@@ -1,4 +1,4 @@
-import { ApiAuditoriesResponse } from '../services/cist-client.service';
+import { ApiAuditoriesResponse } from '../services/cist-json-client.service';
 import { logger } from '../services/logger.service';
 
 export function assertRoomResponse(body: any): body is ApiAuditoriesResponse {

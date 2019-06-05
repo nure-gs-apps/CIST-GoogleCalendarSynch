@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = require("axios");
 const Iconv = require("iconv");
 const ts_optchain_1 = require("ts-optchain");
-class CistClient {
-    constructor(baseApiUrl = CistClient.BASE_API_URL) {
+class CistJsonClient {
+    constructor(baseApiUrl = CistJsonClient.BASE_API_URL) {
         this._axios = axios_1.default.create({
             baseURL: baseApiUrl,
             responseType: 'arraybuffer',
@@ -21,7 +21,7 @@ class CistClient {
     }
     getRoomResponse() {
         return this._axios
-            .get(CistClient.ROOM_PATH)
+            .get(CistJsonClient.ROOM_PATH)
             .then(response => this.parseAuditoriesResponse(response));
     }
     parseAuditoriesResponse(response) {
@@ -34,7 +34,7 @@ class CistClient {
         return JSON.parse(fixedBody);
     }
 }
-CistClient.BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
-CistClient.ROOM_PATH = 'P_API_AUDITORIES_JSON';
-exports.CistClient = CistClient;
-//# sourceMappingURL=cist-client.service.js.map
+CistJsonClient.BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
+CistJsonClient.ROOM_PATH = 'P_API_AUDITORIES_JSON';
+exports.CistJsonClient = CistJsonClient;
+//# sourceMappingURL=cist-json-client.service.js.map

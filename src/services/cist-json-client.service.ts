@@ -30,14 +30,14 @@ export interface ApiAuditoryType {
   short_name: string; // (presumably) direction (branch)
 }
 
-export class CistClient {
+export class CistJsonClient {
   static readonly BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
   static readonly ROOM_PATH = 'P_API_AUDITORIES_JSON';
 
   private _axios: AxiosInstance;
   private _iconv: Iconv.Iconv;
 
-  constructor(baseApiUrl = CistClient.BASE_API_URL) {
+  constructor(baseApiUrl = CistJsonClient.BASE_API_URL) {
     this._axios = axios.create({
       baseURL: baseApiUrl,
       responseType: 'arraybuffer',
@@ -55,7 +55,7 @@ export class CistClient {
 
   getRoomResponse() {
     return this._axios
-      .get(CistClient.ROOM_PATH)
+      .get(CistJsonClient.ROOM_PATH)
       .then(response => this.parseAuditoriesResponse(response));
   }
 
