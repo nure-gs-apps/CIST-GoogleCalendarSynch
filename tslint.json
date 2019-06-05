@@ -1,0 +1,16 @@
+{
+  "extends": "tslint-config-airbnb",
+  "rules": {
+    "max-line-length": [true, {"limit": 80, "ignore-pattern": "^import |^export {(.*?)}| implements | extends |//|/\\*| \\*| \\*/|\".*\"|`.*`|'.*'"}],
+    "variable-name": [true, "allow-leading-underscore"],
+    "align": false,
+    "ter-arrow-parens": false,
+    "function-name": [true, {
+      "method-regex": "^\\*?\\[?[a-zA-Z][\\w\\d\\.]*\\]?$",
+      "private-method-regex": "^\\*?\\[?[a-zA-Z][\\w\\d\\.]*\\]?$",
+      "protected-method-regex": "^\\*?\\[?[a-zA-Z][\\w\\d\\.]*\\]?$",
+      "static-method-regex": "^\\*?\\[?[a-zA-Z][\\w\\d\\.]*\\]?$",
+      "function-regex": "^\\*?\\[?[a-zA-Z][\\w\\d\\.]*\\]?$"
+    }]
+  }
+}
