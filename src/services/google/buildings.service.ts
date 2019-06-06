@@ -13,9 +13,9 @@ import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buil
 @injectable()
 export class BuildingsService {
   static readonly BUILDING_PAGE_SIZE = 100;
-  protected readonly _admin: GoogleApiAdmin;
+  private readonly _admin: GoogleApiAdmin;
 
-  protected _buildings: Resource$Resources$Buildings;
+  private _buildings: Resource$Resources$Buildings;
 
   constructor(@inject(TYPES.GoogleApiAdmin) googleApiAdmin: GoogleApiAdmin) {
     this._admin = googleApiAdmin;
@@ -56,7 +56,7 @@ export class BuildingsService {
     return Promise.all(promises as any);
   }
 
-  protected async loadBuildings() {
+  private async loadBuildings() {
     let buildings = [] as admin_directory_v1.Schema$Building[];
     let buildingsPage = null;
     do {
@@ -72,7 +72,7 @@ export class BuildingsService {
     return buildings;
   }
 
-  protected cistBuildingToGoogleBuilding(
+  private cistBuildingToGoogleBuilding(
     cistBuilding: ApiBuilding,
   ): Schema$Building {
     return {

@@ -13,8 +13,8 @@ import Schema$Building = admin_directory_v1.Schema$Building;
 export class RoomsService {
   static readonly ROOMS_PAGE_SIZE = 1000;
   static readonly CONFERENCE_ROOM = 'CONFERENCE_ROOM';
-  protected readonly _admin: GoogleApiAdmin;
-  protected readonly _rooms: admin_directory_v1.Resource$Resources$Calendars;
+  private readonly _admin: GoogleApiAdmin;
+  private readonly _rooms: admin_directory_v1.Resource$Resources$Calendars;
 
   constructor(@inject(TYPES.GoogleApiAdmin) googleAdmin: GoogleApiAdmin) {
     this._admin = googleAdmin;
@@ -58,7 +58,7 @@ export class RoomsService {
     return Promise.all(promises as any);
   }
 
-  protected async loadRooms() {
+  private async loadRooms() {
     let rooms = [] as Schema$CalendarResource[];
     let roomsPage = null;
     do {
@@ -77,11 +77,11 @@ export class RoomsService {
     return rooms;
   }
 
-  protected getRoomId(room: ApiAuditory, building: ApiBuilding) {
+  private getRoomId(room: ApiAuditory, building: ApiBuilding) {
     return `${building.id}_${room.id}`; // using composite id to ensure uniqueness
   }
 
-  protected cistAuditoryToGoogleRoom(cistRoom: ApiAuditory, roomId: string) {
+  private cistAuditoryToGoogleRoom(cistRoom: ApiAuditory, roomId: string) {
     return { // TODO: add cist room types and is_have_power as features resources
       resourceId: roomId,
       resourceName: cistRoom.short_name,

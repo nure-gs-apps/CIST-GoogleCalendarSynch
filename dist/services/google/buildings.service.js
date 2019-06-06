@@ -10,9 +10,7 @@ const google_api_admin_1 = require("./google-api-admin");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
     constructor(googleApiAdmin) {
         this._admin = googleApiAdmin;
-    }
-    get _buildings() {
-        return this._admin.googleAdmin.resources.buildings;
+        this._buildings = this._admin.googleAdmin.resources.buildings;
     }
     async ensureBuildings(cistResponse) {
         const buildings = await this.loadBuildings();
@@ -39,7 +37,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
                 }));
             }
         }
-        return promises;
+        return Promise.all(promises);
     }
     async loadBuildings() {
         let buildings = [];
@@ -61,7 +59,10 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
             buildingId: cistBuilding.id,
             buildingName: cistBuilding.short_name,
             description: cistBuilding.full_name,
-            floorNames: Array.from(new Set(iterare_1.iterate(cistBuilding.auditories).map(r => r.floor)).values()),
+            floorNames: Array.from(iterare_1.iterate(cistBuilding.auditories)
+                .map(r => r.floor)
+                .toSet()
+                .values()),
         };
     }
 };

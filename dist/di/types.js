@@ -9,6 +9,7 @@ exports.TYPES = {
     GoogleApiAdmin: Symbol.for('GoogleApiAdmin'),
     GoogleApiCalendar: Symbol.for('GoogleApiCalendar'),
     BuildingsService: Symbol.for('BuildingsService'),
+    RoomsService: Symbol.for('RoomsService'),
 };
 exports.ASYNC_INIT = Symbol.for('@asyncInit');
 const injectables = new Set();

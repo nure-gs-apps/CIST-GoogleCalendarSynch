@@ -6,7 +6,7 @@ import Admin = admin_directory_v1.Admin;
 
 @injectable()
 export class GoogleApiAdmin {
-  protected readonly _googleAuth: GoogleAuth;
+  private readonly _googleAuth: GoogleAuth;
   readonly googleAdmin: Admin;
 
   constructor(@inject(TYPES.GoogleAuth) googleAuth: GoogleAuth) {

@@ -7,7 +7,7 @@ import { logger } from '../logger.service';
 @injectable()
 export class GoogleAuth {
   readonly [ASYNC_INIT]: Promise<unknown>;
-  protected _authClient: Nullable<unknown>;
+  private _authClient: Nullable<unknown>;
 
   get authClient() {
     return this._authClient;

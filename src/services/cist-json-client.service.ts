@@ -31,10 +31,46 @@ export interface ApiAuditoryType {
   short_name: string; // (presumably) direction (branch)
 }
 
+export interface ApiGroupResponse {
+  university: {
+    short_name: string;
+    full_name: string;
+    faculties: ApiFaculty[];
+  };
+}
+
+export interface ApiFaculty {
+  id: number;
+  short_name: string;
+  full_name: string;
+  directions: ApiDirection[];
+}
+
+export interface ApiDirection {
+  id: number;
+  short_name: string;
+  full_name: string;
+  groups?: ApiGroup[];
+  specialities: ApiSpeciality[];
+}
+
+export interface ApiSpeciality {
+  id: number;
+  short_name: string;
+  full_name: string;
+  groups: ApiGroup[];
+}
+
+export interface ApiGroup {
+  id: number;
+  name: string;
+}
+
 @injectable()
 export class CistJsonClient {
   static readonly BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
-  static readonly ROOM_PATH = 'P_API_AUDITORIES_JSON';
+  static readonly ROOMS_PATH = 'P_API_AUDITORIES_JSON';
+  static readonly GROUPS_PATH = 'P_API_GROUP_JSON';
 
   private _axios: AxiosInstance;
   private _iconv: Iconv.Iconv;
@@ -55,10 +91,16 @@ export class CistJsonClient {
     });
   }
 
-  getRoomResponse() {
+  getRoomsResponse() {
     return this._axios
-      .get(CistJsonClient.ROOM_PATH)
+      .get(CistJsonClient.ROOMS_PATH)
       .then(response => this.parseAuditoriesResponse(response));
+  }
+
+  getGroupResponse() {
+    return this._axios
+      .get(CistJsonClient.GROUPS_PATH)
+      .then(response => this.parseGroupResponse(response));
   }
 
   private parseAuditoriesResponse(
@@ -71,5 +113,14 @@ export class CistJsonClient {
     // Fixing body deficiencies
     const fixedBody = body.replace(/\[\s*}\s*]/g, '[]');
     return JSON.parse(fixedBody);
+  }
+
+  private parseGroupResponse(
+    response: AxiosResponse,
+  ): ApiGroupResponse {
+    if (typeof response.data !== 'string') {
+      throw new TypeError('Unexpected non-string response');
+    }
+    return JSON.parse(response.data);
   }
 }

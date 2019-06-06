@@ -5,6 +5,7 @@ const cist_json_client_service_1 = require("../services/cist-json-client.service
 const buildings_service_1 = require("../services/google/buildings.service");
 const google_api_admin_1 = require("../services/google/google-api-admin");
 const google_auth_1 = require("../services/google/google-auth");
+const rooms_service_1 = require("../services/google/rooms.service");
 const types_1 = require("./types");
 let container = null;
 function hasContainer() {
@@ -23,6 +24,7 @@ function createContainer(forceNew = false) {
     container.bind(types_1.TYPES.GoogleAuth).to(google_auth_1.GoogleAuth);
     container.bind(types_1.TYPES.GoogleApiAdmin).to(google_api_admin_1.GoogleApiAdmin);
     container.bind(types_1.TYPES.BuildingsService).to(buildings_service_1.BuildingsService);
+    container.bind(types_1.TYPES.RoomsService).to(rooms_service_1.RoomsService);
     return container;
 }
 exports.createContainer = createContainer;

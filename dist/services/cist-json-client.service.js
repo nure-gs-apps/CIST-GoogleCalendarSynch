@@ -23,10 +23,15 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
             return res;
         });
     }
-    getRoomResponse() {
+    getRoomsResponse() {
         return this._axios
-            .get(CistJsonClient_1.ROOM_PATH)
+            .get(CistJsonClient_1.ROOMS_PATH)
             .then(response => this.parseAuditoriesResponse(response));
+    }
+    getGroupResponse() {
+        return this._axios
+            .get(CistJsonClient_1.GROUPS_PATH)
+            .then(response => this.parseGroupResponse(response));
     }
     parseAuditoriesResponse(response) {
         const body = response.data;
@@ -37,9 +42,16 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
         const fixedBody = body.replace(/\[\s*}\s*]/g, '[]');
         return JSON.parse(fixedBody);
     }
+    parseGroupResponse(response) {
+        if (typeof response.data !== 'string') {
+            throw new TypeError('Unexpected non-string response');
+        }
+        return JSON.parse(response.data);
+    }
 };
 CistJsonClient.BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
-CistJsonClient.ROOM_PATH = 'P_API_AUDITORIES_JSON';
+CistJsonClient.ROOMS_PATH = 'P_API_AUDITORIES_JSON';
+CistJsonClient.GROUPS_PATH = 'P_API_GROUP_JSON';
 CistJsonClient = CistJsonClient_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__metadata("design:paramtypes", [Object])
