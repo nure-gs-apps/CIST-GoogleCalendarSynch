@@ -8,7 +8,9 @@ export const TYPES = {
   GoogleAuth: Symbol.for('GoogleAuth'),
   GoogleApiAdmin: Symbol.for('GoogleApiAdmin'),
   GoogleApiCalendar: Symbol.for('GoogleApiCalendar'),
+
   BuildingsService: Symbol.for('BuildingsService'),
+  RoomsService: Symbol.for('RoomsService'),
 };
 
 export const ASYNC_INIT = Symbol.for('@asyncInit');

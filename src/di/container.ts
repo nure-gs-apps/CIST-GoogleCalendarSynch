@@ -4,6 +4,7 @@ import { CistJsonClient } from '../services/cist-json-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { GoogleApiAdmin } from '../services/google/google-api-admin';
 import { GoogleAuth } from '../services/google/google-auth';
+import { RoomsService } from '../services/google/rooms.service';
 import { ASYNC_INIT, TYPES } from './types';
 
 let container: Nullable<Container> = null;
@@ -25,6 +26,7 @@ export function createContainer(forceNew = false) {
   container.bind<GoogleAuth>(TYPES.GoogleAuth).to(GoogleAuth);
   container.bind<GoogleApiAdmin>(TYPES.GoogleApiAdmin).to(GoogleApiAdmin);
   container.bind<BuildingsService>(TYPES.BuildingsService).to(BuildingsService);
+  container.bind<RoomsService>(TYPES.RoomsService).to(RoomsService);
 
   return container;
 }

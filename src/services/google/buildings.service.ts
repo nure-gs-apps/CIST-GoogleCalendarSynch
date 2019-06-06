@@ -8,18 +8,18 @@ import {
 } from '../cist-json-client.service';
 import { GoogleApiAdmin } from './google-api-admin';
 import Schema$Building = admin_directory_v1.Schema$Building;
+import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
 
 @injectable()
 export class BuildingsService {
   static readonly BUILDING_PAGE_SIZE = 100;
   protected readonly _admin: GoogleApiAdmin;
 
-  protected get _buildings() {
-    return this._admin.googleAdmin.resources.buildings;
-  }
+  protected _buildings: Resource$Resources$Buildings;
 
   constructor(@inject(TYPES.GoogleApiAdmin) googleApiAdmin: GoogleApiAdmin) {
     this._admin = googleApiAdmin;
+    this._buildings = this._admin.googleAdmin.resources.buildings;
   }
 
   async ensureBuildings(cistResponse: ApiAuditoriesResponse) {
@@ -53,7 +53,7 @@ export class BuildingsService {
         );
       }
     }
-    return promises;
+    return Promise.all(promises as any);
   }
 
   protected async loadBuildings() {
@@ -76,12 +76,13 @@ export class BuildingsService {
     cistBuilding: ApiBuilding,
   ): Schema$Building {
     return {
-      buildingId: cistBuilding.id,
+      buildingId: cistBuilding.id, // FIXME: maybe exclude for update
       buildingName: cistBuilding.short_name,
       description: cistBuilding.full_name,
-      floorNames: Array.from(new Set(
-        iterate(cistBuilding.auditories).map(r => r.floor),
-      ).values()),
+      floorNames: Array.from(iterate(cistBuilding.auditories)
+        .map(r => r.floor)
+        .toSet()
+        .values()),
     };
   }
 }
