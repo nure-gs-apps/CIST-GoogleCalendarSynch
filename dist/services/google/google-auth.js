@@ -6,7 +6,14 @@ const googleapis_1 = require("googleapis");
 const types_1 = require("../../di/types");
 let GoogleAuth = class GoogleAuth {
     constructor() {
-        this[types_1.ASYNC_INIT] = googleapis_1.google.auth.getClient();
+        this[types_1.ASYNC_INIT] = googleapis_1.google.auth.getClient({
+            scopes: [
+                'https://www.googleapis.com/auth/admin.directory.resource.calendar',
+            ],
+            clientOptions: {
+                subject: 'bohdan.shevchenko@dl.kture.kharkov.ua',
+            },
+        });
         this._authClient = null;
         this[types_1.ASYNC_INIT]
             .then(authClient => this._authClient = authClient);

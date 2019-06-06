@@ -6,6 +6,7 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
+const constants_1 = require("./constants");
 const google_api_admin_1 = require("./google-api-admin");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
     constructor(googleApiAdmin) {
@@ -17,26 +18,32 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         const promises = [];
         const processedIds = new Set();
         for (const cistBuilding of cistResponse.university.buildings) {
-            if (buildings.some(b => b.buildingId === cistBuilding.id)) {
+            const googleBuildingId = getGoogleBuildingId(cistBuilding);
+            if (buildings.some(b => b.buildingId === googleBuildingId)) {
                 promises.push(this._buildings.update({
-                    buildingId: cistBuilding.id,
-                    requestBody: this.cistBuildingToGoogleBuilding(cistBuilding),
+                    customer: constants_1.customer,
+                    buildingId: googleBuildingId,
+                    requestBody: this.cistBuildingToGoogleBuilding(cistBuilding, googleBuildingId),
                 }));
             }
             else {
                 promises.push(this._buildings.insert({
-                    requestBody: this.cistBuildingToGoogleBuilding(cistBuilding),
+                    customer: constants_1.customer,
+                    requestBody: this.cistBuildingToGoogleBuilding(cistBuilding, googleBuildingId),
                 }));
             }
-            processedIds.add(cistBuilding.id);
+            processedIds.add(googleBuildingId);
         }
-        for (const googleBuilding of buildings) {
-            if (!processedIds.has(googleBuilding.buildingId)) {
-                promises.push(this._buildings.delete({
-                    buildingId: googleBuilding.buildingId,
-                }));
-            }
-        }
+        // for (const googleBuilding of buildings) {
+        //   if (!processedIds.has(googleBuilding.buildingId!)) {
+        //     promises.push(
+        //       this._buildings.delete({
+        //         customer,
+        //         buildingId: googleBuilding.buildingId,
+        //       }),
+        //     );
+        //   }
+        // }
         return Promise.all(promises);
     }
     async loadBuildings() {
@@ -44,7 +51,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         let buildingsPage = null;
         do {
             buildingsPage = await this._buildings.list({
-                customer: 'my_customer',
+                customer: constants_1.customer,
                 maxResults: BuildingsService_1.BUILDING_PAGE_SIZE,
                 nextPage: buildingsPage ? buildingsPage.data.nextPageToken : null,
             });
@@ -54,13 +61,13 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         } while (buildingsPage.data.nextPageToken);
         return buildings;
     }
-    cistBuildingToGoogleBuilding(cistBuilding) {
+    cistBuildingToGoogleBuilding(cistBuilding, id = getGoogleBuildingId(cistBuilding)) {
         return {
-            buildingId: cistBuilding.id,
+            buildingId: id,
             buildingName: cistBuilding.short_name,
             description: cistBuilding.full_name,
             floorNames: Array.from(iterare_1.iterate(cistBuilding.auditories)
-                .map(r => r.floor)
+                .map(r => transformFloorname(r.floor))
                 .toSet()
                 .values()),
         };
@@ -73,4 +80,12 @@ BuildingsService = BuildingsService_1 = tslib_1.__decorate([
     tslib_1.__metadata("design:paramtypes", [google_api_admin_1.GoogleApiAdmin])
 ], BuildingsService);
 exports.BuildingsService = BuildingsService;
+function getGoogleBuildingId(cistBuilding) {
+    return `${constants_1.idPrefix}.${cistBuilding.id}`;
+}
+exports.getGoogleBuildingId = getGoogleBuildingId;
+function transformFloorname(floorName) {
+    return floorName ? floorName : '_';
+}
+exports.transformFloorname = transformFloorname;
 //# sourceMappingURL=buildings.service.js.map

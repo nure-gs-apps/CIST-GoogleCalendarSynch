@@ -20,17 +20,17 @@ getAsyncInitializers().then(main);
 async function main() {
   const cistClient = container
     .get<CistJsonClient>(TYPES.CistJsonClient);
-  // const roomsResponse = await cistClient.getRoomsResponse();
+  const roomsResponse = await cistClient.getRoomsResponse();
 
   // if (!assertRoomsResponse(roomsResponse)) {
   //   return;
   // }
-  const groupsResponse = await cistClient.getGroupResponse();
-  assertGroupResponse(groupsResponse);
-  // await container.get<BuildingsService>(TYPES.BuildingsService)
-  //   .ensureBuildings(roomsResponse);
-  // logger.info('Buildings are loaded');
-  // await container.get<RoomsService>(TYPES.RoomsService)
-  //   .ensureRooms(roomsResponse);
-  // logger.info('Rooms are loaded');
+  // const groupsResponse = await cistClient.getGroupResponse();
+  // assertGroupResponse(groupsResponse);
+  await container.get<BuildingsService>(TYPES.BuildingsService)
+    .ensureBuildings(roomsResponse);
+  logger.info('Buildings are loaded');
+  await container.get<RoomsService>(TYPES.RoomsService)
+    .ensureRooms(roomsResponse);
+  logger.info('Rooms are loaded');
 }

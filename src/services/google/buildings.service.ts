@@ -6,6 +6,7 @@ import {
   ApiAuditoriesResponse,
   ApiBuilding,
 } from '../cist-json-client.service';
+import { customer, idPrefix } from './constants';
 import { GoogleApiAdmin } from './google-api-admin';
 import Schema$Building = admin_directory_v1.Schema$Building;
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
@@ -28,31 +29,41 @@ export class BuildingsService {
     const promises = [];
     const processedIds = new Set<string>();
     for (const cistBuilding of cistResponse.university.buildings) {
-      if (buildings.some(b => b.buildingId === cistBuilding.id)) {
+      const googleBuildingId = getGoogleBuildingId(cistBuilding);
+      if (buildings.some(b => b.buildingId === googleBuildingId)) {
         promises.push(
           this._buildings.update({
-            buildingId: cistBuilding.id,
-            requestBody: this.cistBuildingToGoogleBuilding(cistBuilding),
+            customer,
+            buildingId: googleBuildingId,
+            requestBody: this.cistBuildingToGoogleBuilding(
+              cistBuilding,
+              googleBuildingId,
+            ),
           }),
         );
       } else {
         promises.push(
           this._buildings.insert({
-            requestBody: this.cistBuildingToGoogleBuilding(cistBuilding),
+            customer,
+            requestBody: this.cistBuildingToGoogleBuilding(
+              cistBuilding,
+              googleBuildingId,
+            ),
           }),
         );
       }
-      processedIds.add(cistBuilding.id);
+      processedIds.add(googleBuildingId);
     }
-    for (const googleBuilding of buildings) {
-      if (!processedIds.has(googleBuilding.buildingId!)) {
-        promises.push(
-          this._buildings.delete({
-            buildingId: googleBuilding.buildingId,
-          }),
-        );
-      }
-    }
+    // for (const googleBuilding of buildings) {
+    //   if (!processedIds.has(googleBuilding.buildingId!)) {
+    //     promises.push(
+    //       this._buildings.delete({
+    //         customer,
+    //         buildingId: googleBuilding.buildingId,
+    //       }),
+    //     );
+    //   }
+    // }
     return Promise.all(promises as any);
   }
 
@@ -61,7 +72,7 @@ export class BuildingsService {
     let buildingsPage = null;
     do {
       buildingsPage = await this._buildings.list({
-        customer: 'my_customer', // FIXME: move to config or clarify
+        customer,
         maxResults: BuildingsService.BUILDING_PAGE_SIZE,
         nextPage: buildingsPage ? buildingsPage.data.nextPageToken : null,
       } as admin_directory_v1.Params$Resource$Resources$Buildings$List);
@@ -74,15 +85,24 @@ export class BuildingsService {
 
   private cistBuildingToGoogleBuilding(
     cistBuilding: ApiBuilding,
+    id = getGoogleBuildingId(cistBuilding),
   ): Schema$Building {
     return {
-      buildingId: cistBuilding.id, // FIXME: maybe exclude for update
+      buildingId: id, // FIXME: maybe exclude for update
       buildingName: cistBuilding.short_name,
       description: cistBuilding.full_name,
       floorNames: Array.from(iterate(cistBuilding.auditories)
-        .map(r => r.floor)
+        .map(r => transformFloorname(r.floor))
         .toSet()
         .values()),
     };
   }
+}
+
+export function getGoogleBuildingId(cistBuilding: ApiBuilding) {
+  return `${idPrefix}.${cistBuilding.id}`;
+}
+
+export function transformFloorname(floorName: string) {
+  return floorName ? floorName : '_';
 }

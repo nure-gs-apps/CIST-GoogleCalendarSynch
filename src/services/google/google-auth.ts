@@ -14,7 +14,14 @@ export class GoogleAuth {
   }
 
   constructor() {
-    this[ASYNC_INIT] = google.auth.getClient() as Promise<any>;
+    this[ASYNC_INIT] = google.auth.getClient({
+      scopes: [
+        'https://www.googleapis.com/auth/admin.directory.resource.calendar',
+      ],
+      clientOptions: {
+        subject: 'yourEmail',
+      },
+    }) as Promise<any>;
     this._authClient = null;
     this[ASYNC_INIT]
       .then(authClient => this._authClient = authClient);
