@@ -8,7 +8,8 @@ let GoogleAuth = class GoogleAuth {
     constructor() {
         this[types_1.ASYNC_INIT] = googleapis_1.google.auth.getClient();
         this._authClient = null;
-        this[types_1.ASYNC_INIT].then(authClient => this._authClient = authClient);
+        this[types_1.ASYNC_INIT]
+            .then(authClient => this._authClient = authClient);
     }
     get authClient() {
         return this._authClient;

@@ -1,7 +1,7 @@
 import { BindingScopeEnum, Container } from 'inversify';
 import { Nullable } from '../@types';
 import { CistJsonClient } from '../services/cist-json-client.service';
-import { BuildingsService } from '../services/google/buildingsService';
+import { BuildingsService } from '../services/google/buildings.service';
 import { GoogleApiAdmin } from '../services/google/google-api-admin';
 import { GoogleAuth } from '../services/google/google-auth';
 import { ASYNC_INIT, TYPES } from './types';
@@ -44,7 +44,7 @@ export function getAsyncInitializers() {
   if (initPromise) {
     return initPromise;
   }
-  const promises = [];
+  const promises = [] as Promise<any>[];
 
   promises.push(container.get<GoogleAuth>(TYPES.GoogleAuth)[ASYNC_INIT]);
 

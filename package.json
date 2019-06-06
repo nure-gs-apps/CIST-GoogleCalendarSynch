@@ -14,10 +14,11 @@
     "r:g:dev:win": "npm r rimraf tslint nodemon tslint-config-airbnb -g -D",
     "build": "rimraf ./dist && ttsc",
     "start": "node ./dist",
-    "start:b": "npm run build && node ./dist",
+    "start:b": "npm run build && npm start",
     "start:brk": "node --inspect-brk ./dist",
-    "start:b:brk": "npm run build && node --inspect-brk ./dist",
+    "start:b:brk": "npm run build && npm run start:brk",
     "start:dev": "node --inspect=9229 ./dist",
+    "start:b:dev": "npm run build && npm run start:dev",
     "watch": "nodemon -w src/ -w config/ -e ts,yaml -x \"npm run start:b:dev\""
   },
   "repository": {
@@ -39,6 +40,7 @@
     "googleapis": "^39.2.0",
     "iconv": "^2.3.4",
     "inversify": "^5.0.1",
+    "iterare": "^1.1.2",
     "js-yaml": "^3.13.1",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.9.3",

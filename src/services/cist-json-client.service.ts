@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import * as Iconv from 'iconv';
+import { injectable } from 'inversify';
 import { oc } from 'ts-optchain';
 
 export interface ApiAuditoriesResponse {
@@ -30,6 +31,7 @@ export interface ApiAuditoryType {
   short_name: string; // (presumably) direction (branch)
 }
 
+@injectable()
 export class CistJsonClient {
   static readonly BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
   static readonly ROOM_PATH = 'P_API_AUDITORIES_JSON';

@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const inversify_1 = require("inversify");
 const cist_json_client_service_1 = require("../services/cist-json-client.service");
-const buildingsService_1 = require("../services/google/buildingsService");
+const buildings_service_1 = require("../services/google/buildings.service");
 const google_api_admin_1 = require("../services/google/google-api-admin");
 const google_auth_1 = require("../services/google/google-auth");
 const types_1 = require("./types");
@@ -22,7 +22,7 @@ function createContainer(forceNew = false) {
     container.bind(types_1.TYPES.CistJsonClient).to(cist_json_client_service_1.CistJsonClient);
     container.bind(types_1.TYPES.GoogleAuth).to(google_auth_1.GoogleAuth);
     container.bind(types_1.TYPES.GoogleApiAdmin).to(google_api_admin_1.GoogleApiAdmin);
-    container.bind(types_1.TYPES.BuildingsService).to(buildingsService_1.BuildingsService);
+    container.bind(types_1.TYPES.BuildingsService).to(buildings_service_1.BuildingsService);
     return container;
 }
 exports.createContainer = createContainer;
