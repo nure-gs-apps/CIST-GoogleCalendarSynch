@@ -17,8 +17,6 @@ async function main() {
   const response = await container.get<CistJsonClient>(CistJsonClient)
     .getRoomResponse();
   await container.get<BuildingsService>(BuildingsService)
-    .ensureBuildings(response).catch(err => {
-      err.toString();
-      debugger;
-    });
+    .ensureBuildings(response);
+  logger.info('Buildings are loaded');
 }
