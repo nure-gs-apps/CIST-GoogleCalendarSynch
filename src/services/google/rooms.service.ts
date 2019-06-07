@@ -8,9 +8,10 @@ import {
   ApiAuditory, ApiBuilding,
 } from '../cist-json-client.service';
 import { logger } from '../logger.service';
+import { QuotaLimiterService } from '../quota-limiter.service';
 import { getGoogleBuildingId, transformFloorname } from './buildings.service';
 import { customer, idPrefix } from './constants';
-import { GoogleApiAdmin } from './google-api-admin';
+import { GoogleApiDirectory } from './google-api-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise } from 'gaxios';
 
@@ -18,12 +19,38 @@ import { GaxiosPromise } from 'gaxios';
 export class RoomsService {
   static readonly ROOMS_PAGE_SIZE = 500; // maximum
   static readonly CONFERENCE_ROOM = 'CONFERENCE_ROOM';
-  private readonly _admin: GoogleApiAdmin;
+  private readonly _admin: GoogleApiDirectory;
+  private readonly _quotaLimiter: QuotaLimiterService;
+
   private readonly _rooms: admin_directory_v1.Resource$Resources$Calendars;
 
-  constructor(@inject(TYPES.GoogleApiAdmin) googleAdmin: GoogleApiAdmin) {
+  private readonly _insert: admin_directory_v1.Resource$Resources$Calendars['insert'];
+  private readonly _patch: admin_directory_v1.Resource$Resources$Calendars['patch'];
+  private readonly _delete: admin_directory_v1.Resource$Resources$Calendars['delete'];
+  private readonly _list: admin_directory_v1.Resource$Resources$Calendars['list'];
+
+  constructor(
+    @inject(TYPES.GoogleApiAdmin) googleAdmin: GoogleApiDirectory,
+    @inject(
+      TYPES.GoogleDirectoryQuotaLimiter,
+    ) quotaLimiter: QuotaLimiterService,
+  ) {
     this._admin = googleAdmin;
     this._rooms = this._admin.googleAdmin.resources.calendars;
+    this._quotaLimiter = quotaLimiter;
+
+    this._insert = this._quotaLimiter.limiter.wrap(
+      this._rooms.insert.bind(this._rooms),
+    ) as any;
+    this._patch = this._quotaLimiter.limiter.wrap(
+      this._rooms.patch.bind(this._rooms),
+    ) as any;
+    this._delete = this._quotaLimiter.limiter.wrap(
+      this._rooms.delete.bind(this._rooms),
+    ) as any;
+    this._list = this._quotaLimiter.limiter.wrap(
+      this._rooms.list.bind(this._rooms),
+    ) as any;
   }
 
   async ensureRooms(
@@ -36,25 +63,29 @@ export class RoomsService {
       const buildingId = getGoogleBuildingId(cistBuilding);
       for (const cistRoom of cistBuilding.auditories) {
         const cistRoomId = getRoomId(cistRoom, cistBuilding);
-        if (rooms.some(r => r.resourceId === cistRoomId)) {
-          logger.debug(`Updating room ${cistRoomId}`);
-          promises.push(
-            this._rooms.update({
-              customer,
-              calendarResourceId: cistRoomId,
-              requestBody: cistAuditoryToGoogleRoom(
-                cistRoom,
-                buildingId,
-                cistRoomId,
-              ),
-            }),
+        const googleRoom = rooms.find(r => r.resourceId === cistRoomId);
+        if (googleRoom) {
+          const roomPatch = cistAuditoryToGoogleRoomPatch(
+            cistRoom,
+            googleRoom,
+            buildingId,
           );
+          if (roomPatch) {
+            logger.debug(`Patching room ${cistRoomId}`);
+            promises.push(
+              this._patch({
+                customer,
+                calendarResourceId: cistRoomId,
+                requestBody: roomPatch,
+              }),
+            );
+          }
         } else {
           logger.debug(`Inserting room ${cistRoomId}`);
           promises.push(
-            this._rooms.insert({
+            this._insert({
               customer,
-              requestBody: cistAuditoryToGoogleRoom(
+              requestBody: cistAuditoryToInsertGoogleRoom(
                 cistRoom,
                 buildingId,
                 cistRoomId,
@@ -71,7 +102,7 @@ export class RoomsService {
     const rooms = await this.getAllRooms();
     const promises = [];
     for (const room of rooms) {
-      promises.push(this._rooms.delete({
+      promises.push(this._delete({
         customer,
         calendarResourceId: room.resourceId,
       }));
@@ -119,7 +150,7 @@ export class RoomsService {
     let rooms = [] as Schema$CalendarResource[];
     let roomsPage = null;
     do {
-      roomsPage = await this._rooms.list({
+      roomsPage = await this._list({
         customer,
         maxResults: RoomsService.ROOMS_PAGE_SIZE,
         nextPage: roomsPage ? roomsPage.data.nextPageToken : null,
@@ -153,7 +184,7 @@ export class RoomsService {
   }
 }
 
-function cistAuditoryToGoogleRoom(
+function cistAuditoryToInsertGoogleRoom(
   cistRoom: ApiAuditory,
   googleBuildingId: string,
   roomId: string,
@@ -169,6 +200,37 @@ function cistAuditoryToGoogleRoom(
     resourceCategory: 'CONFERENCE_ROOM',
   };
   return room;
+}
+
+function cistAuditoryToGoogleRoomPatch(
+  cistRoom: ApiAuditory,
+  googleRoom: Schema$CalendarResource,
+  googleBuildingId: string,
+) {
+  let hasChanges = false;
+  const roomPatch = {} as Schema$CalendarResource;
+  if (googleBuildingId !== googleRoom.buildingId) {
+    roomPatch.buildingId = googleBuildingId;
+    hasChanges = true;
+  }
+  if (cistRoom.short_name !== googleRoom.resourceName) {
+    roomPatch.resourceName = cistRoom.short_name;
+    hasChanges = true;
+  }
+  if (cistRoom.short_name !== googleRoom.resourceDescription) {
+    roomPatch.resourceDescription = cistRoom.short_name;
+    hasChanges = true;
+  }
+  if (cistRoom.short_name !== googleRoom.userVisibleDescription) {
+    roomPatch.userVisibleDescription = cistRoom.short_name;
+    hasChanges = true;
+  }
+  const floorName = transformFloorname(cistRoom.floor);
+  if (floorName !== googleRoom.floorName) {
+    roomPatch.floorName = floorName;
+    hasChanges = true;
+  }
+  return hasChanges ? roomPatch : null;
 }
 
 export function getRoomId(room: ApiAuditory, building: ApiBuilding) {

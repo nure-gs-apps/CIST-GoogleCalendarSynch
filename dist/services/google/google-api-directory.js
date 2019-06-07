@@ -4,7 +4,7 @@ const tslib_1 = require("tslib");
 const googleapis_1 = require("googleapis");
 const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
-let GoogleApiAdmin = class GoogleApiAdmin {
+let GoogleApiDirectory = class GoogleApiDirectory {
     constructor(googleAuth) {
         this._googleAuth = googleAuth;
         if (!this._googleAuth.authClient) {
@@ -16,10 +16,10 @@ let GoogleApiAdmin = class GoogleApiAdmin {
         });
     }
 };
-GoogleApiAdmin = tslib_1.__decorate([
+GoogleApiDirectory = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAdminAuth)),
     tslib_1.__metadata("design:paramtypes", [Object])
-], GoogleApiAdmin);
-exports.GoogleApiAdmin = GoogleApiAdmin;
-//# sourceMappingURL=google-api-admin.js.map
+], GoogleApiDirectory);
+exports.GoogleApiDirectory = GoogleApiDirectory;
+//# sourceMappingURL=google-api-directory.js.map

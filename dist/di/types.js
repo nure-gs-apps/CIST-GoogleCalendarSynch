@@ -12,9 +12,10 @@ exports.TYPES = {
     GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
     // class tokens
     CistJsonClient: Symbol.for('CistJsonClient'),
-    GoogleAdminAuth: Symbol.for('GoogleAdminAuth'),
+    GoogleAdminAuth: Symbol.for('GoogleDirectoryAuth'),
     GoogleCalendarAuth: Symbol.for('GoogleCalendarAuth'),
-    GoogleApiAdmin: Symbol.for('GoogleApiAdmin'),
+    GoogleDirectoryQuotaLimiter: Symbol.for('GoogleDirectoryQuotaLimiter'),
+    GoogleApiAdmin: Symbol.for('GoogleApiDirectory'),
     GoogleApiCalendar: Symbol.for('GoogleApiCalendar'),
     BuildingsService: Symbol.for('BuildingsService'),
     RoomsService: Symbol.for('RoomsService'),

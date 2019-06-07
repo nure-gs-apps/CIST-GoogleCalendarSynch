@@ -5,7 +5,7 @@ import { IGoogleAuth } from './interfaces';
 import Admin = admin_directory_v1.Admin;
 
 @injectable()
-export class GoogleApiAdmin {
+export class GoogleApiDirectory {
   private readonly _googleAuth: IGoogleAuth;
   readonly googleAdmin: Admin;
 

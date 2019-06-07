@@ -8,3 +8,8 @@ google:
     subjectEmail: yourEmail # Required for admin. email of user belonging to the domain of G Suite.
     calendarKeyFilepath: ./keys/cist-calendar.json
     adminKeyFilepath: ./keys/cist-calendar.json
+  quotas:
+    directoryApi:
+      daily: 150_000 # daily limit
+      period: 100_000 # ms
+      queries: 1500 # per period

@@ -2,14 +2,16 @@ import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { TYPES } from '../../di/types';
+import { arrayContentEqual } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
 import {
   ApiAuditoriesResponse,
   ApiBuilding,
 } from '../cist-json-client.service';
 import { logger } from '../logger.service';
+import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer, idPrefix } from './constants';
-import { GoogleApiAdmin } from './google-api-admin';
+import { GoogleApiDirectory } from './google-api-directory';
 import Schema$Building = admin_directory_v1.Schema$Building;
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
 import { GaxiosPromise } from 'gaxios';
@@ -17,13 +19,38 @@ import { GaxiosPromise } from 'gaxios';
 @injectable()
 export class BuildingsService {
   static readonly BUILDING_PAGE_SIZE = 100;
-  private readonly _admin: GoogleApiAdmin;
+  private readonly _admin: GoogleApiDirectory;
+  private readonly _quotaLimiter: QuotaLimiterService;
 
-  private _buildings: Resource$Resources$Buildings;
+  private readonly _buildings: Resource$Resources$Buildings;
 
-  constructor(@inject(TYPES.GoogleApiAdmin) googleApiAdmin: GoogleApiAdmin) {
+  private readonly _insert: Resource$Resources$Buildings['insert'];
+  private readonly _patch: Resource$Resources$Buildings['patch'];
+  private readonly _delete: Resource$Resources$Buildings['delete'];
+  private readonly _list: Resource$Resources$Buildings['list'];
+
+  constructor(
+    @inject(TYPES.GoogleApiAdmin) googleApiAdmin: GoogleApiDirectory,
+    @inject(
+      TYPES.GoogleDirectoryQuotaLimiter,
+    ) quotaLimiter: QuotaLimiterService,
+  ) {
     this._admin = googleApiAdmin;
     this._buildings = this._admin.googleAdmin.resources.buildings;
+    this._quotaLimiter = quotaLimiter;
+
+    this._insert = this._quotaLimiter.limiter.wrap(
+      this._buildings.insert.bind(this._buildings),
+    ) as any;
+    this._patch = this._quotaLimiter.limiter.wrap(
+      this._buildings.patch.bind(this._buildings),
+    ) as any;
+    this._delete = this._quotaLimiter.limiter.wrap(
+      this._buildings.delete.bind(this._buildings),
+    ) as any;
+    this._list = this._quotaLimiter.limiter.wrap(
+      this._buildings.list.bind(this._buildings),
+    ) as any;
   }
 
   async ensureBuildings(
@@ -34,24 +61,30 @@ export class BuildingsService {
     const promises = [] as GaxiosPromise<any>[];
     for (const cistBuilding of cistResponse.university.buildings) {
       const googleBuildingId = getGoogleBuildingId(cistBuilding);
-      if (buildings.some(b => b.buildingId === googleBuildingId)) {
-        logger.debug(`Updating building ${cistBuilding.short_name}`);
-        promises.push(
-          this._buildings.update({
-            customer,
-            buildingId: googleBuildingId,
-            requestBody: cistBuildingToGoogleBuilding(
-              cistBuilding,
-              googleBuildingId,
-            ),
-          }),
+      const googleBuilding = buildings.find(
+        b => b.buildingId === googleBuildingId,
+      );
+      if (googleBuilding) {
+        const buildingPatch = cistBuildingToGoogleBuildingPatch(
+          cistBuilding,
+          googleBuilding,
         );
+        if (buildingPatch) {
+          logger.debug(`Patching building ${cistBuilding.short_name}`);
+          promises.push(
+            this._patch({
+              customer,
+              buildingId: googleBuildingId,
+              requestBody: buildingPatch,
+            }),
+          );
+        }
       } else {
         logger.debug(`Inserting building ${cistBuilding.short_name}`);
         promises.push(
-          this._buildings.insert({
+          this._insert({
             customer,
-            requestBody: cistBuildingToGoogleBuilding(
+            requestBody: cistBuildingToInsertGoogleBuilding(
               cistBuilding,
               googleBuildingId,
             ),
@@ -66,7 +99,7 @@ export class BuildingsService {
     const buildings = await this.getAllBuildings();
     const promises = [];
     for (const room of buildings) {
-      promises.push(this._buildings.delete({
+      promises.push(this._delete({
         customer,
         buildingId: room.buildingId,
       }));
@@ -102,7 +135,7 @@ export class BuildingsService {
     let buildings = [] as admin_directory_v1.Schema$Building[];
     let buildingsPage = null;
     do {
-      buildingsPage = await this._buildings.list({
+      buildingsPage = await this._list({
         customer,
         maxResults: BuildingsService.BUILDING_PAGE_SIZE,
         nextPage: buildingsPage ? buildingsPage.data.nextPageToken : null,
@@ -122,7 +155,7 @@ export class BuildingsService {
     for (const googleBuilding of buildings) {
       if (ids.has(googleBuilding.buildingId!)) {
         promises.push(
-          this._buildings.delete({
+          this._delete({
             customer,
             buildingId: googleBuilding.buildingId,
           }),
@@ -133,19 +166,46 @@ export class BuildingsService {
   }
 }
 
-function cistBuildingToGoogleBuilding(
+function cistBuildingToInsertGoogleBuilding(
   cistBuilding: ApiBuilding,
   id = getGoogleBuildingId(cistBuilding),
 ): Schema$Building {
   return {
-    buildingId: id, // FIXME: maybe exclude for update
+    buildingId: id,
     buildingName: cistBuilding.short_name,
     description: cistBuilding.full_name,
-    floorNames: Array.from(iterate(cistBuilding.auditories)
-      .map(r => transformFloorname(r.floor))
-      .toSet()
-      .values()),
+    floorNames: getFloornamesFromBuilding(cistBuilding),
   };
+}
+
+function cistBuildingToGoogleBuildingPatch(
+  cistBuilding: ApiBuilding,
+  googleBuilding: Schema$Building,
+) {
+  let hasChanges = false;
+  const buildingPatch = {} as Schema$Building;
+  if (cistBuilding.short_name !== googleBuilding.buildingName) {
+    buildingPatch.buildingName = cistBuilding.short_name;
+    hasChanges = true;
+  }
+  if (cistBuilding.full_name !== googleBuilding.description) {
+    buildingPatch.description = cistBuilding.full_name;
+    hasChanges = true;
+  }
+  const floorNames = getFloornamesFromBuilding(cistBuilding);
+  if (!arrayContentEqual(googleBuilding.floorNames!, floorNames)) {
+    buildingPatch.floorNames = floorNames;
+    hasChanges = true;
+  }
+  return hasChanges ? buildingPatch : null;
+}
+
+// FIXME: move to other place maybe
+function getFloornamesFromBuilding(building: ApiBuilding) {
+  return Array.from(iterate(building.auditories)
+    .map(r => transformFloorname(r.floor))
+    .toSet()
+    .values());
 }
 
 export function getGoogleBuildingId(cistBuilding: ApiBuilding) {

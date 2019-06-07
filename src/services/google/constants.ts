@@ -1,5 +1,5 @@
 import * as config from 'config';
-import { IConfig } from '../../di/container';
+import { IConfig } from '../../@types';
 
 export const idPrefix = config.get<IConfig['google']['idPrefix']>(
   'google.idPrefix',

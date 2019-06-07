@@ -6,7 +6,7 @@ import { adminAuthScopes } from './constants';
 import { IGoogleAuth } from './interfaces';
 
 @injectable()
-export class GoogleAdminAuth implements IGoogleAuth {
+export class GoogleDirectoryAuth implements IGoogleAuth {
   readonly [ASYNC_INIT]: Promise<any>;
   private _authClient: Nullable<any>;
 

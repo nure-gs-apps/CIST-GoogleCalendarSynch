@@ -1,39 +1,29 @@
+import Bottleneck from 'bottleneck';
 import * as config from 'config';
 import { BindingScopeEnum, Container } from 'inversify';
-import { Nullable } from '../@types';
+import { IConfig, Nullable } from '../@types';
 import { CistJsonClient } from '../services/cist-json-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
-import { GoogleApiAdmin } from '../services/google/google-api-admin';
-import { GoogleAdminAuth } from '../services/google/google-admin-auth';
+import { GoogleDirectoryAuth } from '../services/google/google-directory-auth';
+import { GoogleApiDirectory } from '../services/google/google-api-directory';
 import { IGoogleAuth } from '../services/google/interfaces';
 import { RoomsService } from '../services/google/rooms.service';
+import {
+  getQuotaLimiterFactory,
+  QuotaLimiterService,
+} from '../services/quota-limiter.service';
 import { ASYNC_INIT, ContainerType, TYPES } from './types';
 
 let container: Nullable<Container> = null;
 let containerType: Nullable<ContainerType> = null;
-
-export function hasContainer() {
-  return !!container;
-}
 
 export interface ICreateContainerOptions {
   type: ContainerType;
   forceNew: boolean;
 }
 
-export interface IConfig {
-  cist: {
-    baseUrl: string;
-    apiKey: string;
-  };
-  google: {
-    idPrefix: string;
-    auth: {
-      subjectEmail: string;
-      calendarKeyFilepath: string;
-      adminKeyFilepath: string;
-    };
-  };
+export function hasContainer() {
+  return !!container;
 }
 
 export function createContainer(options?: Partial<ICreateContainerOptions>) {
@@ -46,9 +36,10 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   if (!forceNew && container) {
     throw new TypeError('Container is already created');
   }
+  const defaultScope = BindingScopeEnum.Singleton;
   container = new Container({
+    defaultScope,
     autoBindInjectable: true,
-    defaultScope: BindingScopeEnum.Singleton,
   });
 
   if (containerType === ContainerType.FULL) {
@@ -66,17 +57,22 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
     container.bind<string>(TYPES.GoogleAuthCalendarKeyFilepath).toConstantValue(
       config.get<IConfig['google']['auth']['calendarKeyFilepath']>(
         'google.auth.calendarKeyFilepath',
-      ),
+      ) || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
     );
     container.bind<string>(TYPES.GoogleAuthAdminKeyFilepath).toConstantValue(
       config.get<IConfig['google']['auth']['adminKeyFilepath']>(
         'google.auth.adminKeyFilepath',
-      ),
+      ) || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
     );
 
     container.bind<CistJsonClient>(TYPES.CistJsonClient).to(CistJsonClient);
-    container.bind<IGoogleAuth>(TYPES.GoogleAdminAuth).to(GoogleAdminAuth);
-    container.bind<GoogleApiAdmin>(TYPES.GoogleApiAdmin).to(GoogleApiAdmin);
+    container.bind<IGoogleAuth>(TYPES.GoogleAdminAuth).to(GoogleDirectoryAuth);
+    container.bind<QuotaLimiterService>(TYPES.GoogleDirectoryQuotaLimiter)
+      .toDynamicValue(getQuotaLimiterFactory(
+        config.get<IConfig['google']['quotas']['directoryApi']>('google.quotas.directoryApi'),
+        defaultScope === BindingScopeEnum.Singleton,
+      ));
+    container.bind<GoogleApiDirectory>(TYPES.GoogleApiAdmin).to(GoogleApiDirectory);
     container.bind<BuildingsService>(TYPES.BuildingsService)
       .to(BuildingsService);
     container.bind<RoomsService>(TYPES.RoomsService).to(RoomsService);
@@ -111,7 +107,9 @@ export function getAsyncInitializers() {
   const promises = [] as Promise<any>[];
 
   if (containerType === ContainerType.FULL) {
-    promises.push(container.get<GoogleAdminAuth>(TYPES.GoogleAdminAuth)[ASYNC_INIT]);
+    promises.push(
+      container.get<GoogleDirectoryAuth>(TYPES.GoogleAdminAuth)[ASYNC_INIT],
+    );
   }
 
   initPromise = Promise.all(promises!);

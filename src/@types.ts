@@ -35,3 +35,27 @@ export type DeepPartial<T> = {
 export type DeepNullablePartial<T> = {
   [P in keyof T]?: Nullable<DeepNullablePartial<T[P]>>;
 };
+
+export interface IConfig {
+  cist: {
+    baseUrl: string;
+    apiKey: string;
+  };
+  google: {
+    idPrefix: string;
+    auth: {
+      subjectEmail: string;
+      calendarKeyFilepath: string;
+      adminKeyFilepath: string;
+    };
+    quotas: {
+      directoryApi: IApiQuota;
+    };
+  };
+}
+
+export interface IApiQuota {
+  daily: number;
+  period: number;
+  queries: number;
+}

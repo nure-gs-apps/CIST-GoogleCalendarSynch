@@ -3,16 +3,16 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '../../di/types';
 import { ApiGroupResponse } from '../cist-json-client.service';
 import { customer } from './constants';
-import { GoogleApiAdmin } from './google-api-admin';
+import { GoogleApiDirectory } from './google-api-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 
 @injectable()
 export class GroupsService {
   static readonly ROOMS_PAGE_SIZE = 1000;
-  private readonly _admin: GoogleApiAdmin;
+  private readonly _admin: GoogleApiDirectory;
   private readonly _groups: admin_directory_v1.Resource$Groups;
 
-  constructor(@inject(TYPES.GoogleApiAdmin) googleAdmin: GoogleApiAdmin) {
+  constructor(@inject(TYPES.GoogleApiAdmin) googleAdmin: GoogleApiDirectory) {
     this._admin = googleAdmin;
     this._groups = this._admin.googleAdmin.groups;
   }

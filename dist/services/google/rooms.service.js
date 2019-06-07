@@ -8,13 +8,19 @@ const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
 const translit_1 = require("../../utils/translit");
 const logger_service_1 = require("../logger.service");
+const quota_limiter_service_1 = require("../quota-limiter.service");
 const buildings_service_1 = require("./buildings.service");
 const constants_1 = require("./constants");
-const google_api_admin_1 = require("./google-api-admin");
+const google_api_directory_1 = require("./google-api-directory");
 let RoomsService = RoomsService_1 = class RoomsService {
-    constructor(googleAdmin) {
+    constructor(googleAdmin, quotaLimiter) {
         this._admin = googleAdmin;
         this._rooms = this._admin.googleAdmin.resources.calendars;
+        this._quotaLimiter = quotaLimiter;
+        this._insert = this._quotaLimiter.limiter.wrap(this._rooms.insert.bind(this._rooms));
+        this._patch = this._quotaLimiter.limiter.wrap(this._rooms.patch.bind(this._rooms));
+        this._delete = this._quotaLimiter.limiter.wrap(this._rooms.delete.bind(this._rooms));
+        this._list = this._quotaLimiter.limiter.wrap(this._rooms.list.bind(this._rooms));
     }
     async ensureRooms(cistResponse) {
         const rooms = await this.getAllRooms();
@@ -23,19 +29,23 @@ let RoomsService = RoomsService_1 = class RoomsService {
             const buildingId = buildings_service_1.getGoogleBuildingId(cistBuilding);
             for (const cistRoom of cistBuilding.auditories) {
                 const cistRoomId = getRoomId(cistRoom, cistBuilding);
-                if (rooms.some(r => r.resourceId === cistRoomId)) {
-                    logger_service_1.logger.debug(`Updating room ${cistRoomId}`);
-                    promises.push(this._rooms.update({
-                        customer: constants_1.customer,
-                        calendarResourceId: cistRoomId,
-                        requestBody: cistAuditoryToGoogleRoom(cistRoom, buildingId, cistRoomId),
-                    }));
+                const googleRoom = rooms.find(r => r.resourceId === cistRoomId);
+                if (googleRoom) {
+                    const roomPatch = cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
+                    if (roomPatch) {
+                        logger_service_1.logger.debug(`Patching room ${cistRoomId}`);
+                        promises.push(this._patch({
+                            customer: constants_1.customer,
+                            calendarResourceId: cistRoomId,
+                            requestBody: roomPatch,
+                        }));
+                    }
                 }
                 else {
                     logger_service_1.logger.debug(`Inserting room ${cistRoomId}`);
-                    promises.push(this._rooms.insert({
+                    promises.push(this._insert({
                         customer: constants_1.customer,
-                        requestBody: cistAuditoryToGoogleRoom(cistRoom, buildingId, cistRoomId),
+                        requestBody: cistAuditoryToInsertGoogleRoom(cistRoom, buildingId, cistRoomId),
                     }));
                 }
             }
@@ -46,7 +56,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
         const rooms = await this.getAllRooms();
         const promises = [];
         for (const room of rooms) {
-            promises.push(this._rooms.delete({
+            promises.push(this._delete({
                 customer: constants_1.customer,
                 calendarResourceId: room.resourceId,
             }));
@@ -81,7 +91,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
         let rooms = [];
         let roomsPage = null;
         do {
-            roomsPage = await this._rooms.list({
+            roomsPage = await this._list({
                 customer: constants_1.customer,
                 maxResults: RoomsService_1.ROOMS_PAGE_SIZE,
                 nextPage: roomsPage ? roomsPage.data.nextPageToken : null,
@@ -111,10 +121,12 @@ RoomsService.CONFERENCE_ROOM = 'CONFERENCE_ROOM';
 RoomsService = RoomsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiAdmin)),
-    tslib_1.__metadata("design:paramtypes", [google_api_admin_1.GoogleApiAdmin])
+    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleDirectoryQuotaLimiter)),
+    tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
+        quota_limiter_service_1.QuotaLimiterService])
 ], RoomsService);
 exports.RoomsService = RoomsService;
-function cistAuditoryToGoogleRoom(cistRoom, googleBuildingId, roomId) {
+function cistAuditoryToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
     const room = {
         resourceId: roomId,
         buildingId: googleBuildingId,
@@ -126,6 +138,32 @@ function cistAuditoryToGoogleRoom(cistRoom, googleBuildingId, roomId) {
         resourceCategory: 'CONFERENCE_ROOM',
     };
     return room;
+}
+function cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
+    let hasChanges = false;
+    const roomPatch = {};
+    if (googleBuildingId !== googleRoom.buildingId) {
+        roomPatch.buildingId = googleBuildingId;
+        hasChanges = true;
+    }
+    if (cistRoom.short_name !== googleRoom.resourceName) {
+        roomPatch.resourceName = cistRoom.short_name;
+        hasChanges = true;
+    }
+    if (cistRoom.short_name !== googleRoom.resourceDescription) {
+        roomPatch.resourceDescription = cistRoom.short_name;
+        hasChanges = true;
+    }
+    if (cistRoom.short_name !== googleRoom.userVisibleDescription) {
+        roomPatch.userVisibleDescription = cistRoom.short_name;
+        hasChanges = true;
+    }
+    const floorName = buildings_service_1.transformFloorname(cistRoom.floor);
+    if (floorName !== googleRoom.floorName) {
+        roomPatch.floorName = floorName;
+        hasChanges = true;
+    }
+    return hasChanges ? roomPatch : null;
 }
 function getRoomId(room, building) {
     return `${constants_1.idPrefix}.${translit_1.toTranslit(building.id)}.${translit_1.toTranslit(room.id)}`; // using composite id to ensure uniqueness

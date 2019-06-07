@@ -6,7 +6,7 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 const constants_1 = require("./constants");
-const google_api_admin_1 = require("./google-api-admin");
+const google_api_directory_1 = require("./google-api-directory");
 let GroupsService = GroupsService_1 = class GroupsService {
     constructor(googleAdmin) {
         this._admin = googleAdmin;
@@ -34,7 +34,7 @@ GroupsService.ROOMS_PAGE_SIZE = 1000;
 GroupsService = GroupsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiAdmin)),
-    tslib_1.__metadata("design:paramtypes", [google_api_admin_1.GoogleApiAdmin])
+    tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory])
 ], GroupsService);
 exports.GroupsService = GroupsService;
 //# sourceMappingURL=groups.service.js.map
