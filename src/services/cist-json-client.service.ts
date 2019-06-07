@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import * as Iconv from 'iconv';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { oc } from 'ts-optchain';
+import { TYPES } from '../di/types';
 
 export interface ApiAuditoriesResponse {
   university: {
@@ -74,14 +75,18 @@ export class CistJsonClient {
 
   private _axios: AxiosInstance;
   private _iconv: Iconv.Iconv;
+  private _apiKey: string;
 
-  constructor(baseApiUrl = CistJsonClient.BASE_API_URL) {
+  constructor(
+    @inject(TYPES.CistBaseApi) baseApiUrl: string,
+    @inject(TYPES.CistApiKey) apiKey: string,
+  ) {
     this._axios = axios.create({
-      baseURL: baseApiUrl,
+      baseURL: baseApiUrl || CistJsonClient.BASE_API_URL,
       responseType: 'arraybuffer',
     });
-    // @ts-ignore
-    this._iconv = new Iconv.Iconv('windows-1251', 'utf8');
+    this._apiKey = apiKey;
+    this._iconv = new (Iconv as any).Iconv('windows-1251', 'utf8');
     this._axios.interceptors.response.use(res => {
       const data = res.data as Buffer;
       res.data = oc(res.headers['content-type']).toString().toLowerCase().includes('charset=windows-1251')

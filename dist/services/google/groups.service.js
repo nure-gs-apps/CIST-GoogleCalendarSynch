@@ -5,6 +5,7 @@ const tslib_1 = require("tslib");
 "use strict";
 const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
+const constants_1 = require("./constants");
 const google_api_admin_1 = require("./google-api-admin");
 let GroupsService = GroupsService_1 = class GroupsService {
     constructor(googleAdmin) {
@@ -18,7 +19,7 @@ let GroupsService = GroupsService_1 = class GroupsService {
         let groupsPage = null;
         do {
             groupsPage = await this._groups.list({
-                customer: 'my_customer',
+                customer: constants_1.customer,
                 maxResults: GroupsService_1.ROOMS_PAGE_SIZE,
                 nextPage: groupsPage ? groupsPage.data.nextPageToken : null,
             });

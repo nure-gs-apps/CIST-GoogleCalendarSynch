@@ -2,6 +2,7 @@ import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../di/types';
 import { ApiGroupResponse } from '../cist-json-client.service';
+import { customer } from './constants';
 import { GoogleApiAdmin } from './google-api-admin';
 import Schema$Group = admin_directory_v1.Schema$Group;
 
@@ -25,7 +26,7 @@ export class GroupsService {
     let groupsPage = null;
     do {
       groupsPage = await this._groups.list({
-        customer: 'my_customer',
+        customer,
         maxResults: GroupsService.ROOMS_PAGE_SIZE,
         nextPage: groupsPage ? groupsPage.data.nextPageToken : null,
       } as admin_directory_v1.Params$Resource$Groups$List);

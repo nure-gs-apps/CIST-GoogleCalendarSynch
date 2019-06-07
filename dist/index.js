@@ -18,6 +18,12 @@ async function main() {
     // }
     // const groupsResponse = await cistClient.getGroupResponse();
     // assertGroupResponse(groupsResponse);
+    // await container.get<RoomsService>(TYPES.RoomsService)
+    //   .deleteAll();
+    // logger.info('Rooms are deleted');
+    // await container.get<BuildingsService>(TYPES.BuildingsService)
+    //   .deleteAll();
+    // logger.info('Buildings are deleted');
     await container.get(types_1.TYPES.BuildingsService)
         .ensureBuildings(roomsResponse);
     logger_service_1.logger.info('Buildings are loaded');

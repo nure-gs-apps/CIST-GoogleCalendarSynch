@@ -1,0 +1,10 @@
+cist:
+  baseUrl: http://cist.nure.ua/ias/app/tt/
+  apiKey: yourKey # Required if classes are loaded
+
+google:
+  idPrefix: cist
+  auth:
+    subjectEmail: yourEmail # Required for admin. email of user belonging to the domain of G Suite.
+    calendarKeyFilepath: ./keys/cist-calendar.json
+    adminKeyFilepath: ./keys/cist-calendar.json

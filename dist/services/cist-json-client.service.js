@@ -7,13 +7,14 @@ const axios_1 = require("axios");
 const Iconv = require("iconv");
 const inversify_1 = require("inversify");
 const ts_optchain_1 = require("ts-optchain");
+const types_1 = require("../di/types");
 let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
-    constructor(baseApiUrl = CistJsonClient_1.BASE_API_URL) {
+    constructor(baseApiUrl, apiKey) {
         this._axios = axios_1.default.create({
-            baseURL: baseApiUrl,
+            baseURL: baseApiUrl || CistJsonClient_1.BASE_API_URL,
             responseType: 'arraybuffer',
         });
-        // @ts-ignore
+        this._apiKey = apiKey;
         this._iconv = new Iconv.Iconv('windows-1251', 'utf8');
         this._axios.interceptors.response.use(res => {
             const data = res.data;
@@ -54,7 +55,9 @@ CistJsonClient.ROOMS_PATH = 'P_API_AUDITORIES_JSON';
 CistJsonClient.GROUPS_PATH = 'P_API_GROUP_JSON';
 CistJsonClient = CistJsonClient_1 = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__metadata("design:paramtypes", [Object])
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.CistBaseApi)),
+    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.CistApiKey)),
+    tslib_1.__metadata("design:paramtypes", [String, String])
 ], CistJsonClient);
 exports.CistJsonClient = CistJsonClient;
 //# sourceMappingURL=cist-json-client.service.js.map

@@ -3,15 +3,29 @@ import 'reflect-metadata';
 import { decorate, injectable } from 'inversify';
 
 export const TYPES = {
+  // constants tokens
+
+  CistBaseApi: Symbol.for('CistBaseApi'),
+  CistApiKey: Symbol.for('CistApiKey'),
+  GoogleAuthAdminKeyFilepath: Symbol.for('GoogleAuthAdminKeyFilepath'),
+  GoogleAuthCalendarKeyFilepath: Symbol.for('GoogleAuthCalendarKeyFilepath'),
+  GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
+
+  // class tokens
   CistJsonClient: Symbol.for('CistJsonClient'),
 
-  GoogleAuth: Symbol.for('GoogleAuth'),
+  GoogleAdminAuth: Symbol.for('GoogleAdminAuth'),
+  GoogleCalendarAuth: Symbol.for('GoogleCalendarAuth'),
   GoogleApiAdmin: Symbol.for('GoogleApiAdmin'),
   GoogleApiCalendar: Symbol.for('GoogleApiCalendar'),
 
   BuildingsService: Symbol.for('BuildingsService'),
   RoomsService: Symbol.for('RoomsService'),
 };
+
+export enum ContainerType {
+  FULL, CIST_JSON_ONLY,
+}
 
 export const ASYNC_INIT = Symbol.for('@asyncInit');
 
