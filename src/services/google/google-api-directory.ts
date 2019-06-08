@@ -7,14 +7,14 @@ import Admin = admin_directory_v1.Admin;
 @injectable()
 export class GoogleApiDirectory {
   private readonly _googleAuth: IGoogleAuth;
-  readonly googleAdmin: Admin;
+  readonly googleDirectory: Admin;
 
-  constructor(@inject(TYPES.GoogleAdminAuth) googleAuth: IGoogleAuth) {
+  constructor(@inject(TYPES.GoogleDirectoryAuth) googleAuth: IGoogleAuth) {
     this._googleAuth = googleAuth;
     if (!this._googleAuth.authClient) {
       throw new TypeError('Google auth is not initialized');
     }
-    this.googleAdmin = google.admin({
+    this.googleDirectory = google.admin({
       version: 'directory_v1',
       auth: this._googleAuth.authClient,
     });

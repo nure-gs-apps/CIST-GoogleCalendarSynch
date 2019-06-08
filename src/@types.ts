@@ -46,7 +46,7 @@ export interface IConfig {
     auth: {
       subjectEmail: string;
       calendarKeyFilepath: string;
-      adminKeyFilepath: string;
+      directoryKeyFilepath: string;
     };
     quotas: {
       directoryApi: IApiQuota;
@@ -58,4 +58,5 @@ export interface IApiQuota {
   daily: number;
   period: number;
   queries: number;
+  burst: boolean;
 }

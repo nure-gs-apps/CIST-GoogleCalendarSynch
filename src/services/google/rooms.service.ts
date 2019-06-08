@@ -1,6 +1,7 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
+import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
 import { toTranslit } from '../../utils/translit';
 import {
@@ -19,7 +20,7 @@ import { GaxiosPromise } from 'gaxios';
 export class RoomsService {
   static readonly ROOMS_PAGE_SIZE = 500; // maximum
   static readonly CONFERENCE_ROOM = 'CONFERENCE_ROOM';
-  private readonly _admin: GoogleApiDirectory;
+  private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
   private readonly _rooms: admin_directory_v1.Resource$Resources$Calendars;
@@ -29,14 +30,28 @@ export class RoomsService {
   private readonly _delete: admin_directory_v1.Resource$Resources$Calendars['delete'];
   private readonly _list: admin_directory_v1.Resource$Resources$Calendars['list'];
 
+  private _cachedRooms: Nullable<Schema$CalendarResource[]>;
+  private _cacheLastUpdate: Nullable<Date>;
+
+  get cachedRooms() {
+    return this._cachedRooms as Nullable<
+      ReadonlyArray<Schema$CalendarResource>
+    >;
+  }
+  get cacheLastUpdate() {
+    return this._cacheLastUpdate
+      ? new Date(this._cacheLastUpdate.getTime())
+      : null;
+  }
+
   constructor(
-    @inject(TYPES.GoogleApiAdmin) googleAdmin: GoogleApiDirectory,
+    @inject(TYPES.GoogleApiDirectory) googleApiDirectory: GoogleApiDirectory,
     @inject(
       TYPES.GoogleDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
   ) {
-    this._admin = googleAdmin;
-    this._rooms = this._admin.googleAdmin.resources.calendars;
+    this._directory = googleApiDirectory;
+    this._rooms = this._directory.googleDirectory.resources.calendars;
     this._quotaLimiter = quotaLimiter;
 
     this._insert = this._quotaLimiter.limiter.wrap(
@@ -51,6 +66,9 @@ export class RoomsService {
     this._list = this._quotaLimiter.limiter.wrap(
       this._rooms.list.bind(this._rooms),
     ) as any;
+
+    this._cachedRooms = null;
+    this._cacheLastUpdate = null;
   }
 
   async ensureRooms(
@@ -71,7 +89,7 @@ export class RoomsService {
             buildingId,
           );
           if (roomPatch) {
-            logger.debug(`Patching room ${cistRoomId}`);
+            logger.debug(`Patching room ${cistRoomId}_${cistRoom.short_name}`);
             promises.push(
               this._patch({
                 customer,
@@ -81,7 +99,7 @@ export class RoomsService {
             );
           }
         } else {
-          logger.debug(`Inserting room ${cistRoomId}`);
+          logger.debug(`Inserting room ${cistRoomId}_${cistRoom.short_name}`);
           promises.push(
             this._insert({
               customer,
@@ -95,6 +113,7 @@ export class RoomsService {
         }
       }
     }
+    this.clearCache();
     return Promise.all(promises as any);
   }
 
@@ -107,11 +126,13 @@ export class RoomsService {
         calendarResourceId: room.resourceId,
       }));
     }
+    this.clearCache();
     return Promise.all(promises);
   }
 
   async deleteIrrelevant(cistResponse: ApiAuditoriesResponse) {
     const rooms = await this.getAllRooms();
+    this.clearCache();
     return Promise.all(this.doDeleteByIds(
       rooms,
       iterate(rooms).filter(r => {
@@ -130,6 +151,7 @@ export class RoomsService {
 
   async deleteRelevant(cistResponse: ApiAuditoriesResponse) {
     const rooms = await this.getAllRooms();
+    this.clearCache();
     return Promise.all(this.doDeleteByIds(
       rooms,
       iterate(rooms).filter(r => {
@@ -146,7 +168,7 @@ export class RoomsService {
     ));
   }
 
-  async getAllRooms() {
+  async getAllRooms(cacheResults = false) {
     let rooms = [] as Schema$CalendarResource[];
     let roomsPage = null;
     do {
@@ -162,7 +184,16 @@ export class RoomsService {
         );
       }
     } while (roomsPage.data.nextPageToken);
+    if (cacheResults) {
+      this._cachedRooms = rooms;
+      this._cacheLastUpdate = new Date();
+    }
     return rooms;
+  }
+
+  clearCache() {
+    this._cachedRooms = null;
+    this._cacheLastUpdate = null;
   }
 
   private doDeleteByIds(
@@ -233,6 +264,7 @@ function cistAuditoryToGoogleRoomPatch(
   return hasChanges ? roomPatch : null;
 }
 
+export const roomIdPrefix = 'r';
 export function getRoomId(room: ApiAuditory, building: ApiBuilding) {
-  return `${idPrefix}.${toTranslit(building.id)}.${toTranslit(room.id)}`; // using composite id to ensure uniqueness
+  return `${idPrefix}.${roomIdPrefix}.${toTranslit(building.id)}.${toTranslit(room.id)}`; // using composite id to ensure uniqueness
 }

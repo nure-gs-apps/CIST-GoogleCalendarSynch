@@ -1,6 +1,7 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
+import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
 import { arrayContentEqual } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
@@ -19,7 +20,7 @@ import { GaxiosPromise } from 'gaxios';
 @injectable()
 export class BuildingsService {
   static readonly BUILDING_PAGE_SIZE = 100;
-  private readonly _admin: GoogleApiDirectory;
+  private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
   private readonly _buildings: Resource$Resources$Buildings;
@@ -29,14 +30,26 @@ export class BuildingsService {
   private readonly _delete: Resource$Resources$Buildings['delete'];
   private readonly _list: Resource$Resources$Buildings['list'];
 
+  private _cachedBuildings: Nullable<Schema$Building[]>;
+  private _cacheLastUpdate: Nullable<Date>;
+
+  get cachedBuildings() {
+    return this._cachedBuildings as Nullable<ReadonlyArray<Schema$Building>>;
+  }
+  get cacheLastUpdate() {
+    return this._cacheLastUpdate
+      ? new Date(this._cacheLastUpdate.getTime())
+      : null;
+  }
+
   constructor(
-    @inject(TYPES.GoogleApiAdmin) googleApiAdmin: GoogleApiDirectory,
+    @inject(TYPES.GoogleApiDirectory) googleApiDirectory: GoogleApiDirectory,
     @inject(
       TYPES.GoogleDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
   ) {
-    this._admin = googleApiAdmin;
-    this._buildings = this._admin.googleAdmin.resources.buildings;
+    this._directory = googleApiDirectory;
+    this._buildings = this._directory.googleDirectory.resources.buildings;
     this._quotaLimiter = quotaLimiter;
 
     this._insert = this._quotaLimiter.limiter.wrap(
@@ -51,6 +64,9 @@ export class BuildingsService {
     this._list = this._quotaLimiter.limiter.wrap(
       this._buildings.list.bind(this._buildings),
     ) as any;
+
+    this._cachedBuildings = null;
+    this._cacheLastUpdate = null;
   }
 
   async ensureBuildings(
@@ -92,6 +108,7 @@ export class BuildingsService {
         );
       }
     }
+    this.clearCache();
     return Promise.all(promises as any);
   }
 
@@ -104,11 +121,13 @@ export class BuildingsService {
         buildingId: room.buildingId,
       }));
     }
+    this.clearCache();
     return Promise.all(promises);
   }
 
   async deleteIrrelevant(cistResponse: ApiAuditoriesResponse) {
     const buildings = await this.getAllBuildings();
+    this.clearCache();
     return Promise.all(this.doDeleteByIds(
       buildings,
       iterate(buildings).filter(building => (
@@ -121,6 +140,7 @@ export class BuildingsService {
 
   async deleteRelevant(cistResponse: ApiAuditoriesResponse) {
     const buildings = await this.getAllBuildings();
+    this.clearCache();
     return Promise.all(this.doDeleteByIds(
       buildings,
       iterate(buildings).filter(building => (
@@ -131,7 +151,7 @@ export class BuildingsService {
     ));
   }
 
-  async getAllBuildings() {
+  async getAllBuildings(cacheResults = false) {
     let buildings = [] as admin_directory_v1.Schema$Building[];
     let buildingsPage = null;
     do {
@@ -144,7 +164,16 @@ export class BuildingsService {
         buildings = buildings.concat(buildingsPage.data.buildings);
       }
     } while (buildingsPage.data.nextPageToken);
+    if (cacheResults) {
+      this._cachedBuildings = buildings;
+      this._cacheLastUpdate = new Date();
+    }
     return buildings;
+  }
+
+  clearCache() {
+    this._cachedBuildings = null;
+    this._cacheLastUpdate = null;
   }
 
   private doDeleteByIds(
@@ -200,7 +229,7 @@ function cistBuildingToGoogleBuildingPatch(
   return hasChanges ? buildingPatch : null;
 }
 
-// FIXME: move to other place maybe
+// FIXME: maybe move to other place
 function getFloornamesFromBuilding(building: ApiBuilding) {
   return Array.from(iterate(building.auditories)
     .map(r => transformFloorname(r.floor))
@@ -208,8 +237,9 @@ function getFloornamesFromBuilding(building: ApiBuilding) {
     .values());
 }
 
+export const buildingIdPrefix = 'b';
 export function getGoogleBuildingId(cistBuilding: ApiBuilding) {
-  return `${idPrefix}.${toTranslit(cistBuilding.id)}`;
+  return `${idPrefix}.${buildingIdPrefix}.${toTranslit(cistBuilding.id)}`;
 }
 
 const emptyFloorName = /^\s*$/;

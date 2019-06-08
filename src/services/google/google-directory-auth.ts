@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import { google } from 'googleapis';
 import { Nullable } from '../../@types';
 import { ASYNC_INIT, TYPES } from '../../di/types';
-import { adminAuthScopes } from './constants';
+import { directoryAuthScopes } from './constants';
 import { IGoogleAuth } from './interfaces';
 
 @injectable()
@@ -16,10 +16,10 @@ export class GoogleDirectoryAuth implements IGoogleAuth {
 
   constructor(
     @inject(TYPES.GoogleAuthSubject) subject: string,
-    @inject(TYPES.GoogleAuthAdminKeyFilepath) keyFilepath: string,
+    @inject(TYPES.GoogleAuthDirectoryKeyFilepath) keyFilepath: string,
   ) {
     this[ASYNC_INIT] = google.auth.getClient({
-      scopes: adminAuthScopes.slice(),
+      scopes: directoryAuthScopes.slice(),
       keyFilename: keyFilepath,
       clientOptions: {
         subject,

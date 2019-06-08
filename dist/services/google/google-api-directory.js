@@ -10,7 +10,7 @@ let GoogleApiDirectory = class GoogleApiDirectory {
         if (!this._googleAuth.authClient) {
             throw new TypeError('Google auth is not initialized');
         }
-        this.googleAdmin = googleapis_1.google.admin({
+        this.googleDirectory = googleapis_1.google.admin({
             version: 'directory_v1',
             auth: this._googleAuth.authClient,
         });
@@ -18,7 +18,7 @@ let GoogleApiDirectory = class GoogleApiDirectory {
 };
 GoogleApiDirectory = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAdminAuth)),
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleDirectoryAuth)),
     tslib_1.__metadata("design:paramtypes", [Object])
 ], GoogleApiDirectory);
 exports.GoogleApiDirectory = GoogleApiDirectory;

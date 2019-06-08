@@ -16,19 +16,22 @@ async function main() {
     // if (!assertRoomsResponse(roomsResponse)) {
     //   return;
     // }
-    // const groupsResponse = await cistClient.getGroupResponse();
+    const groupsResponse = await cistClient.getGroupResponse();
     // assertGroupResponse(groupsResponse);
-    // await container.get<RoomsService>(TYPES.RoomsService)
-    //   .deleteAll();
-    // logger.info('Rooms are deleted');
-    // await container.get<BuildingsService>(TYPES.BuildingsService)
-    //   .deleteAll();
-    // logger.info('Buildings are deleted');
-    await container.get(types_1.TYPES.BuildingsService)
-        .ensureBuildings(roomsResponse);
+    const buildingsService = container.get(types_1.TYPES.BuildingsService);
+    const roomsService = container.get(types_1.TYPES.RoomsService);
+    const groupsService = container.get(types_1.TYPES.GroupsService);
+    await roomsService.deleteAll();
+    logger_service_1.logger.info('Rooms are deleted');
+    await buildingsService.deleteAll();
+    logger_service_1.logger.info('Buildings are deleted');
+    await groupsService.deleteAll();
+    logger_service_1.logger.info('Groups are deleted');
+    await buildingsService.ensureBuildings(roomsResponse);
     logger_service_1.logger.info('Buildings are loaded');
-    await container.get(types_1.TYPES.RoomsService)
-        .ensureRooms(roomsResponse);
+    await roomsService.ensureRooms(roomsResponse);
     logger_service_1.logger.info('Rooms are loaded');
+    await groupsService.ensureGroups(groupsResponse);
+    logger_service_1.logger.info('Groups are loaded');
 }
 //# sourceMappingURL=index.js.map

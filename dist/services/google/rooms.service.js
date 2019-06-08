@@ -13,14 +13,24 @@ const buildings_service_1 = require("./buildings.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
 let RoomsService = RoomsService_1 = class RoomsService {
-    constructor(googleAdmin, quotaLimiter) {
-        this._admin = googleAdmin;
-        this._rooms = this._admin.googleAdmin.resources.calendars;
+    constructor(googleApiDirectory, quotaLimiter) {
+        this._directory = googleApiDirectory;
+        this._rooms = this._directory.googleDirectory.resources.calendars;
         this._quotaLimiter = quotaLimiter;
         this._insert = this._quotaLimiter.limiter.wrap(this._rooms.insert.bind(this._rooms));
         this._patch = this._quotaLimiter.limiter.wrap(this._rooms.patch.bind(this._rooms));
         this._delete = this._quotaLimiter.limiter.wrap(this._rooms.delete.bind(this._rooms));
         this._list = this._quotaLimiter.limiter.wrap(this._rooms.list.bind(this._rooms));
+        this._cachedRooms = null;
+        this._cacheLastUpdate = null;
+    }
+    get cachedRooms() {
+        return this._cachedRooms;
+    }
+    get cacheLastUpdate() {
+        return this._cacheLastUpdate
+            ? new Date(this._cacheLastUpdate.getTime())
+            : null;
     }
     async ensureRooms(cistResponse) {
         const rooms = await this.getAllRooms();
@@ -33,7 +43,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 if (googleRoom) {
                     const roomPatch = cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
                     if (roomPatch) {
-                        logger_service_1.logger.debug(`Patching room ${cistRoomId}`);
+                        logger_service_1.logger.debug(`Patching room ${cistRoomId}_${cistRoom.short_name}`);
                         promises.push(this._patch({
                             customer: constants_1.customer,
                             calendarResourceId: cistRoomId,
@@ -42,7 +52,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                     }
                 }
                 else {
-                    logger_service_1.logger.debug(`Inserting room ${cistRoomId}`);
+                    logger_service_1.logger.debug(`Inserting room ${cistRoomId}_${cistRoom.short_name}`);
                     promises.push(this._insert({
                         customer: constants_1.customer,
                         requestBody: cistAuditoryToInsertGoogleRoom(cistRoom, buildingId, cistRoomId),
@@ -50,6 +60,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 }
             }
         }
+        this.clearCache();
         return Promise.all(promises);
     }
     async deleteAll() {
@@ -61,10 +72,12 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 calendarResourceId: room.resourceId,
             }));
         }
+        this.clearCache();
         return Promise.all(promises);
     }
     async deleteIrrelevant(cistResponse) {
         const rooms = await this.getAllRooms();
+        this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
                 const isIrrelevant = !building.auditories.some(a => r.resourceId === getRoomId(a, building));
@@ -77,6 +90,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
     }
     async deleteRelevant(cistResponse) {
         const rooms = await this.getAllRooms();
+        this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
                 const isRelevant = building.auditories.some(a => r.resourceId === getRoomId(a, building));
@@ -87,7 +101,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
             return false;
         }).map(r => r.resourceId).toSet()));
     }
-    async getAllRooms() {
+    async getAllRooms(cacheResults = false) {
         let rooms = [];
         let roomsPage = null;
         do {
@@ -102,7 +116,15 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 roomsPage.data.items.filter(i => !i.resourceType));
             }
         } while (roomsPage.data.nextPageToken);
+        if (cacheResults) {
+            this._cachedRooms = rooms;
+            this._cacheLastUpdate = new Date();
+        }
         return rooms;
+    }
+    clearCache() {
+        this._cachedRooms = null;
+        this._cacheLastUpdate = null;
     }
     doDeleteByIds(rooms, ids, promises = []) {
         for (const googleRoom of rooms) {
@@ -120,7 +142,7 @@ RoomsService.ROOMS_PAGE_SIZE = 500; // maximum
 RoomsService.CONFERENCE_ROOM = 'CONFERENCE_ROOM';
 RoomsService = RoomsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiAdmin)),
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleDirectoryQuotaLimiter)),
     tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
         quota_limiter_service_1.QuotaLimiterService])
@@ -165,8 +187,9 @@ function cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
     }
     return hasChanges ? roomPatch : null;
 }
+exports.roomIdPrefix = 'r';
 function getRoomId(room, building) {
-    return `${constants_1.idPrefix}.${translit_1.toTranslit(building.id)}.${translit_1.toTranslit(room.id)}`; // using composite id to ensure uniqueness
+    return `${constants_1.idPrefix}.${exports.roomIdPrefix}.${translit_1.toTranslit(building.id)}.${translit_1.toTranslit(room.id)}`; // using composite id to ensure uniqueness
 }
 exports.getRoomId = getRoomId;
 //# sourceMappingURL=rooms.service.js.map

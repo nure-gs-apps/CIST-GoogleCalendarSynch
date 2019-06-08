@@ -14,20 +14,27 @@ function getQuotaLimiterFactory(config, isSingleton) {
 exports.getQuotaLimiterFactory = getQuotaLimiterFactory;
 class QuotaLimiterService {
     constructor(quota) {
-        const plusOneInterval = quota.period / quota.queries;
-        // The library required 250 granularity
-        const increaseInterval = Math.ceil(plusOneInterval / 250) * 250;
-        const increaseAmount = 250 / plusOneInterval;
         this.dailyLimiter = new bottleneck_1.default({
             reservoir: quota.daily,
             reservoirRefreshInterval: QuotaLimiterService.DAY_MS,
         });
-        this.limiter = new bottleneck_1.default({
-            reservoir: quota.queries,
-            reservoirIncreaseMaximum: quota.queries,
-            reservoirIncreaseInterval: increaseInterval,
-            reservoirIncreaseAmount: increaseAmount,
-        });
+        const plusOneInterval = quota.period / quota.queries;
+        if (quota.burst) {
+            // The library requires 250 granularity
+            const increaseInterval = Math.ceil(plusOneInterval / 250) * 250;
+            const increaseAmount = 250 / plusOneInterval;
+            this.limiter = new bottleneck_1.default({
+                reservoir: quota.queries,
+                reservoirIncreaseMaximum: quota.queries,
+                reservoirIncreaseInterval: increaseInterval,
+                reservoirIncreaseAmount: increaseAmount,
+            });
+        }
+        else {
+            this.limiter = new bottleneck_1.default({
+                minTime: plusOneInterval,
+            });
+        }
         this.limiter.chain(this.dailyLimiter);
         this._disposed = false;
     }

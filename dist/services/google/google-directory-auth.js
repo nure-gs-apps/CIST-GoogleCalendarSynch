@@ -8,7 +8,7 @@ const constants_1 = require("./constants");
 let GoogleDirectoryAuth = class GoogleDirectoryAuth {
     constructor(subject, keyFilepath) {
         this[types_1.ASYNC_INIT] = googleapis_1.google.auth.getClient({
-            scopes: constants_1.adminAuthScopes.slice(),
+            scopes: constants_1.directoryAuthScopes.slice(),
             keyFilename: keyFilepath,
             clientOptions: {
                 subject,
@@ -25,7 +25,7 @@ let GoogleDirectoryAuth = class GoogleDirectoryAuth {
 GoogleDirectoryAuth = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuthSubject)),
-    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAuthAdminKeyFilepath)),
+    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAuthDirectoryKeyFilepath)),
     tslib_1.__metadata("design:paramtypes", [String, String])
 ], GoogleDirectoryAuth);
 exports.GoogleDirectoryAuth = GoogleDirectoryAuth;

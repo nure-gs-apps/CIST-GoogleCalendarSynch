@@ -6,6 +6,7 @@ import { CistJsonClient } from '../services/cist-json-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { GoogleDirectoryAuth } from '../services/google/google-directory-auth';
 import { GoogleApiDirectory } from '../services/google/google-api-directory';
+import { GroupsService } from '../services/google/groups.service';
 import { IGoogleAuth } from '../services/google/interfaces';
 import { RoomsService } from '../services/google/rooms.service';
 import {
@@ -59,23 +60,27 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
         'google.auth.calendarKeyFilepath',
       ) || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
     );
-    container.bind<string>(TYPES.GoogleAuthAdminKeyFilepath).toConstantValue(
-      config.get<IConfig['google']['auth']['adminKeyFilepath']>(
-        'google.auth.adminKeyFilepath',
-      ) || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
-    );
+    container.bind<string>(TYPES.GoogleAuthDirectoryKeyFilepath)
+      .toConstantValue(
+        config.get<IConfig['google']['auth']['directoryKeyFilepath']>(
+          'google.auth.directoryKeyFilepath',
+        ) || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
+      );
 
     container.bind<CistJsonClient>(TYPES.CistJsonClient).to(CistJsonClient);
-    container.bind<IGoogleAuth>(TYPES.GoogleAdminAuth).to(GoogleDirectoryAuth);
+    container.bind<IGoogleAuth>(TYPES.GoogleDirectoryAuth)
+      .to(GoogleDirectoryAuth);
     container.bind<QuotaLimiterService>(TYPES.GoogleDirectoryQuotaLimiter)
       .toDynamicValue(getQuotaLimiterFactory(
         config.get<IConfig['google']['quotas']['directoryApi']>('google.quotas.directoryApi'),
         defaultScope === BindingScopeEnum.Singleton,
       ));
-    container.bind<GoogleApiDirectory>(TYPES.GoogleApiAdmin).to(GoogleApiDirectory);
+    container.bind<GoogleApiDirectory>(TYPES.GoogleApiDirectory)
+      .to(GoogleApiDirectory);
     container.bind<BuildingsService>(TYPES.BuildingsService)
       .to(BuildingsService);
     container.bind<RoomsService>(TYPES.RoomsService).to(RoomsService);
+    container.bind<GroupsService>(TYPES.GroupsService).to(GroupsService);
   } else if (containerType === ContainerType.CIST_JSON_ONLY) {
     container.bind<string>(TYPES.CistBaseApi).toConstantValue(
       config.get<IConfig['cist']['baseUrl']>('cist.baseUrl'),
@@ -108,7 +113,7 @@ export function getAsyncInitializers() {
 
   if (containerType === ContainerType.FULL) {
     promises.push(
-      container.get<GoogleDirectoryAuth>(TYPES.GoogleAdminAuth)[ASYNC_INIT],
+      container.get<GoogleDirectoryAuth>(TYPES.GoogleDirectoryAuth)[ASYNC_INIT],
     );
   }
 

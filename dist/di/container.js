@@ -6,6 +6,7 @@ const cist_json_client_service_1 = require("../services/cist-json-client.service
 const buildings_service_1 = require("../services/google/buildings.service");
 const google_directory_auth_1 = require("../services/google/google-directory-auth");
 const google_api_directory_1 = require("../services/google/google-api-directory");
+const groups_service_1 = require("../services/google/groups.service");
 const rooms_service_1 = require("../services/google/rooms.service");
 const quota_limiter_service_1 = require("../services/quota-limiter.service");
 const types_1 = require("./types");
@@ -34,15 +35,19 @@ function createContainer(options) {
         container.bind(types_1.TYPES.CistApiKey).toConstantValue(config.get('cist.apiKey'));
         container.bind(types_1.TYPES.GoogleAuthSubject).toConstantValue(config.get('google.auth.subjectEmail'));
         container.bind(types_1.TYPES.GoogleAuthCalendarKeyFilepath).toConstantValue(config.get('google.auth.calendarKeyFilepath') || process.env.GOOGLE_APPLICATION_CREDENTIALS);
-        container.bind(types_1.TYPES.GoogleAuthAdminKeyFilepath).toConstantValue(config.get('google.auth.adminKeyFilepath') || process.env.GOOGLE_APPLICATION_CREDENTIALS);
+        container.bind(types_1.TYPES.GoogleAuthDirectoryKeyFilepath)
+            .toConstantValue(config.get('google.auth.directoryKeyFilepath') || process.env.GOOGLE_APPLICATION_CREDENTIALS);
         container.bind(types_1.TYPES.CistJsonClient).to(cist_json_client_service_1.CistJsonClient);
-        container.bind(types_1.TYPES.GoogleAdminAuth).to(google_directory_auth_1.GoogleDirectoryAuth);
+        container.bind(types_1.TYPES.GoogleDirectoryAuth)
+            .to(google_directory_auth_1.GoogleDirectoryAuth);
         container.bind(types_1.TYPES.GoogleDirectoryQuotaLimiter)
             .toDynamicValue(quota_limiter_service_1.getQuotaLimiterFactory(config.get('google.quotas.directoryApi'), defaultScope === inversify_1.BindingScopeEnum.Singleton));
-        container.bind(types_1.TYPES.GoogleApiAdmin).to(google_api_directory_1.GoogleApiDirectory);
+        container.bind(types_1.TYPES.GoogleApiDirectory)
+            .to(google_api_directory_1.GoogleApiDirectory);
         container.bind(types_1.TYPES.BuildingsService)
             .to(buildings_service_1.BuildingsService);
         container.bind(types_1.TYPES.RoomsService).to(rooms_service_1.RoomsService);
+        container.bind(types_1.TYPES.GroupsService).to(groups_service_1.GroupsService);
     }
     else if (containerType === types_1.ContainerType.CIST_JSON_ONLY) {
         container.bind(types_1.TYPES.CistBaseApi).toConstantValue(config.get('cist.baseUrl'));
@@ -69,7 +74,7 @@ function getAsyncInitializers() {
     }
     const promises = [];
     if (containerType === types_1.ContainerType.FULL) {
-        promises.push(container.get(types_1.TYPES.GoogleAdminAuth)[types_1.ASYNC_INIT]);
+        promises.push(container.get(types_1.TYPES.GoogleDirectoryAuth)[types_1.ASYNC_INIT]);
     }
     initPromise = Promise.all(promises);
     return initPromise;

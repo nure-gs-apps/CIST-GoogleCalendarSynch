@@ -7,21 +7,22 @@ export const TYPES = {
 
   CistBaseApi: Symbol.for('CistBaseApi'),
   CistApiKey: Symbol.for('CistApiKey'),
-  GoogleAuthAdminKeyFilepath: Symbol.for('GoogleAuthAdminKeyFilepath'),
+  GoogleAuthDirectoryKeyFilepath: Symbol.for('GoogleAuthDirectoryKeyFilepath'),
   GoogleAuthCalendarKeyFilepath: Symbol.for('GoogleAuthCalendarKeyFilepath'),
   GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
 
   // class tokens
   CistJsonClient: Symbol.for('CistJsonClient'),
 
-  GoogleAdminAuth: Symbol.for('GoogleDirectoryAuth'),
+  GoogleDirectoryAuth: Symbol.for('GoogleDirectoryAuth'),
   GoogleCalendarAuth: Symbol.for('GoogleCalendarAuth'),
   GoogleDirectoryQuotaLimiter: Symbol.for('GoogleDirectoryQuotaLimiter'),
-  GoogleApiAdmin: Symbol.for('GoogleApiDirectory'),
+  GoogleApiDirectory: Symbol.for('GoogleApiDirectory'),
   GoogleApiCalendar: Symbol.for('GoogleApiCalendar'),
 
   BuildingsService: Symbol.for('BuildingsService'),
   RoomsService: Symbol.for('RoomsService'),
+  GroupsService: Symbol.for('GroupsService'),
 };
 
 export enum ContainerType {

@@ -8,9 +8,13 @@ if (!/^\w*$/.test(idPrefix)) {
   throw new TypeError('idPrefix must be a alphanumeral string');
 }
 export const customer = 'my_customer';
+export const domainName = config.get<IConfig['google']['auth']['subjectEmail']>(
+  'google.auth.subjectEmail',
+).split('@')[1];
 
-export const adminAuthScopes = [
+export const directoryAuthScopes = [
   'https://www.googleapis.com/auth/admin.directory.resource.calendar',
+  'https://www.googleapis.com/auth/admin.directory.group',
 ] as ReadonlyArray<string>;
 
 export const calenderAuthScopes = [

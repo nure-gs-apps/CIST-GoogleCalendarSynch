@@ -13,14 +13,24 @@ const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
-    constructor(googleApiAdmin, quotaLimiter) {
-        this._admin = googleApiAdmin;
-        this._buildings = this._admin.googleAdmin.resources.buildings;
+    constructor(googleApiDirectory, quotaLimiter) {
+        this._directory = googleApiDirectory;
+        this._buildings = this._directory.googleDirectory.resources.buildings;
         this._quotaLimiter = quotaLimiter;
         this._insert = this._quotaLimiter.limiter.wrap(this._buildings.insert.bind(this._buildings));
         this._patch = this._quotaLimiter.limiter.wrap(this._buildings.patch.bind(this._buildings));
         this._delete = this._quotaLimiter.limiter.wrap(this._buildings.delete.bind(this._buildings));
         this._list = this._quotaLimiter.limiter.wrap(this._buildings.list.bind(this._buildings));
+        this._cachedBuildings = null;
+        this._cacheLastUpdate = null;
+    }
+    get cachedBuildings() {
+        return this._cachedBuildings;
+    }
+    get cacheLastUpdate() {
+        return this._cacheLastUpdate
+            ? new Date(this._cacheLastUpdate.getTime())
+            : null;
     }
     async ensureBuildings(cistResponse) {
         const buildings = await this.getAllBuildings();
@@ -47,6 +57,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
                 }));
             }
         }
+        this.clearCache();
         return Promise.all(promises);
     }
     async deleteAll() {
@@ -58,17 +69,20 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
                 buildingId: room.buildingId,
             }));
         }
+        this.clearCache();
         return Promise.all(promises);
     }
     async deleteIrrelevant(cistResponse) {
         const buildings = await this.getAllBuildings();
+        this.clearCache();
         return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (!cistResponse.university.buildings.some(b => getGoogleBuildingId(b) === building.buildingId))).map(b => b.buildingId).toSet()));
     }
     async deleteRelevant(cistResponse) {
         const buildings = await this.getAllBuildings();
+        this.clearCache();
         return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (cistResponse.university.buildings.some(b => getGoogleBuildingId(b) === building.buildingId))).map(b => b.buildingId).toSet()));
     }
-    async getAllBuildings() {
+    async getAllBuildings(cacheResults = false) {
         let buildings = [];
         let buildingsPage = null;
         do {
@@ -81,7 +95,15 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
                 buildings = buildings.concat(buildingsPage.data.buildings);
             }
         } while (buildingsPage.data.nextPageToken);
+        if (cacheResults) {
+            this._cachedBuildings = buildings;
+            this._cacheLastUpdate = new Date();
+        }
         return buildings;
+    }
+    clearCache() {
+        this._cachedBuildings = null;
+        this._cacheLastUpdate = null;
     }
     doDeleteByIds(buildings, ids, promises = []) {
         for (const googleBuilding of buildings) {
@@ -98,7 +120,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
 BuildingsService.BUILDING_PAGE_SIZE = 100;
 BuildingsService = BuildingsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiAdmin)),
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleDirectoryQuotaLimiter)),
     tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
         quota_limiter_service_1.QuotaLimiterService])
@@ -130,15 +152,16 @@ function cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding) {
     }
     return hasChanges ? buildingPatch : null;
 }
-// FIXME: move to other place maybe
+// FIXME: maybe move to other place
 function getFloornamesFromBuilding(building) {
     return Array.from(iterare_1.iterate(building.auditories)
         .map(r => transformFloorname(r.floor))
         .toSet()
         .values());
 }
+exports.buildingIdPrefix = 'b';
 function getGoogleBuildingId(cistBuilding) {
-    return `${constants_1.idPrefix}.${translit_1.toTranslit(cistBuilding.id)}`;
+    return `${constants_1.idPrefix}.${exports.buildingIdPrefix}.${translit_1.toTranslit(cistBuilding.id)}`;
 }
 exports.getGoogleBuildingId = getGoogleBuildingId;
 const emptyFloorName = /^\s*$/;

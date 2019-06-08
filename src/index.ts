@@ -7,6 +7,7 @@ import { createContainer, getAsyncInitializers } from './di/container';
 import { CistJsonClient } from './services/cist-json-client.service';
 import { BuildingsService } from './services/google/buildings.service';
 import { GoogleDirectoryAuth } from './services/google/google-directory-auth';
+import { GroupsService } from './services/google/groups.service';
 import { RoomsService } from './services/google/rooms.service';
 import { logger } from './services/logger.service';
 import {
@@ -25,20 +26,26 @@ async function main() {
   // if (!assertRoomsResponse(roomsResponse)) {
   //   return;
   // }
-  // const groupsResponse = await cistClient.getGroupResponse();
+  const groupsResponse = await cistClient.getGroupResponse();
   // assertGroupResponse(groupsResponse);
 
-  // await container.get<RoomsService>(TYPES.RoomsService)
-  //   .deleteAll();
-  // logger.info('Rooms are deleted');
-  // await container.get<BuildingsService>(TYPES.BuildingsService)
-  //   .deleteAll();
-  // logger.info('Buildings are deleted');
+  const buildingsService = container.get<BuildingsService>(
+    TYPES.BuildingsService,
+  );
+  const roomsService = container.get<RoomsService>(TYPES.RoomsService);
+  const groupsService = container.get<GroupsService>(TYPES.GroupsService);
 
-  await container.get<BuildingsService>(TYPES.BuildingsService)
-    .ensureBuildings(roomsResponse);
+  await roomsService.deleteAll();
+  logger.info('Rooms are deleted');
+  await buildingsService.deleteAll();
+  logger.info('Buildings are deleted');
+  await groupsService.deleteAll();
+  logger.info('Groups are deleted');
+
+  await buildingsService.ensureBuildings(roomsResponse);
   logger.info('Buildings are loaded');
-  await container.get<RoomsService>(TYPES.RoomsService)
-    .ensureRooms(roomsResponse);
+  await roomsService.ensureRooms(roomsResponse);
   logger.info('Rooms are loaded');
+  await groupsService.ensureGroups(groupsResponse);
+  logger.info('Groups are loaded');
 }
