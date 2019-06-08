@@ -1,8 +1,6 @@
 "use strict";
-var GroupsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
-"use strict";
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
@@ -11,7 +9,7 @@ const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
-let GroupsService = GroupsService_1 = class GroupsService {
+let GroupsService = class GroupsService {
     constructor(googleApiDirectory, quotaLimiter) {
         this._directory = googleApiDirectory;
         this._groups = this._directory.googleDirectory.groups;
@@ -34,11 +32,12 @@ let GroupsService = GroupsService_1 = class GroupsService {
     async ensureGroups(cistResponse) {
         const groups = await this.getAllGroups();
         const promises = [];
+        const insertedGroups = new Set();
         for (const faculty of cistResponse.university.faculties) {
             for (const direction of faculty.directions) {
                 if (direction.groups) {
                     for (const cistGroup of direction.groups) {
-                        const request = this.ensureGroup(groups, cistGroup);
+                        const request = this.ensureGroup(groups, cistGroup, insertedGroups);
                         if (request) {
                             promises.push(request);
                         }
@@ -46,7 +45,7 @@ let GroupsService = GroupsService_1 = class GroupsService {
                 }
                 for (const speciality of direction.specialities) {
                     for (const cistGroup of speciality.groups) {
-                        const request = this.ensureGroup(groups, cistGroup);
+                        const request = this.ensureGroup(groups, cistGroup, insertedGroups);
                         if (request) {
                             promises.push(request);
                         }
@@ -74,13 +73,13 @@ let GroupsService = GroupsService_1 = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => g.id === getGoogleGroupId(cistGroup));
+                        const isRelevant = direction.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
                         if (isRelevant) {
                             return true;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => g.id === getGoogleGroupId(cistGroup));
+                        const isRelevant = speciality.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
                         if (isRelevant) {
                             return true;
                         }
@@ -96,13 +95,13 @@ let GroupsService = GroupsService_1 = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isIrrelevant = !direction.groups.some(cistGroup => g.id === getGoogleGroupId(cistGroup));
+                        const isIrrelevant = !direction.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
                         if (isIrrelevant) {
                             return true;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isIrrelevant = !speciality.groups.some(cistGroup => g.id === getGoogleGroupId(cistGroup));
+                        const isIrrelevant = !speciality.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
                         if (isIrrelevant) {
                             return true;
                         }
@@ -115,12 +114,17 @@ let GroupsService = GroupsService_1 = class GroupsService {
     async getAllGroups(cacheResults = false) {
         let groups = [];
         let groupsPage = null;
+        let counter = 0;
+        logger_service_1.logger.trace('Loading groups');
         do {
+            logger_service_1.logger.trace(`Getting portion ${counter}...`);
             groupsPage = await this._groups.list({
                 customer: constants_1.customer,
-                maxResults: GroupsService_1.ROOMS_PAGE_SIZE,
-                nextPage: groupsPage ? groupsPage.data.nextPageToken : null,
+                // maxResults: GroupsService.ROOMS_PAGE_SIZE,
+                pageToken: groupsPage ? groupsPage.data.nextPageToken : null,
             });
+            logger_service_1.logger.trace('Got portion. Saved', !!groupsPage.data.groups ? groupsPage.data.groups.length : null, groupsPage.data.nextPageToken);
+            counter += 1;
             if (groupsPage.data.groups) {
                 groups = groups.concat(groupsPage.data.groups);
             }
@@ -129,30 +133,36 @@ let GroupsService = GroupsService_1 = class GroupsService {
             this._cachedGroups = groups;
             this._cacheLastUpdate = new Date();
         }
+        logger_service_1.logger.trace('Returning groups');
         return groups;
     }
     clearCache() {
         this._cachedGroups = null;
         this._cacheLastUpdate = null;
     }
-    ensureGroup(groups, cistGroup) {
-        const googleGroupId = getGoogleGroupId(cistGroup);
-        const googleGroup = groups.find(g => g.id === googleGroupId);
+    ensureGroup(groups, cistGroup, insertedGroups) {
+        const googleGroupEmail = getGroupEmail(cistGroup);
+        const googleGroup = groups.find(g => g.email === googleGroupEmail);
         if (googleGroup) {
+            insertedGroups.add(googleGroupEmail);
             const groupPatch = cistGroupToGoogleGroupPatch(cistGroup, googleGroup);
             if (groupPatch) {
                 logger_service_1.logger.debug(`Patching group ${cistGroup.name}`);
                 return this._patch({
                     customer: constants_1.customer,
-                    groupKey: googleGroupId,
+                    groupKey: googleGroupEmail,
                     requestBody: groupPatch,
                 });
             }
             return null;
         }
+        if (insertedGroups.has(googleGroupEmail)) {
+            return null;
+        }
         logger_service_1.logger.debug(`Inserting group ${cistGroup.name}`);
+        insertedGroups.add(googleGroupEmail);
         return this._insert({
-            requestBody: cistGroupToInsertGoogleGroup(cistGroup, googleGroupId),
+            requestBody: cistGroupToInsertGoogleGroup(cistGroup, googleGroupEmail),
         });
     }
     doDeleteByIds(groups, ids) {
@@ -167,8 +177,8 @@ let GroupsService = GroupsService_1 = class GroupsService {
         return Promise.all(promises);
     }
 };
-GroupsService.ROOMS_PAGE_SIZE = 1000;
-GroupsService = GroupsService_1 = tslib_1.__decorate([
+GroupsService.ROOMS_PAGE_SIZE = 200; // max limit
+GroupsService = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleDirectoryQuotaLimiter)),
@@ -176,12 +186,11 @@ GroupsService = GroupsService_1 = tslib_1.__decorate([
         quota_limiter_service_1.QuotaLimiterService])
 ], GroupsService);
 exports.GroupsService = GroupsService;
-function cistGroupToInsertGoogleGroup(cistGroup, id = getGoogleGroupId(cistGroup)) {
+function cistGroupToInsertGoogleGroup(cistGroup, email = getGroupEmail(cistGroup)) {
     return {
-        id,
+        email,
         name: cistGroup.name,
         description: cistGroup.name,
-        email: getGroupEmail(cistGroup),
     };
 }
 function cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
@@ -202,13 +211,9 @@ function cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
     }
     return hasChanges ? groupPatch : null;
 }
-exports.groupIdPrefix = 'g';
-function getGoogleGroupId(cistGroup) {
-    return `${constants_1.idPrefix}.${exports.groupIdPrefix}.${translit_1.toTranslit(cistGroup.id.toString())}`;
-}
-exports.getGoogleGroupId = getGoogleGroupId;
 function getGroupEmail(cistGroup) {
-    return `${translit_1.toTranslit(cistGroup.name)}@${constants_1.domainName}`;
+    const userName = translit_1.toTranslit(cistGroup.name).replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_');
+    return `${userName}@${constants_1.domainName}`.toLowerCase();
 }
 exports.getGroupEmail = getGroupEmail;
 //# sourceMappingURL=groups.service.js.map

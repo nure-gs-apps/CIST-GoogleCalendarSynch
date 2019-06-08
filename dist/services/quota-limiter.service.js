@@ -32,6 +32,7 @@ class QuotaLimiterService {
         }
         else {
             this.limiter = new bottleneck_1.default({
+                // maxConcurrent: 10,
                 minTime: plusOneInterval,
             });
         }

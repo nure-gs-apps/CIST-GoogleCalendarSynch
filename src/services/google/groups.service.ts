@@ -15,7 +15,7 @@ import { GaxiosPromise } from 'gaxios';
 
 @injectable()
 export class GroupsService {
-  static readonly ROOMS_PAGE_SIZE = 1000;
+  static readonly ROOMS_PAGE_SIZE = 200; // max limit
   private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
@@ -69,11 +69,12 @@ export class GroupsService {
     const groups = await this.getAllGroups();
 
     const promises = [] as GaxiosPromise<any>[];
+    const insertedGroups = new Set<string>();
     for (const faculty of cistResponse.university.faculties) {
       for (const direction of faculty.directions) {
         if (direction.groups) {
           for (const cistGroup of direction.groups) {
-            const request = this.ensureGroup(groups, cistGroup);
+            const request = this.ensureGroup(groups, cistGroup, insertedGroups);
             if (request) {
               promises.push(request);
             }
@@ -81,7 +82,7 @@ export class GroupsService {
         }
         for (const speciality of direction.specialities) {
           for (const cistGroup of speciality.groups) {
-            const request = this.ensureGroup(groups, cistGroup);
+            const request = this.ensureGroup(groups, cistGroup, insertedGroups);
             if (request) {
               promises.push(request);
             }
@@ -114,7 +115,7 @@ export class GroupsService {
           for (const direction of faculty.directions) {
             if (direction.groups) {
               const isRelevant = direction.groups.some(
-                cistGroup => g.id === getGoogleGroupId(cistGroup),
+                cistGroup => g.email === getGroupEmail(cistGroup),
               );
               if (isRelevant) {
                 return true;
@@ -122,7 +123,7 @@ export class GroupsService {
             }
             for (const speciality of direction.specialities) {
               const isRelevant = speciality.groups.some(
-                cistGroup => g.id === getGoogleGroupId(cistGroup),
+                cistGroup => g.email === getGroupEmail(cistGroup),
               );
               if (isRelevant) {
                 return true;
@@ -144,7 +145,7 @@ export class GroupsService {
           for (const direction of faculty.directions) {
             if (direction.groups) {
               const isIrrelevant = !direction.groups.some(
-                cistGroup => g.id === getGoogleGroupId(cistGroup),
+                cistGroup => g.email === getGroupEmail(cistGroup),
               );
               if (isIrrelevant) {
                 return true;
@@ -152,7 +153,7 @@ export class GroupsService {
             }
             for (const speciality of direction.specialities) {
               const isIrrelevant = !speciality.groups.some(
-                cistGroup => g.id === getGoogleGroupId(cistGroup),
+                cistGroup => g.email === getGroupEmail(cistGroup),
               );
               if (isIrrelevant) {
                 return true;
@@ -168,12 +169,17 @@ export class GroupsService {
   async getAllGroups(cacheResults = false) {
     let groups = [] as Schema$Group[];
     let groupsPage = null;
+    let counter = 0;
+    logger.trace('Loading groups');
     do {
+      logger.trace(`Getting portion ${counter}...`);
       groupsPage = await this._groups.list({
         customer,
-        maxResults: GroupsService.ROOMS_PAGE_SIZE,
-        nextPage: groupsPage ? groupsPage.data.nextPageToken : null,
-      } as admin_directory_v1.Params$Resource$Groups$List);
+        // maxResults: GroupsService.ROOMS_PAGE_SIZE,
+        pageToken: groupsPage ? groupsPage.data.nextPageToken : null, // BUG in typedefs
+      } as any);
+      logger.trace('Got portion. Saved', !!groupsPage.data.groups ? groupsPage.data.groups.length : null, groupsPage.data.nextPageToken!);
+      counter += 1;
       if (groupsPage.data.groups) {
         groups = groups.concat(groupsPage.data.groups);
       }
@@ -182,6 +188,7 @@ export class GroupsService {
       this._cachedGroups = groups;
       this._cacheLastUpdate = new Date();
     }
+    logger.trace('Returning groups');
     return groups;
   }
 
@@ -193,12 +200,14 @@ export class GroupsService {
   private ensureGroup(
     groups: ReadonlyArray<Schema$Group>,
     cistGroup: ApiGroup,
+    insertedGroups: Set<string>,
   ) {
-    const googleGroupId = getGoogleGroupId(cistGroup);
+    const googleGroupEmail = getGroupEmail(cistGroup);
     const googleGroup = groups.find(
-      g => g.id === googleGroupId,
+      g => g.email === googleGroupEmail,
     );
     if (googleGroup) {
+      insertedGroups.add(googleGroupEmail);
       const groupPatch = cistGroupToGoogleGroupPatch(
         cistGroup,
         googleGroup,
@@ -207,15 +216,19 @@ export class GroupsService {
         logger.debug(`Patching group ${cistGroup.name}`);
         return this._patch({
           customer,
-          groupKey: googleGroupId,
+          groupKey: googleGroupEmail,
           requestBody: groupPatch,
         } as admin_directory_v1.Params$Resource$Groups$Patch);
       }
       return null;
     }
+    if (insertedGroups.has(googleGroupEmail)) {
+      return null;
+    }
     logger.debug(`Inserting group ${cistGroup.name}`);
+    insertedGroups.add(googleGroupEmail);
     return this._insert({
-      requestBody: cistGroupToInsertGoogleGroup(cistGroup, googleGroupId),
+      requestBody: cistGroupToInsertGoogleGroup(cistGroup, googleGroupEmail),
     });
   }
 
@@ -236,13 +249,12 @@ export class GroupsService {
 
 function cistGroupToInsertGoogleGroup(
   cistGroup: ApiGroup,
-  id = getGoogleGroupId(cistGroup),
+  email = getGroupEmail(cistGroup),
 ): Schema$Group {
   return {
-    id,
+    email, // TODO: integrate with existing if any
     name: cistGroup.name,
-    description: cistGroup.name,
-    email: getGroupEmail(cistGroup), // TODO: integrate with existing if any
+    description: cistGroup.name, // TODO: add faculty, direction and speciality info
   };
 }
 
@@ -268,11 +280,7 @@ function cistGroupToGoogleGroupPatch(
   return hasChanges ? groupPatch : null;
 }
 
-export const groupIdPrefix = 'g';
-export function getGoogleGroupId(cistGroup: ApiGroup) {
-  return `${idPrefix}.${groupIdPrefix}.${toTranslit(cistGroup.id.toString())}`;
-}
-
 export function getGroupEmail(cistGroup: ApiGroup) {
-  return `${toTranslit(cistGroup.name)}@${domainName}`;
+  const userName = toTranslit(cistGroup.name).replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_');
+  return `${userName}@${domainName}`.toLowerCase();
 }

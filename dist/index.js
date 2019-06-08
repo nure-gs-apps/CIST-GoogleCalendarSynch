@@ -21,16 +21,16 @@ async function main() {
     const buildingsService = container.get(types_1.TYPES.BuildingsService);
     const roomsService = container.get(types_1.TYPES.RoomsService);
     const groupsService = container.get(types_1.TYPES.GroupsService);
-    await roomsService.deleteAll();
-    logger_service_1.logger.info('Rooms are deleted');
-    await buildingsService.deleteAll();
-    logger_service_1.logger.info('Buildings are deleted');
-    await groupsService.deleteAll();
-    logger_service_1.logger.info('Groups are deleted');
-    await buildingsService.ensureBuildings(roomsResponse);
-    logger_service_1.logger.info('Buildings are loaded');
-    await roomsService.ensureRooms(roomsResponse);
-    logger_service_1.logger.info('Rooms are loaded');
+    // await roomsService.deleteAll();
+    // logger.info('Rooms are deleted');
+    // await buildingsService.deleteAll();
+    // logger.info('Buildings are deleted');
+    // await groupsService.deleteAll();
+    // logger.info('Groups are deleted');
+    // await buildingsService.ensureBuildings(roomsResponse);
+    // logger.info('Buildings are loaded');
+    // await roomsService.ensureRooms(roomsResponse);
+    // logger.info('Rooms are loaded');
     await groupsService.ensureGroups(groupsResponse);
     logger_service_1.logger.info('Groups are loaded');
 }

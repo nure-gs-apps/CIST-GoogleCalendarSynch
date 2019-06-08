@@ -46,6 +46,7 @@ export class QuotaLimiterService {
       });
     } else {
       this.limiter = new Bottleneck({
+        // maxConcurrent: 10,
         minTime: plusOneInterval,
       });
     }
