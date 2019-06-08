@@ -146,18 +146,18 @@ export class GroupsService {
         for (const faculty of cistResponse.university.faculties) {
           for (const direction of faculty.directions) {
             if (direction.groups) {
-              const isIrrelevant = !direction.groups.some(
+              const isRelevant = direction.groups.some(
                 cistGroup => g.email === getGroupEmail(cistGroup),
               );
-              if (!isIrrelevant) {
+              if (isRelevant) {
                 return false;
               }
             }
             for (const speciality of direction.specialities) {
-              const isIrrelevant = !speciality.groups.some(
+              const isRelevant = speciality.groups.some(
                 cistGroup => g.email === getGroupEmail(cistGroup),
               );
-              if (!isIrrelevant) {
+              if (isRelevant) {
                 return false;
               }
             }
@@ -172,7 +172,7 @@ export class GroupsService {
     let groups = [] as Schema$Group[];
     let groupsPage = null;
     do {
-      groupsPage = await this._groups.list({
+      groupsPage = await this._list({
         customer,
         // maxResults: GroupsService.ROOMS_PAGE_SIZE,
         pageToken: groupsPage ? groupsPage.data.nextPageToken : null, // BUG in typedefs

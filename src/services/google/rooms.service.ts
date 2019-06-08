@@ -90,7 +90,7 @@ export class RoomsService {
             buildingId,
           );
           if (roomPatch) {
-            logger.debug(`Patching room ${cistRoomId}_${cistRoom.short_name}`);
+            logger.debug(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
             promises.push(
               this._patch({
                 customer,
@@ -100,7 +100,7 @@ export class RoomsService {
             );
           }
         } else {
-          logger.debug(`Inserting room ${cistRoomId}_${cistRoom.short_name}`);
+          logger.debug(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
           promises.push(
             this._insert({
               customer,
@@ -138,14 +138,14 @@ export class RoomsService {
       rooms,
       iterate(rooms).filter(r => {
         for (const building of cistResponse.university.buildings) {
-          const isIrrelevant = !building.auditories.some(
+          const isRelevant = building.auditories.some(
             a => r.resourceId === getRoomId(a, building),
           );
-          if (isIrrelevant) {
-            return true;
+          if (isRelevant) {
+            return false;
           }
         }
-        return false;
+        return true;
       }).map(r => r.resourceId!).toSet(),
     ));
   }
@@ -205,7 +205,7 @@ export class RoomsService {
     for (const googleRoom of rooms) {
       if (ids.has(googleRoom.resourceId!)) {
         promises.push(
-          this._rooms.delete({
+          this._delete({
             customer,
             calendarResourceId: googleRoom.resourceId,
           }),

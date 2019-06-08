@@ -95,14 +95,14 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isIrrelevant = !direction.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
-                        if (!isIrrelevant) {
+                        const isRelevant = direction.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
+                        if (isRelevant) {
                             return false;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isIrrelevant = !speciality.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
-                        if (!isIrrelevant) {
+                        const isRelevant = speciality.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
+                        if (isRelevant) {
                             return false;
                         }
                     }
@@ -115,7 +115,7 @@ let GroupsService = class GroupsService {
         let groups = [];
         let groupsPage = null;
         do {
-            groupsPage = await this._groups.list({
+            groupsPage = await this._list({
                 customer: constants_1.customer,
                 // maxResults: GroupsService.ROOMS_PAGE_SIZE,
                 pageToken: groupsPage ? groupsPage.data.nextPageToken : null,

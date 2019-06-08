@@ -43,7 +43,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 if (googleRoom) {
                     const roomPatch = cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
                     if (roomPatch) {
-                        logger_service_1.logger.debug(`Patching room ${cistRoomId}_${cistRoom.short_name}`);
+                        logger_service_1.logger.debug(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
                         promises.push(this._patch({
                             customer: constants_1.customer,
                             calendarResourceId: cistRoomId,
@@ -52,7 +52,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                     }
                 }
                 else {
-                    logger_service_1.logger.debug(`Inserting room ${cistRoomId}_${cistRoom.short_name}`);
+                    logger_service_1.logger.debug(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
                     promises.push(this._insert({
                         customer: constants_1.customer,
                         requestBody: cistAuditoryToInsertGoogleRoom(cistRoom, buildingId, cistRoomId),
@@ -80,12 +80,12 @@ let RoomsService = RoomsService_1 = class RoomsService {
         this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
-                const isIrrelevant = !building.auditories.some(a => r.resourceId === getRoomId(a, building));
-                if (isIrrelevant) {
-                    return true;
+                const isRelevant = building.auditories.some(a => r.resourceId === getRoomId(a, building));
+                if (isRelevant) {
+                    return false;
                 }
             }
-            return false;
+            return true;
         }).map(r => r.resourceId).toSet()));
     }
     async deleteRelevant(cistResponse) {
@@ -129,7 +129,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
     doDeleteByIds(rooms, ids, promises = []) {
         for (const googleRoom of rooms) {
             if (ids.has(googleRoom.resourceId)) {
-                promises.push(this._rooms.delete({
+                promises.push(this._delete({
                     customer: constants_1.customer,
                     calendarResourceId: googleRoom.resourceId,
                 }));
