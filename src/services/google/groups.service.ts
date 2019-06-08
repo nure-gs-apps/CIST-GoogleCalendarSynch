@@ -149,21 +149,21 @@ export class GroupsService {
               const isIrrelevant = !direction.groups.some(
                 cistGroup => g.email === getGroupEmail(cistGroup),
               );
-              if (isIrrelevant) {
-                return true;
+              if (!isIrrelevant) {
+                return false;
               }
             }
             for (const speciality of direction.specialities) {
               const isIrrelevant = !speciality.groups.some(
                 cistGroup => g.email === getGroupEmail(cistGroup),
               );
-              if (isIrrelevant) {
-                return true;
+              if (!isIrrelevant) {
+                return false;
               }
             }
           }
         }
-        return false;
+        return true;
       }).map(g => g.id!).toSet(),
     );
   }

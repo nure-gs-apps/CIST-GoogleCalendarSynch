@@ -96,19 +96,19 @@ let GroupsService = class GroupsService {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
                         const isIrrelevant = !direction.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
-                        if (isIrrelevant) {
-                            return true;
+                        if (!isIrrelevant) {
+                            return false;
                         }
                     }
                     for (const speciality of direction.specialities) {
                         const isIrrelevant = !speciality.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
-                        if (isIrrelevant) {
-                            return true;
+                        if (!isIrrelevant) {
+                            return false;
                         }
                     }
                 }
             }
-            return false;
+            return true;
         }).map(g => g.id).toSet());
     }
     async getAllGroups(cacheResults = false) {
