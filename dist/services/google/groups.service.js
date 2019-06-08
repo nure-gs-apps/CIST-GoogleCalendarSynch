@@ -4,7 +4,7 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
-const translit_1 = require("../../utils/translit");
+const common_1 = require("../../utils/common");
 const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
@@ -114,17 +114,12 @@ let GroupsService = class GroupsService {
     async getAllGroups(cacheResults = false) {
         let groups = [];
         let groupsPage = null;
-        let counter = 0;
-        logger_service_1.logger.trace('Loading groups');
         do {
-            logger_service_1.logger.trace(`Getting portion ${counter}...`);
             groupsPage = await this._groups.list({
                 customer: constants_1.customer,
                 // maxResults: GroupsService.ROOMS_PAGE_SIZE,
                 pageToken: groupsPage ? groupsPage.data.nextPageToken : null,
             });
-            logger_service_1.logger.trace('Got portion. Saved', !!groupsPage.data.groups ? groupsPage.data.groups.length : null, groupsPage.data.nextPageToken);
-            counter += 1;
             if (groupsPage.data.groups) {
                 groups = groups.concat(groupsPage.data.groups);
             }
@@ -133,7 +128,6 @@ let GroupsService = class GroupsService {
             this._cachedGroups = groups;
             this._cacheLastUpdate = new Date();
         }
-        logger_service_1.logger.trace('Returning groups');
         return groups;
     }
     clearCache() {
@@ -212,8 +206,10 @@ function cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
     return hasChanges ? groupPatch : null;
 }
 function getGroupEmail(cistGroup) {
-    const userName = translit_1.toTranslit(cistGroup.name).replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_');
-    return `${userName}@${constants_1.domainName}`.toLowerCase();
+    // // is OK for google email, but causes collisions
+    // const userName = toTranslit(cistGroup.name).replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_');
+    const localPart = common_1.toBase64(cistGroup.name);
+    return `${localPart}@${constants_1.domainName}`.toLowerCase();
 }
 exports.getGroupEmail = getGroupEmail;
 //# sourceMappingURL=groups.service.js.map

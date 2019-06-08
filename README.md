@@ -10,3 +10,4 @@ CLARIFY:
 
 TODO:
 - process errors: https://developers.google.com/admin-sdk/directory/v1/limits
+- handle backendError

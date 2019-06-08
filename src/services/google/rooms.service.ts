@@ -3,6 +3,7 @@ import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
+import { toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
 import {
   ApiAuditoriesResponse,
@@ -266,5 +267,5 @@ function cistAuditoryToGoogleRoomPatch(
 
 export const roomIdPrefix = 'r';
 export function getRoomId(room: ApiAuditory, building: ApiBuilding) {
-  return `${idPrefix}.${roomIdPrefix}.${toTranslit(building.id)}.${toTranslit(room.id)}`; // using composite id to ensure uniqueness
+  return `${idPrefix}.${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`; // using composite id to ensure uniqueness
 }

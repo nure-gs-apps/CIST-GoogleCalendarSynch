@@ -3,6 +3,7 @@ import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
+import { toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
 import { ApiGroup, ApiGroupResponse } from '../cist-json-client.service';
 import { logger } from '../logger.service';
@@ -169,17 +170,12 @@ export class GroupsService {
   async getAllGroups(cacheResults = false) {
     let groups = [] as Schema$Group[];
     let groupsPage = null;
-    let counter = 0;
-    logger.trace('Loading groups');
     do {
-      logger.trace(`Getting portion ${counter}...`);
       groupsPage = await this._groups.list({
         customer,
         // maxResults: GroupsService.ROOMS_PAGE_SIZE,
         pageToken: groupsPage ? groupsPage.data.nextPageToken : null, // BUG in typedefs
       } as any);
-      logger.trace('Got portion. Saved', !!groupsPage.data.groups ? groupsPage.data.groups.length : null, groupsPage.data.nextPageToken!);
-      counter += 1;
       if (groupsPage.data.groups) {
         groups = groups.concat(groupsPage.data.groups);
       }
@@ -188,7 +184,6 @@ export class GroupsService {
       this._cachedGroups = groups;
       this._cacheLastUpdate = new Date();
     }
-    logger.trace('Returning groups');
     return groups;
   }
 
@@ -281,6 +276,8 @@ function cistGroupToGoogleGroupPatch(
 }
 
 export function getGroupEmail(cistGroup: ApiGroup) {
-  const userName = toTranslit(cistGroup.name).replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_');
-  return `${userName}@${domainName}`.toLowerCase();
+  // // is OK for google email, but causes collisions
+  // const userName = toTranslit(cistGroup.name).replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_');
+  const localPart = toBase64(cistGroup.name);
+  return `${localPart}@${domainName}`.toLowerCase();
 }

@@ -6,7 +6,7 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
-const translit_1 = require("../../utils/translit");
+const common_1 = require("../../utils/common");
 const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const buildings_service_1 = require("./buildings.service");
@@ -189,7 +189,7 @@ function cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
 }
 exports.roomIdPrefix = 'r';
 function getRoomId(room, building) {
-    return `${constants_1.idPrefix}.${exports.roomIdPrefix}.${translit_1.toTranslit(building.id)}.${translit_1.toTranslit(room.id)}`; // using composite id to ensure uniqueness
+    return `${constants_1.idPrefix}.${exports.roomIdPrefix}.${common_1.toBase64(building.id)}.${common_1.toBase64(room.id)}`; // using composite id to ensure uniqueness
 }
 exports.getRoomId = getRoomId;
 //# sourceMappingURL=rooms.service.js.map

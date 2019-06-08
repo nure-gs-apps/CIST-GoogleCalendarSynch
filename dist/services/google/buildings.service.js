@@ -7,7 +7,6 @@ const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
 const common_1 = require("../../utils/common");
-const translit_1 = require("../../utils/translit");
 const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
@@ -161,7 +160,7 @@ function getFloornamesFromBuilding(building) {
 }
 exports.buildingIdPrefix = 'b';
 function getGoogleBuildingId(cistBuilding) {
-    return `${constants_1.idPrefix}.${exports.buildingIdPrefix}.${translit_1.toTranslit(cistBuilding.id)}`;
+    return `${constants_1.idPrefix}.${exports.buildingIdPrefix}.${common_1.toBase64(cistBuilding.id)}`;
 }
 exports.getGoogleBuildingId = getGoogleBuildingId;
 const emptyFloorName = /^\s*$/;

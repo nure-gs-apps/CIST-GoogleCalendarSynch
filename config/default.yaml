@@ -12,5 +12,5 @@ google:
     directoryApi:
       daily: 150_000 # daily limit
       period: 100_000 # ms
-      queries: 100 # per period. Actual is 1500, but decreased for reliability
+      queries: 460 # per period. Fallback to 425 if problems. Actual is 1500, but decreased for reliability
       burst: false # true: try load all 1500 queries at once and throttle; false: make request with equal interval all the time. False is used because it works more reliable for now

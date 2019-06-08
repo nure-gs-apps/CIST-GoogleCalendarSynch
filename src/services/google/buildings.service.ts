@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
-import { arrayContentEqual } from '../../utils/common';
+import { arrayContentEqual, toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
 import {
   ApiAuditoriesResponse,
@@ -239,7 +239,7 @@ function getFloornamesFromBuilding(building: ApiBuilding) {
 
 export const buildingIdPrefix = 'b';
 export function getGoogleBuildingId(cistBuilding: ApiBuilding) {
-  return `${idPrefix}.${buildingIdPrefix}.${toTranslit(cistBuilding.id)}`;
+  return `${idPrefix}.${buildingIdPrefix}.${toBase64(cistBuilding.id)}`;
 }
 
 const emptyFloorName = /^\s*$/;
