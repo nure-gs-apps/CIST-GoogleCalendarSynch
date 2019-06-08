@@ -10,7 +10,7 @@ if (!/^\w*$/.test(idPrefix)) {
 export const customer = 'my_customer';
 export const domainName = config.get<IConfig['google']['auth']['subjectEmail']>(
   'google.auth.subjectEmail',
-).split('@')[1];
+).split('@')[1].toLowerCase();
 
 export const directoryAuthScopes = [
   'https://www.googleapis.com/auth/admin.directory.resource.calendar',

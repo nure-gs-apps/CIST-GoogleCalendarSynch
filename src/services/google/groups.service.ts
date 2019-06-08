@@ -4,6 +4,7 @@ import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
 import { toBase64 } from '../../utils/common';
+import * as v from 'voca';
 import { toTranslit } from '../../utils/translit';
 import { ApiGroup, ApiGroupResponse } from '../cist-json-client.service';
 import { logger } from '../logger.service';
@@ -276,8 +277,14 @@ function cistGroupToGoogleGroupPatch(
 }
 
 export function getGroupEmail(cistGroup: ApiGroup) {
-  // // is OK for google email, but causes collisions
-  // const userName = toTranslit(cistGroup.name).replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_');
-  const localPart = toBase64(cistGroup.name);
-  return `${localPart}@${domainName}`.toLowerCase();
+  // is OK for google email, but causes collisions
+  const groupName = toTranslit(cistGroup.name)
+    .replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_')
+    .toLowerCase();
+  // const uniqueHash = toBase64(cistGroup.name)
+  //   .split('')
+  //   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
+  //   .join('');
+  const uniqueHash = cistGroup.id.toString();
+  return `${groupName}.${uniqueHash}@${domainName}`;
 }

@@ -4,7 +4,7 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
-const common_1 = require("../../utils/common");
+const translit_1 = require("../../utils/translit");
 const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
@@ -206,10 +206,16 @@ function cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
     return hasChanges ? groupPatch : null;
 }
 function getGroupEmail(cistGroup) {
-    // // is OK for google email, but causes collisions
-    // const userName = toTranslit(cistGroup.name).replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_');
-    const localPart = common_1.toBase64(cistGroup.name);
-    return `${localPart}@${constants_1.domainName}`.toLowerCase();
+    // is OK for google email, but causes collisions
+    const groupName = translit_1.toTranslit(cistGroup.name)
+        .replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_')
+        .toLowerCase();
+    // const uniqueHash = toBase64(cistGroup.name)
+    //   .split('')
+    //   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
+    //   .join('');
+    const uniqueHash = cistGroup.id.toString();
+    return `${groupName}.${uniqueHash}@${constants_1.domainName}`;
 }
 exports.getGroupEmail = getGroupEmail;
 //# sourceMappingURL=groups.service.js.map

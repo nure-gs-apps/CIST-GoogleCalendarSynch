@@ -6,7 +6,7 @@ if (!/^\w*$/.test(exports.idPrefix)) {
     throw new TypeError('idPrefix must be a alphanumeral string');
 }
 exports.customer = 'my_customer';
-exports.domainName = config.get('google.auth.subjectEmail').split('@')[1];
+exports.domainName = config.get('google.auth.subjectEmail').split('@')[1].toLowerCase();
 exports.directoryAuthScopes = [
     'https://www.googleapis.com/auth/admin.directory.resource.calendar',
     'https://www.googleapis.com/auth/admin.directory.group',
