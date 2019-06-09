@@ -283,7 +283,7 @@ export function getGroupEmail(cistGroup: ApiGroup) {
   // is OK for google email, but causes collisions
   const groupName = toTranslit(
     cistGroup.name,
-    localPartTemplate[0].length + localPartTemplate[1].length,
+    64 - (localPartTemplate[0].length + localPartTemplate[1].length), // undergo google email limit
   )
     .replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_')
     .toLowerCase();

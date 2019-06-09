@@ -210,7 +210,7 @@ function getGroupEmail(cistGroup) {
     const uniqueHash = cistGroup.id.toString();
     const localPartTemplate = [`${exports.groupEmailPrefix}_`, `.${uniqueHash}`];
     // is OK for google email, but causes collisions
-    const groupName = translit_1.toTranslit(cistGroup.name, localPartTemplate[0].length + localPartTemplate[1].length)
+    const groupName = translit_1.toTranslit(cistGroup.name, 64 - (localPartTemplate[0].length + localPartTemplate[1].length))
         .replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_')
         .toLowerCase();
     return `${localPartTemplate.join(groupName)}@${constants_1.domainName}`;
