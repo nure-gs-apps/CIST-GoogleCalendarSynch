@@ -1,9 +1,13 @@
 import Bottleneck from 'bottleneck';
 import * as config from 'config';
 import { BindingScopeEnum, Container } from 'inversify';
-import { IConfig, Nullable } from '../@types';
+import { ICalendarConfig, IConfig, Nullable } from '../@types';
 import { CistJsonClient } from '../services/cist-json-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
+import { CalendarService } from '../services/google/calendar.service';
+import { EventsService } from '../services/google/events.service';
+import { GoogleApiCalendar } from '../services/google/google-api-calendar';
+import { GoogleCalendarAuth } from '../services/google/google-calendar-auth';
 import { GoogleDirectoryAuth } from '../services/google/google-directory-auth';
 import { GoogleApiDirectory } from '../services/google/google-api-directory';
 import { GroupsService } from '../services/google/groups.service';
@@ -55,6 +59,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
         'google.auth.subjectEmail',
       ),
     );
+
     container.bind<string>(TYPES.GoogleAuthCalendarKeyFilepath).toConstantValue(
       config.get<IConfig['google']['auth']['calendarKeyFilepath']>(
         'google.auth.calendarKeyFilepath',
@@ -66,21 +71,40 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
           'google.auth.directoryKeyFilepath',
         ) || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
       );
+    container.bind<ICalendarConfig>(TYPES.GoogleCalendarConfig).toConstantValue(
+      config.get<IConfig['google']['calendar']>('google.calendar'),
+    );
 
     container.bind<CistJsonClient>(TYPES.CistJsonClient).to(CistJsonClient);
+
     container.bind<IGoogleAuth>(TYPES.GoogleDirectoryAuth)
       .to(GoogleDirectoryAuth);
+    container.bind<IGoogleAuth>(TYPES.GoogleCalendarAuth)
+      .to(GoogleCalendarAuth);
+
     container.bind<QuotaLimiterService>(TYPES.GoogleDirectoryQuotaLimiter)
       .toDynamicValue(getQuotaLimiterFactory(
         config.get<IConfig['google']['quotas']['directoryApi']>('google.quotas.directoryApi'),
         defaultScope === BindingScopeEnum.Singleton,
       ));
+    container.bind<QuotaLimiterService>(TYPES.GoogleCalendarQuotaLimiter)
+      .toDynamicValue(getQuotaLimiterFactory(
+        config.get<IConfig['google']['quotas']['calendarApi']>('google.quotas.calendarApi'),
+        defaultScope === BindingScopeEnum.Singleton,
+      ));
+
     container.bind<GoogleApiDirectory>(TYPES.GoogleApiDirectory)
       .to(GoogleApiDirectory);
+    container.bind<GoogleApiCalendar>(TYPES.GoogleApiCalendar)
+      .to(GoogleApiCalendar);
+
     container.bind<BuildingsService>(TYPES.BuildingsService)
       .to(BuildingsService);
     container.bind<RoomsService>(TYPES.RoomsService).to(RoomsService);
     container.bind<GroupsService>(TYPES.GroupsService).to(GroupsService);
+
+    container.bind<CalendarService>(TYPES.CalendarService).to(CalendarService);
+    container.bind<EventsService>(TYPES.EventsService).to(EventsService);
   } else if (containerType === ContainerType.CIST_JSON_ONLY) {
     container.bind<string>(TYPES.CistBaseApi).toConstantValue(
       config.get<IConfig['cist']['baseUrl']>('cist.baseUrl'),
@@ -114,6 +138,9 @@ export function getAsyncInitializers() {
   if (containerType === ContainerType.FULL) {
     promises.push(
       container.get<GoogleDirectoryAuth>(TYPES.GoogleDirectoryAuth)[ASYNC_INIT],
+    );
+    promises.push(
+      container.get<GoogleCalendarAuth>(TYPES.GoogleCalendarAuth)[ASYNC_INIT],
     );
   }
 

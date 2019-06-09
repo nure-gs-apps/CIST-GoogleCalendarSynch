@@ -6,16 +6,17 @@ const container_1 = require("./di/container");
 const types_1 = require("./di/types");
 // initialize exit handlers
 require("./services/exit-handler.service");
+const logger_service_1 = require("./services/logger.service");
 const container = container_1.createContainer();
 container_1.getAsyncInitializers().then(main);
 async function main() {
-    const cistClient = container
-        .get(types_1.TYPES.CistJsonClient);
-    const roomsResponse = await cistClient.getRoomsResponse();
+    // const cistClient = container
+    //   .get<CistJsonClient>(TYPES.CistJsonClient);
+    // const roomsResponse = await cistClient.getRoomsResponse();
     // if (!assertRoomsResponse(roomsResponse)) {
     //   return;
     // }
-    const groupsResponse = await cistClient.getGroupsResponse();
+    // const groupsResponse = await cistClient.getGroupsResponse();
     // if (!assertGroupsResponse(groupsResponse)) {
     //   return;
     // }
@@ -26,9 +27,11 @@ async function main() {
     // if (!assertEventsResponse(eventsResponse)) {
     //   return;
     // }
-    const buildingsService = container.get(types_1.TYPES.BuildingsService);
-    const roomsService = container.get(types_1.TYPES.RoomsService);
-    const groupsService = container.get(types_1.TYPES.GroupsService);
+    // const buildingsService = container.get<BuildingsService>(
+    //   TYPES.BuildingsService,
+    // );
+    // const roomsService = container.get<RoomsService>(TYPES.RoomsService);
+    // const groupsService = container.get<GroupsService>(TYPES.GroupsService);
     // await roomsService.deleteAll();
     // logger.info('Rooms are deleted');
     // await buildingsService.deleteAll();
@@ -41,6 +44,8 @@ async function main() {
     // logger.info('Rooms are loaded');
     // await groupsService.ensureGroups(groupsResponse);
     // logger.info('Groups are loaded');
-    await groupsService.deleteIrrelevant(groupsResponse);
+    const calendarService = container.get(types_1.TYPES.CalendarService);
+    const calendar = await calendarService.ensureCalendar();
+    logger_service_1.logger.info(calendar);
 }
 //# sourceMappingURL=index.js.map

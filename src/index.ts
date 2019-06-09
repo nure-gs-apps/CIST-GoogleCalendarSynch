@@ -9,6 +9,7 @@ import {
 // initialize exit handlers
 import './services/exit-handler.service';
 import { BuildingsService } from './services/google/buildings.service';
+import { CalendarService } from './services/google/calendar.service';
 import { GroupsService } from './services/google/groups.service';
 import { RoomsService } from './services/google/rooms.service';
 import { logger } from './services/logger.service';
@@ -21,15 +22,15 @@ const container = createContainer();
 getAsyncInitializers().then(main);
 
 async function main() {
-  const cistClient = container
-    .get<CistJsonClient>(TYPES.CistJsonClient);
+  // const cistClient = container
+  //   .get<CistJsonClient>(TYPES.CistJsonClient);
 
-  const roomsResponse = await cistClient.getRoomsResponse();
+  // const roomsResponse = await cistClient.getRoomsResponse();
   // if (!assertRoomsResponse(roomsResponse)) {
   //   return;
   // }
 
-  const groupsResponse = await cistClient.getGroupsResponse();
+  // const groupsResponse = await cistClient.getGroupsResponse();
   // if (!assertGroupsResponse(groupsResponse)) {
   //   return;
   // }
@@ -42,11 +43,11 @@ async function main() {
   //   return;
   // }
 
-  const buildingsService = container.get<BuildingsService>(
-    TYPES.BuildingsService,
-  );
-  const roomsService = container.get<RoomsService>(TYPES.RoomsService);
-  const groupsService = container.get<GroupsService>(TYPES.GroupsService);
+  // const buildingsService = container.get<BuildingsService>(
+  //   TYPES.BuildingsService,
+  // );
+  // const roomsService = container.get<RoomsService>(TYPES.RoomsService);
+  // const groupsService = container.get<GroupsService>(TYPES.GroupsService);
 
   // await roomsService.deleteAll();
   // logger.info('Rooms are deleted');
@@ -61,5 +62,8 @@ async function main() {
   // logger.info('Rooms are loaded');
   // await groupsService.ensureGroups(groupsResponse);
   // logger.info('Groups are loaded');
-  await groupsService.deleteIrrelevant(groupsResponse);
+
+  const calendarService = container.get<CalendarService>(TYPES.CalendarService);
+  const calendar = await calendarService.ensureCalendar();
+  logger.info(calendar);
 }

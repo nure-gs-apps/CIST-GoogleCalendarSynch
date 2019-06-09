@@ -4,6 +4,10 @@ const config = require("config");
 const inversify_1 = require("inversify");
 const cist_json_client_service_1 = require("../services/cist-json-client.service");
 const buildings_service_1 = require("../services/google/buildings.service");
+const calendar_service_1 = require("../services/google/calendar.service");
+const events_service_1 = require("../services/google/events.service");
+const google_api_calendar_1 = require("../services/google/google-api-calendar");
+const google_calendar_auth_1 = require("../services/google/google-calendar-auth");
 const google_directory_auth_1 = require("../services/google/google-directory-auth");
 const google_api_directory_1 = require("../services/google/google-api-directory");
 const groups_service_1 = require("../services/google/groups.service");
@@ -37,17 +41,26 @@ function createContainer(options) {
         container.bind(types_1.TYPES.GoogleAuthCalendarKeyFilepath).toConstantValue(config.get('google.auth.calendarKeyFilepath') || process.env.GOOGLE_APPLICATION_CREDENTIALS);
         container.bind(types_1.TYPES.GoogleAuthDirectoryKeyFilepath)
             .toConstantValue(config.get('google.auth.directoryKeyFilepath') || process.env.GOOGLE_APPLICATION_CREDENTIALS);
+        container.bind(types_1.TYPES.GoogleCalendarConfig).toConstantValue(config.get('google.calendar'));
         container.bind(types_1.TYPES.CistJsonClient).to(cist_json_client_service_1.CistJsonClient);
         container.bind(types_1.TYPES.GoogleDirectoryAuth)
             .to(google_directory_auth_1.GoogleDirectoryAuth);
+        container.bind(types_1.TYPES.GoogleCalendarAuth)
+            .to(google_calendar_auth_1.GoogleCalendarAuth);
         container.bind(types_1.TYPES.GoogleDirectoryQuotaLimiter)
             .toDynamicValue(quota_limiter_service_1.getQuotaLimiterFactory(config.get('google.quotas.directoryApi'), defaultScope === inversify_1.BindingScopeEnum.Singleton));
+        container.bind(types_1.TYPES.GoogleCalendarQuotaLimiter)
+            .toDynamicValue(quota_limiter_service_1.getQuotaLimiterFactory(config.get('google.quotas.calendarApi'), defaultScope === inversify_1.BindingScopeEnum.Singleton));
         container.bind(types_1.TYPES.GoogleApiDirectory)
             .to(google_api_directory_1.GoogleApiDirectory);
+        container.bind(types_1.TYPES.GoogleApiCalendar)
+            .to(google_api_calendar_1.GoogleApiCalendar);
         container.bind(types_1.TYPES.BuildingsService)
             .to(buildings_service_1.BuildingsService);
         container.bind(types_1.TYPES.RoomsService).to(rooms_service_1.RoomsService);
         container.bind(types_1.TYPES.GroupsService).to(groups_service_1.GroupsService);
+        container.bind(types_1.TYPES.CalendarService).to(calendar_service_1.CalendarService);
+        container.bind(types_1.TYPES.EventsService).to(events_service_1.EventsService);
     }
     else if (containerType === types_1.ContainerType.CIST_JSON_ONLY) {
         container.bind(types_1.TYPES.CistBaseApi).toConstantValue(config.get('cist.baseUrl'));
@@ -75,6 +88,7 @@ function getAsyncInitializers() {
     const promises = [];
     if (containerType === types_1.ContainerType.FULL) {
         promises.push(container.get(types_1.TYPES.GoogleDirectoryAuth)[types_1.ASYNC_INIT]);
+        promises.push(container.get(types_1.TYPES.GoogleCalendarAuth)[types_1.ASYNC_INIT]);
     }
     initPromise = Promise.all(promises);
     return initPromise;

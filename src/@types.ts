@@ -43,6 +43,7 @@ export interface IConfig {
   };
   google: {
     idPrefix: Nullable<string>;
+    calendar: ICalendarConfig;
     auth: {
       subjectEmail: string;
       calendarKeyFilepath: string;
@@ -60,4 +61,10 @@ export interface IApiQuota {
   period: number;
   queries: number;
   burst: boolean;
+}
+
+export interface ICalendarConfig {
+  id: Nullable<string>;
+  summary: string;
+  timeZone: string;
 }

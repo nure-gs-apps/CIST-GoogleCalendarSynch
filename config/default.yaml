@@ -4,6 +4,10 @@ cist:
 
 google:
   idPrefix: cist
+  calendar:
+    id: null # override in other configs to facilitate initial selection process
+    summary: 'CIST Timetable' # basically name for calendar. Can be used for searching if id is not overriden
+    timeZone: Europe/Kiev # timezone for calendar creation
   auth:
     subjectEmail: yourEmail # Required for admin. email of user belonging to the domain of G Suite.
     calendarKeyFilepath: ./keys/cist-calendar.json
