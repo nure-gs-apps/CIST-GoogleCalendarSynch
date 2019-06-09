@@ -6,10 +6,10 @@ import { TYPES } from '../../di/types';
 import { toBase64 } from '../../utils/common';
 import * as v from 'voca';
 import { toTranslit } from '../../utils/translit';
-import { ApiGroup, ApiGroupResponse } from '../cist-json-client.service';
+import { ApiGroup, ApiGroupsResponse } from '../cist-json-client.service';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
-import { customer, domainName, idPrefix } from './constants';
+import { customer, domainName } from './constants';
 import { GoogleApiDirectory } from './google-api-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 import Resource$Groups = admin_directory_v1.Resource$Groups;
@@ -67,7 +67,7 @@ export class GroupsService {
     this._cacheLastUpdate = null;
   }
 
-  async ensureGroups(cistResponse: ApiGroupResponse) {
+  async ensureGroups(cistResponse: ApiGroupsResponse) {
     const groups = await this.getAllGroups();
 
     const promises = [] as GaxiosPromise<any>[];
@@ -108,7 +108,7 @@ export class GroupsService {
     return Promise.all(promises);
   }
 
-  async deleteRelevant(cistResponse: ApiGroupResponse) {
+  async deleteRelevant(cistResponse: ApiGroupsResponse) {
     const groups = await this.getAllGroups();
     return this.doDeleteByIds(
       groups,
@@ -138,7 +138,7 @@ export class GroupsService {
     );
   }
 
-  async deleteIrrelevant(cistResponse: ApiGroupResponse) {
+  async deleteIrrelevant(cistResponse: ApiGroupsResponse) {
     const groups = await this.getAllGroups();
     return this.doDeleteByIds(
       groups,

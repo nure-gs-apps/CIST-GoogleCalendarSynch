@@ -11,7 +11,7 @@ import {
 } from '../cist-json-client.service';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
-import { customer, idPrefix } from './constants';
+import { customer, prependIdPrefix } from './constants';
 import { GoogleApiDirectory } from './google-api-directory';
 import Schema$Building = admin_directory_v1.Schema$Building;
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
@@ -239,7 +239,7 @@ function getFloornamesFromBuilding(building: ApiBuilding) {
 
 export const buildingIdPrefix = 'b';
 export function getGoogleBuildingId(cistBuilding: ApiBuilding) {
-  return `${idPrefix}.${buildingIdPrefix}.${toBase64(cistBuilding.id)}`;
+  return prependIdPrefix(`${buildingIdPrefix}.${toBase64(cistBuilding.id)}`);
 }
 
 const emptyFloorName = /^\s*$/;

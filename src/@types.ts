@@ -42,7 +42,7 @@ export interface IConfig {
     apiKey: string;
   };
   google: {
-    idPrefix: string;
+    idPrefix: Nullable<string>;
     auth: {
       subjectEmail: string;
       calendarKeyFilepath: string;

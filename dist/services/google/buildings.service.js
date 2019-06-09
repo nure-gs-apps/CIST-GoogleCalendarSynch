@@ -160,7 +160,7 @@ function getFloornamesFromBuilding(building) {
 }
 exports.buildingIdPrefix = 'b';
 function getGoogleBuildingId(cistBuilding) {
-    return `${constants_1.idPrefix}.${exports.buildingIdPrefix}.${common_1.toBase64(cistBuilding.id)}`;
+    return constants_1.prependIdPrefix(`${exports.buildingIdPrefix}.${common_1.toBase64(cistBuilding.id)}`);
 }
 exports.getGoogleBuildingId = getGoogleBuildingId;
 const emptyFloorName = /^\s*$/;

@@ -8,6 +8,13 @@ const Iconv = require("iconv");
 const inversify_1 = require("inversify");
 const ts_optchain_1 = require("ts-optchain");
 const types_1 = require("../di/types");
+const common_1 = require("../utils/common");
+var TimetableType;
+(function (TimetableType) {
+    TimetableType[TimetableType["GROUP"] = 1] = "GROUP";
+    TimetableType[TimetableType["TEACHER"] = 2] = "TEACHER";
+    TimetableType[TimetableType["ROOM"] = 3] = "ROOM";
+})(TimetableType = exports.TimetableType || (exports.TimetableType = {}));
 let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
     constructor(baseApiUrl, apiKey) {
         this._axios = axios_1.default.create({
@@ -29,9 +36,28 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
             .get(CistJsonClient_1.ROOMS_PATH)
             .then(response => this.parseAuditoriesResponse(response));
     }
-    getGroupResponse() {
+    getGroupsResponse() {
         return this._axios
             .get(CistJsonClient_1.GROUPS_PATH)
+            .then(response => this.parseGroupResponse(response));
+    }
+    getEventsResponse(type, entityId, dateLimits) {
+        const queryParams = {
+            type_id: type,
+            timetable_id: entityId,
+        };
+        if (dateLimits) {
+            if (dateLimits.from) {
+                queryParams.time_from = common_1.dateToSeconds(dateLimits.from);
+            }
+            if (dateLimits.to) {
+                queryParams.time_to = common_1.dateToSeconds(dateLimits.to);
+            }
+        }
+        return this._axios
+            .get(CistJsonClient_1.EVENTS_PATH, {
+            params: queryParams,
+        })
             .then(response => this.parseGroupResponse(response));
     }
     parseAuditoriesResponse(response) {
@@ -49,10 +75,17 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
         }
         return JSON.parse(response.data);
     }
+    parseEventsResponse(response) {
+        if (typeof response.data !== 'string') {
+            throw new TypeError('Unexpected non-string response');
+        }
+        return JSON.parse(response.data);
+    }
 };
 CistJsonClient.BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
 CistJsonClient.ROOMS_PATH = 'P_API_AUDITORIES_JSON';
 CistJsonClient.GROUPS_PATH = 'P_API_GROUP_JSON';
+CistJsonClient.EVENTS_PATH = 'P_API_EVENT_JSON';
 CistJsonClient = CistJsonClient_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.CistBaseApi)),

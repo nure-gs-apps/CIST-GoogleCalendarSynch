@@ -8,3 +8,7 @@ export function arrayContentEqual<T>(
 export function toBase64(value: string) {
   return Buffer.from(value).toString('base64');
 }
+
+export function dateToSeconds(date: Date) {
+  return Math.round(date.getTime() / 1000);
+}

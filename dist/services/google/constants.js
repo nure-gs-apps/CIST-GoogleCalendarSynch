@@ -1,10 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const config = require("config");
-exports.idPrefix = config.get('google.idPrefix') || 'cist';
-if (!/^\w*$/.test(exports.idPrefix)) {
-    throw new TypeError('idPrefix must be a alphanumeral string');
-}
+exports.prependIdPrefix = (() => {
+    const idPrefix = config.get('google.idPrefix');
+    const prefixIsValid = idPrefix === null || (typeof idPrefix === 'string'
+        && /^\w+$/.test(idPrefix));
+    if (!prefixIsValid) {
+        throw new TypeError('idPrefix must be a alphanumeral string or null to omit');
+    }
+    return prefixIsValid
+        ? (id) => `${idPrefix}.${id}`
+        : (id) => id;
+})();
 exports.customer = 'my_customer';
 exports.domainName = config.get('google.auth.subjectEmail').split('@')[1].toLowerCase();
 exports.directoryAuthScopes = [

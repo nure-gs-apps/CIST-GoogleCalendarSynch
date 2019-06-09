@@ -26,7 +26,7 @@ async function main() {
   // if (!assertRoomsResponse(roomsResponse)) {
   //   return;
   // }
-  const groupsResponse = await cistClient.getGroupResponse();
+  const groupsResponse = await cistClient.getGroupsResponse();
   // assertGroupResponse(groupsResponse);
 
   const buildingsService = container.get<BuildingsService>(
@@ -42,11 +42,10 @@ async function main() {
   // await groupsService.deleteAll();
   // logger.info('Groups are deleted');
 
-  // await buildingsService.ensureBuildings(roomsResponse);
-  // logger.info('Buildings are loaded');
-  // await roomsService.ensureRooms(roomsResponse);
-  // logger.info('Rooms are loaded');
-  await groupsService.deleteAll();
+  await buildingsService.ensureBuildings(roomsResponse);
+  logger.info('Buildings are loaded');
+  await roomsService.ensureRooms(roomsResponse);
+  logger.info('Rooms are loaded');
   await groupsService.ensureGroups(groupsResponse);
   logger.info('Groups are loaded');
 }

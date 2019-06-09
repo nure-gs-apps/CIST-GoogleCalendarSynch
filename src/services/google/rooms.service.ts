@@ -12,7 +12,7 @@ import {
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { getGoogleBuildingId, transformFloorname } from './buildings.service';
-import { customer, idPrefix } from './constants';
+import { customer, prependIdPrefix } from './constants';
 import { GoogleApiDirectory } from './google-api-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise } from 'gaxios';
@@ -267,5 +267,5 @@ function cistAuditoryToGoogleRoomPatch(
 
 export const roomIdPrefix = 'r';
 export function getRoomId(room: ApiAuditory, building: ApiBuilding) {
-  return `${idPrefix}.${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`; // using composite id to ensure uniqueness
+  return prependIdPrefix(`${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`); // using composite id to ensure uniqueness
 }

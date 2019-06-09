@@ -1,6 +1,6 @@
 import {
   ApiAuditoriesResponse, ApiGroup,
-  ApiGroupResponse,
+  ApiGroupsResponse,
 } from '../services/cist-json-client.service';
 import { logger } from '../services/logger.service';
 
@@ -73,8 +73,8 @@ export function assertRoomsResponse(body: any): body is ApiAuditoriesResponse {
   return true;
 }
 
-export function assertGroupResponse(body: any): body is ApiGroupResponse {
-  const response = body as ApiGroupResponse;
+export function assertGroupResponse(body: any): body is ApiGroupsResponse {
+  const response = body as ApiGroupsResponse;
 
   const responseOk = Object.keys(response).length === 1
     && typeof response.university === 'object';

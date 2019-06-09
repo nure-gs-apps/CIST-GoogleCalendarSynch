@@ -3,6 +3,7 @@ import * as Iconv from 'iconv';
 import { inject, injectable } from 'inversify';
 import { oc } from 'ts-optchain';
 import { TYPES } from '../di/types';
+import { dateToSeconds } from '../utils/common';
 
 export interface ApiAuditoriesResponse {
   university: {
@@ -32,7 +33,11 @@ export interface ApiAuditoryType {
   short_name: string; // (presumably) direction (branch)
 }
 
-export interface ApiGroupResponse {
+export interface ApiEventsResponse {
+  events: any[];
+}
+
+export interface ApiGroupsResponse {
   university: {
     short_name: string;
     full_name: string;
@@ -67,11 +72,23 @@ export interface ApiGroup {
   name: string;
 }
 
+export enum TimetableType {
+  GROUP = 1,
+  TEACHER = 2,
+  ROOM = 3,
+}
+
+export interface IDateLimits {
+  from?: Date;
+  to?: Date;
+}
+
 @injectable()
 export class CistJsonClient {
   static readonly BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
   static readonly ROOMS_PATH = 'P_API_AUDITORIES_JSON';
   static readonly GROUPS_PATH = 'P_API_GROUP_JSON';
+  static readonly EVENTS_PATH = 'P_API_EVENT_JSON';
 
   private _axios: AxiosInstance;
   private _iconv: Iconv.Iconv;
@@ -102,10 +119,34 @@ export class CistJsonClient {
       .then(response => this.parseAuditoriesResponse(response));
   }
 
-  getGroupResponse() {
+  getGroupsResponse() {
     return this._axios
       .get(CistJsonClient.GROUPS_PATH)
       .then(response => this.parseGroupResponse(response));
+  }
+
+  getEventsResponse(
+    type: TimetableType,
+    entityId: number | string,
+    dateLimits?: IDateLimits,
+  ) {
+    const queryParams: Record<string, any> = {
+      type_id: type,
+      timetable_id: entityId,
+    };
+    if (dateLimits) {
+      if (dateLimits.from) {
+        queryParams.time_from = dateToSeconds(dateLimits.from);
+      }
+      if (dateLimits.to) {
+        queryParams.time_to = dateToSeconds(dateLimits.to);
+      }
+    }
+    return this._axios
+      .get(CistJsonClient.EVENTS_PATH, {
+        params: queryParams,
+      })
+      .then(response => this.parseEventsResponse(response));
   }
 
   private parseAuditoriesResponse(
@@ -122,7 +163,16 @@ export class CistJsonClient {
 
   private parseGroupResponse(
     response: AxiosResponse,
-  ): ApiGroupResponse {
+  ): ApiGroupsResponse {
+    if (typeof response.data !== 'string') {
+      throw new TypeError('Unexpected non-string response');
+    }
+    return JSON.parse(response.data);
+  }
+
+  private parseEventsResponse(
+    response: AxiosResponse,
+  ): ApiEventsResponse {
     if (typeof response.data !== 'string') {
       throw new TypeError('Unexpected non-string response');
     }

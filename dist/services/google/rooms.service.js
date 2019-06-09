@@ -189,7 +189,7 @@ function cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
 }
 exports.roomIdPrefix = 'r';
 function getRoomId(room, building) {
-    return `${constants_1.idPrefix}.${exports.roomIdPrefix}.${common_1.toBase64(building.id)}.${common_1.toBase64(room.id)}`; // using composite id to ensure uniqueness
+    return constants_1.prependIdPrefix(`${exports.roomIdPrefix}.${common_1.toBase64(building.id)}.${common_1.toBase64(room.id)}`); // using composite id to ensure uniqueness
 }
 exports.getRoomId = getRoomId;
 //# sourceMappingURL=rooms.service.js.map
