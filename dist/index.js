@@ -27,10 +27,11 @@ async function main() {
     // logger.info('Buildings are deleted');
     // await groupsService.deleteAll();
     // logger.info('Groups are deleted');
-    await buildingsService.ensureBuildings(roomsResponse);
-    logger_service_1.logger.info('Buildings are loaded');
-    await roomsService.ensureRooms(roomsResponse);
-    logger_service_1.logger.info('Rooms are loaded');
+    // await buildingsService.ensureBuildings(roomsResponse);
+    // logger.info('Buildings are loaded');
+    // await roomsService.ensureRooms(roomsResponse);
+    // logger.info('Rooms are loaded');
+    await groupsService.deleteAll();
     await groupsService.ensureGroups(groupsResponse);
     logger_service_1.logger.info('Groups are loaded');
 }

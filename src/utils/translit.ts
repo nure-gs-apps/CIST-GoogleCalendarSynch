@@ -38,13 +38,24 @@ const dict: [string, string][] = [
 ];
 const cyrillicToEnglish: ReadonlyMap<string, string> = new Map(dict);
 
-export function toTranslit(value: string) {
+export function toTranslit(
+  value: string,
+  lengthLimit = Number.MAX_SAFE_INTEGER,
+) {
+  let newValueLength = 0;
   const newValue = [];
   for (const c of value) {
-    newValue.push(cyrillicToEnglish.has(c)
-      ? cyrillicToEnglish.get(c)
-      : c,
-    );
+    const transliterated = cyrillicToEnglish.has(c)
+      ? cyrillicToEnglish.get(c)!
+      : c;
+    newValue.push(transliterated);
+    newValueLength += transliterated.length;
+    if (newValueLength > lengthLimit) {
+      return newValue.join('').slice(0, lengthLimit);
+    }
+    if (newValueLength === lengthLimit) {
+      return newValue.join('');
+    }
   }
   return newValue.join('');
 }

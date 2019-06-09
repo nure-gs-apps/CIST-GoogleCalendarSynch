@@ -39,12 +39,21 @@ const dict = [
     ["'", ''], ['"', ''], ['`', ''],
 ];
 const cyrillicToEnglish = new Map(dict);
-function toTranslit(value) {
+function toTranslit(value, lengthLimit = Number.MAX_SAFE_INTEGER) {
+    let newValueLength = 0;
     const newValue = [];
     for (const c of value) {
-        newValue.push(cyrillicToEnglish.has(c)
+        const transliterated = cyrillicToEnglish.has(c)
             ? cyrillicToEnglish.get(c)
-            : c);
+            : c;
+        newValue.push(transliterated);
+        newValueLength += transliterated.length;
+        if (newValueLength > lengthLimit) {
+            return newValue.join('').slice(0, lengthLimit);
+        }
+        if (newValueLength === lengthLimit) {
+            return newValue.join('');
+        }
     }
     return newValue.join('');
 }

@@ -205,17 +205,21 @@ function cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
     }
     return hasChanges ? groupPatch : null;
 }
+exports.groupEmailPrefix = 'g';
 function getGroupEmail(cistGroup) {
+    const uniqueHash = cistGroup.id.toString();
+    const localPartTemplate = [`${exports.groupEmailPrefix}_`, `.${uniqueHash}`];
     // is OK for google email, but causes collisions
-    const groupName = translit_1.toTranslit(cistGroup.name)
+    const groupName = translit_1.toTranslit(cistGroup.name, localPartTemplate[0].length + localPartTemplate[1].length)
         .replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_')
         .toLowerCase();
-    // const uniqueHash = toBase64(cistGroup.name)
-    //   .split('')
-    //   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
-    //   .join('');
-    const uniqueHash = cistGroup.id.toString();
-    return `${groupName}.${uniqueHash}@${constants_1.domainName}`;
+    return `${localPartTemplate.join(groupName)}@${constants_1.domainName}`;
 }
 exports.getGroupEmail = getGroupEmail;
+// // There is another way of making a unique hash
+// // is Unique but too long and unneeded
+// const uniqueHash = toBase64(cistGroup.name)
+//   .split('')
+//   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
+//   .join('');
 //# sourceMappingURL=groups.service.js.map
