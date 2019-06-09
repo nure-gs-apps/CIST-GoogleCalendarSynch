@@ -4,7 +4,6 @@ import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
 import { arrayContentEqual, toBase64 } from '../../utils/common';
-import { toTranslit } from '../../utils/translit';
 import {
   ApiAuditoriesResponse,
   ApiBuilding,
@@ -78,7 +77,7 @@ export class BuildingsService {
     for (const cistBuilding of cistResponse.university.buildings) {
       const googleBuildingId = getGoogleBuildingId(cistBuilding);
       const googleBuilding = buildings.find(
-        b => b.buildingId === googleBuildingId,
+        b => isSameIdentity(cistBuilding, b, googleBuildingId),
       );
       if (googleBuilding) {
         const buildingPatch = cistBuildingToGoogleBuildingPatch(
@@ -132,7 +131,7 @@ export class BuildingsService {
       buildings,
       iterate(buildings).filter(building => (
         !cistResponse.university.buildings.some(
-          b => getGoogleBuildingId(b) === building.buildingId,
+          b => isSameIdentity(b, building),
         )
       )).map(b => b.buildingId!).toSet(),
     ));
@@ -145,7 +144,7 @@ export class BuildingsService {
       buildings,
       iterate(buildings).filter(building => (
         cistResponse.university.buildings.some(
-          b => getGoogleBuildingId(b) === building.buildingId,
+          b => isSameIdentity(b, building),
         )
       )).map(b => b.buildingId!).toSet(),
     ));
@@ -245,4 +244,12 @@ export function getGoogleBuildingId(cistBuilding: ApiBuilding) {
 const emptyFloorName = /^\s*$/;
 export function transformFloorname(floorName: string) {
   return !emptyFloorName.test(floorName) ? floorName : '_';
+}
+
+export function isSameIdentity(
+  cistBuilding: ApiBuilding,
+  googleBuilding: Schema$Building,
+  googleBuildingId = getGoogleBuildingId(cistBuilding),
+) {
+  return googleBuilding.buildingId === googleBuildingId;
 }

@@ -4,10 +4,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("./@types");
 const container_1 = require("./di/container");
 const types_1 = require("./di/types");
-const cist_json_client_service_1 = require("./services/cist-json-client.service");
 // initialize exit handlers
 require("./services/exit-handler.service");
-const assert_responses_1 = require("./utils/assert-responses");
 const container = container_1.createContainer();
 container_1.getAsyncInitializers().then(main);
 async function main() {
@@ -18,13 +16,16 @@ async function main() {
     //   return;
     // }
     const groupsResponse = await cistClient.getGroupsResponse();
-    if (!assert_responses_1.assertGroupsResponse(groupsResponse)) {
-        return;
-    }
-    const eventsResponse = await cistClient.getEventsResponse(cist_json_client_service_1.TimetableType.GROUP, 4901435);
-    if (!assert_responses_1.assertEventsResponse(eventsResponse)) {
-        return;
-    }
+    // if (!assertGroupsResponse(groupsResponse)) {
+    //   return;
+    // }
+    // const eventsResponse = await cistClient.getEventsResponse(
+    //   TimetableType.GROUP,
+    //   4901435,
+    // );
+    // if (!assertEventsResponse(eventsResponse)) {
+    //   return;
+    // }
     const buildingsService = container.get(types_1.TYPES.BuildingsService);
     const roomsService = container.get(types_1.TYPES.RoomsService);
     const groupsService = container.get(types_1.TYPES.GroupsService);
@@ -40,5 +41,6 @@ async function main() {
     // logger.info('Rooms are loaded');
     // await groupsService.ensureGroups(groupsResponse);
     // logger.info('Groups are loaded');
+    await groupsService.deleteIrrelevant(groupsResponse);
 }
 //# sourceMappingURL=index.js.map

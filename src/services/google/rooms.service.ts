@@ -4,7 +4,6 @@ import iterate from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
 import { toBase64 } from '../../utils/common';
-import { toTranslit } from '../../utils/translit';
 import {
   ApiAuditoriesResponse,
   ApiAuditory, ApiBuilding,
@@ -82,7 +81,9 @@ export class RoomsService {
       const buildingId = getGoogleBuildingId(cistBuilding);
       for (const cistRoom of cistBuilding.auditories) {
         const cistRoomId = getRoomId(cistRoom, cistBuilding);
-        const googleRoom = rooms.find(r => r.resourceId === cistRoomId);
+        const googleRoom = rooms.find(
+          r => isSameIdentity(cistRoom, cistBuilding, r, cistRoomId),
+        );
         if (googleRoom) {
           const roomPatch = cistAuditoryToGoogleRoomPatch(
             cistRoom,
@@ -139,7 +140,7 @@ export class RoomsService {
       iterate(rooms).filter(r => {
         for (const building of cistResponse.university.buildings) {
           const isRelevant = building.auditories.some(
-            a => r.resourceId === getRoomId(a, building),
+            a => isSameIdentity(a, building, r),
           );
           if (isRelevant) {
             return false;
@@ -158,7 +159,7 @@ export class RoomsService {
       iterate(rooms).filter(r => {
         for (const building of cistResponse.university.buildings) {
           const isRelevant = building.auditories.some(
-          a => r.resourceId === getRoomId(a, building),
+          a => isSameIdentity(a, building, r),
           );
           if (isRelevant) {
             return true;
@@ -268,4 +269,13 @@ function cistAuditoryToGoogleRoomPatch(
 export const roomIdPrefix = 'r';
 export function getRoomId(room: ApiAuditory, building: ApiBuilding) {
   return prependIdPrefix(`${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`); // using composite id to ensure uniqueness
+}
+
+export function isSameIdentity(
+  cistRoom: ApiAuditory,
+  building: ApiBuilding,
+  googleRoom: Schema$CalendarResource,
+  googleRoomId = getRoomId(cistRoom, building),
+) {
+  return googleRoom.resourceId === googleRoomId;
 }

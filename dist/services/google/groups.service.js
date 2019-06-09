@@ -73,13 +73,13 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
+                        const isRelevant = direction.groups.some(cistGroup => isSameIdenity(cistGroup, g));
                         if (isRelevant) {
                             return true;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
+                        const isRelevant = speciality.groups.some(cistGroup => isSameIdenity(cistGroup, g));
                         if (isRelevant) {
                             return true;
                         }
@@ -95,13 +95,13 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
+                        const isRelevant = direction.groups.some(cistGroup => isSameIdenity(cistGroup, g));
                         if (isRelevant) {
                             return false;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => g.email === getGroupEmail(cistGroup));
+                        const isRelevant = speciality.groups.some(cistGroup => isSameIdenity(cistGroup, g));
                         if (isRelevant) {
                             return false;
                         }
@@ -136,7 +136,7 @@ let GroupsService = class GroupsService {
     }
     ensureGroup(groups, cistGroup, insertedGroups) {
         const googleGroupEmail = getGroupEmail(cistGroup);
-        const googleGroup = groups.find(g => g.email === googleGroupEmail);
+        const googleGroup = groups.find(g => isSameIdenity(cistGroup, g));
         if (googleGroup) {
             insertedGroups.add(googleGroupEmail);
             const groupPatch = cistGroupToGoogleGroupPatch(cistGroup, googleGroup);
@@ -222,4 +222,10 @@ exports.getGroupEmail = getGroupEmail;
 //   .split('')
 //   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
 //   .join('');
+function isSameIdenity(cistGroup, googleGroup) {
+    const emailParts = googleGroup.email.split('@');
+    const parts = emailParts[emailParts.length - 2].split('.');
+    return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
+}
+exports.isSameIdenity = isSameIdenity;
 //# sourceMappingURL=groups.service.js.map

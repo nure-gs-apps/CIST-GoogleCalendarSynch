@@ -36,7 +36,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         const promises = [];
         for (const cistBuilding of cistResponse.university.buildings) {
             const googleBuildingId = getGoogleBuildingId(cistBuilding);
-            const googleBuilding = buildings.find(b => b.buildingId === googleBuildingId);
+            const googleBuilding = buildings.find(b => isSameIdentity(cistBuilding, b, googleBuildingId));
             if (googleBuilding) {
                 const buildingPatch = cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding);
                 if (buildingPatch) {
@@ -74,12 +74,12 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
     async deleteIrrelevant(cistResponse) {
         const buildings = await this.getAllBuildings();
         this.clearCache();
-        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (!cistResponse.university.buildings.some(b => getGoogleBuildingId(b) === building.buildingId))).map(b => b.buildingId).toSet()));
+        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (!cistResponse.university.buildings.some(b => isSameIdentity(b, building)))).map(b => b.buildingId).toSet()));
     }
     async deleteRelevant(cistResponse) {
         const buildings = await this.getAllBuildings();
         this.clearCache();
-        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (cistResponse.university.buildings.some(b => getGoogleBuildingId(b) === building.buildingId))).map(b => b.buildingId).toSet()));
+        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (cistResponse.university.buildings.some(b => isSameIdentity(b, building)))).map(b => b.buildingId).toSet()));
     }
     async getAllBuildings(cacheResults = false) {
         let buildings = [];
@@ -168,4 +168,8 @@ function transformFloorname(floorName) {
     return !emptyFloorName.test(floorName) ? floorName : '_';
 }
 exports.transformFloorname = transformFloorname;
+function isSameIdentity(cistBuilding, googleBuilding, googleBuildingId = getGoogleBuildingId(cistBuilding)) {
+    return googleBuilding.buildingId === googleBuildingId;
+}
+exports.isSameIdentity = isSameIdentity;
 //# sourceMappingURL=buildings.service.js.map

@@ -117,7 +117,7 @@ export class GroupsService {
           for (const direction of faculty.directions) {
             if (direction.groups) {
               const isRelevant = direction.groups.some(
-                cistGroup => g.email === getGroupEmail(cistGroup),
+                cistGroup => isSameIdenity(cistGroup, g),
               );
               if (isRelevant) {
                 return true;
@@ -125,7 +125,7 @@ export class GroupsService {
             }
             for (const speciality of direction.specialities) {
               const isRelevant = speciality.groups.some(
-                cistGroup => g.email === getGroupEmail(cistGroup),
+                cistGroup => isSameIdenity(cistGroup, g),
               );
               if (isRelevant) {
                 return true;
@@ -147,7 +147,7 @@ export class GroupsService {
           for (const direction of faculty.directions) {
             if (direction.groups) {
               const isRelevant = direction.groups.some(
-                cistGroup => g.email === getGroupEmail(cistGroup),
+                cistGroup => isSameIdenity(cistGroup, g),
               );
               if (isRelevant) {
                 return false;
@@ -155,7 +155,7 @@ export class GroupsService {
             }
             for (const speciality of direction.specialities) {
               const isRelevant = speciality.groups.some(
-                cistGroup => g.email === getGroupEmail(cistGroup),
+                cistGroup => isSameIdenity(cistGroup, g),
               );
               if (isRelevant) {
                 return false;
@@ -200,7 +200,7 @@ export class GroupsService {
   ) {
     const googleGroupEmail = getGroupEmail(cistGroup);
     const googleGroup = groups.find(
-      g => g.email === googleGroupEmail,
+      g => isSameIdenity(cistGroup, g),
     );
     if (googleGroup) {
       insertedGroups.add(googleGroupEmail);
@@ -295,3 +295,12 @@ export function getGroupEmail(cistGroup: ApiGroup) {
 //   .split('')
 //   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
 //   .join('');
+
+export function isSameIdenity(
+  cistGroup: ApiGroup,
+  googleGroup: Schema$Group,
+) {
+  const emailParts = googleGroup.email!.split('@');
+  const parts = emailParts[emailParts.length - 2].split('.');
+  return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
+}

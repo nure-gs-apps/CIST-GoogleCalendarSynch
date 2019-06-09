@@ -39,7 +39,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
             const buildingId = buildings_service_1.getGoogleBuildingId(cistBuilding);
             for (const cistRoom of cistBuilding.auditories) {
                 const cistRoomId = getRoomId(cistRoom, cistBuilding);
-                const googleRoom = rooms.find(r => r.resourceId === cistRoomId);
+                const googleRoom = rooms.find(r => isSameIdentity(cistRoom, cistBuilding, r, cistRoomId));
                 if (googleRoom) {
                     const roomPatch = cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
                     if (roomPatch) {
@@ -80,7 +80,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
         this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
-                const isRelevant = building.auditories.some(a => r.resourceId === getRoomId(a, building));
+                const isRelevant = building.auditories.some(a => isSameIdentity(a, building, r));
                 if (isRelevant) {
                     return false;
                 }
@@ -93,7 +93,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
         this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
-                const isRelevant = building.auditories.some(a => r.resourceId === getRoomId(a, building));
+                const isRelevant = building.auditories.some(a => isSameIdentity(a, building, r));
                 if (isRelevant) {
                     return true;
                 }
@@ -192,4 +192,8 @@ function getRoomId(room, building) {
     return constants_1.prependIdPrefix(`${exports.roomIdPrefix}.${common_1.toBase64(building.id)}.${common_1.toBase64(room.id)}`); // using composite id to ensure uniqueness
 }
 exports.getRoomId = getRoomId;
+function isSameIdentity(cistRoom, building, googleRoom, googleRoomId = getRoomId(cistRoom, building)) {
+    return googleRoom.resourceId === googleRoomId;
+}
+exports.isSameIdentity = isSameIdentity;
 //# sourceMappingURL=rooms.service.js.map
