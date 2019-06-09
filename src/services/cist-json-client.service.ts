@@ -13,6 +13,23 @@ export interface ApiAuditoriesResponse {
   };
 }
 
+export interface ApiGroupsResponse {
+  university: {
+    short_name: string;
+    full_name: string;
+    faculties: ApiFaculty[];
+  };
+}
+
+export interface ApiEventsResponse {
+  'time-zone': string;
+  events: ApiEvent[];
+  groups: ApiGroup[];
+  teachers: ApiTeacher[];
+  subjects: ApiSubject[];
+  types: ApiEventType[];
+}
+
 export interface ApiBuilding {
   id: string; // the same as short_name, but don't rely
   short_name: string;
@@ -31,18 +48,6 @@ export interface ApiAuditory {
 export interface ApiAuditoryType {
   id: string;
   short_name: string; // (presumably) direction (branch)
-}
-
-export interface ApiEventsResponse {
-  events: any[];
-}
-
-export interface ApiGroupsResponse {
-  university: {
-    short_name: string;
-    full_name: string;
-    faculties: ApiFaculty[];
-  };
 }
 
 export interface ApiFaculty {
@@ -70,6 +75,44 @@ export interface ApiSpeciality {
 export interface ApiGroup {
   id: number;
   name: string;
+}
+
+export interface ApiEvent {
+  subject_id: number;
+  start_time: number;
+  end_time: number;
+  type: number;
+  number_pair: number;
+  auditory: string;
+  teachers: number[];
+  groups: number[];
+}
+
+export interface ApiTeacher {
+  id: string;
+  short_name: string;
+  full_name: string;
+}
+
+export interface ApiSubject {
+  id: number;
+  brief: string;
+  title: string;
+  hours: ApiSubjectHour[];
+}
+
+export interface ApiSubjectHour {
+  type: number;
+  val: number;
+  teachers: number[];
+}
+
+export interface ApiEventType { // for course work: #BFC9CA
+  id: number;
+  short_name: string;
+  full_name: string;
+  id_base: number;
+  type: string;
 }
 
 export enum TimetableType {
@@ -122,7 +165,7 @@ export class CistJsonClient {
   getGroupsResponse() {
     return this._axios
       .get(CistJsonClient.GROUPS_PATH)
-      .then(response => this.parseGroupResponse(response));
+      .then(response => this.parseGroupsResponse(response));
   }
 
   getEventsResponse(
@@ -131,6 +174,7 @@ export class CistJsonClient {
     dateLimits?: IDateLimits,
   ) {
     const queryParams: Record<string, any> = {
+      api_key: this._apiKey,
       type_id: type,
       timetable_id: entityId,
     };
@@ -161,7 +205,7 @@ export class CistJsonClient {
     return JSON.parse(fixedBody);
   }
 
-  private parseGroupResponse(
+  private parseGroupsResponse(
     response: AxiosResponse,
   ): ApiGroupsResponse {
     if (typeof response.data !== 'string') {

@@ -1,12 +1,13 @@
 import {
-  ApiAuditoriesResponse, ApiGroup,
+  ApiAuditoriesResponse, ApiEventsResponse, ApiGroup,
   ApiGroupsResponse,
 } from '../services/cist-json-client.service';
 import { logger } from '../services/logger.service';
 
 export function assertRoomsResponse(body: any): body is ApiAuditoriesResponse {
   const response = body as ApiAuditoriesResponse;
-  const responseOk = Object.keys(response).length === 1
+  const responseOk = typeof response === 'object'
+    && Object.keys(response).length === 1
     && typeof response.university === 'object';
   logger.info('response OK', responseOk);
   if (!responseOk) {
@@ -15,7 +16,8 @@ export function assertRoomsResponse(body: any): body is ApiAuditoriesResponse {
   }
 
   const university = response.university;
-  const universityOk = Object.keys(university).length === 3
+  const universityOk = typeof university === 'object'
+    && Object.keys(university).length === 3
     && typeof university.short_name === 'string'
     && typeof university.full_name === 'string'
     && Array.isArray(university.buildings);
@@ -73,10 +75,11 @@ export function assertRoomsResponse(body: any): body is ApiAuditoriesResponse {
   return true;
 }
 
-export function assertGroupResponse(body: any): body is ApiGroupsResponse {
+export function assertGroupsResponse(body: any): body is ApiGroupsResponse {
   const response = body as ApiGroupsResponse;
 
-  const responseOk = Object.keys(response).length === 1
+  const responseOk = typeof response === 'object'
+    && Object.keys(response).length === 1
     && typeof response.university === 'object';
   logger.info('response OK', responseOk);
   if (!responseOk) {
@@ -85,7 +88,8 @@ export function assertGroupResponse(body: any): body is ApiGroupsResponse {
   }
 
   const university = response.university;
-  const universityOk = Object.keys(university).length === 3
+  const universityOk = typeof university === 'object'
+    && Object.keys(university).length === 3
     && typeof university.short_name === 'string'
     && typeof university.full_name === 'string'
     && Array.isArray(university.faculties);
@@ -157,6 +161,112 @@ export function assertGroupResponse(body: any): body is ApiGroupsResponse {
   return true;
 }
 
+export function assertEventsResponse(body: any): body is ApiEventsResponse {
+  const response = body as ApiEventsResponse;
+
+  const responseOk = typeof response === 'object'
+    && Object.keys(response).length === 6
+    && typeof response['time-zone'] === 'string'
+    && Array.isArray(response.events)
+    && Array.isArray(response.groups)
+    && Array.isArray(response.teachers)
+    && Array.isArray(response.subjects)
+    && Array.isArray(response.types);
+  logger.info('response ok:', responseOk);
+  if (!responseOk) {
+    logger.info('response keys:', Object.keys(response));
+    return false;
+  }
+
+  for (const event of response.events) {
+    const eventOk = typeof event === 'object'
+      && Object.keys(event).length === 8
+      && typeof event.subject_id === 'number'
+      && typeof event.start_time === 'number'
+      && typeof event.end_time === 'number'
+      && typeof event.type === 'number'
+      && typeof event.number_pair === 'number'
+      && typeof event.auditory === 'string'
+      && assertTeachers(event.teachers)
+      && Array.isArray(event.groups);
+    logger.info(`event ${JSON.stringify(event)} is ok: ${eventOk}`);
+    if (!eventOk) {
+      return false;
+    }
+
+    for (const group of event.groups) {
+      const groupOk = typeof group === 'number';
+      logger.info(`event group ${group} is ok: ${groupOk}`);
+      if (!groupOk) {
+        return false;
+      }
+    }
+  }
+
+  for (const group of response.groups) {
+    if (!assertGroup(group)) {
+      return false;
+    }
+  }
+
+  for (const teacher of response.teachers) {
+    const teacherOk = typeof teacher === 'object'
+      && Object.keys(teacher).length === 3
+      && typeof teacher.id === 'string'
+      && typeof teacher.short_name === 'string'
+      && typeof teacher.full_name === 'string';
+    logger.info(`teacher ${teacher.short_name} is ok: ${teacherOk}`);
+    if (!teacherOk) {
+      logger.info('teacher keys:', Object.keys(teacher));
+      return false;
+    }
+  }
+
+  for (const subject of response.subjects) {
+    const subjectOk = typeof subject === 'object'
+      && Object.keys(subject).length === 4
+      && typeof subject.id === 'number'
+      && typeof subject.brief === 'number'
+      && typeof subject.title === 'number'
+      && Array.isArray(subject.hours);
+    logger.info(`subject ${subject.brief} is ok: ${subjectOk}`);
+    if (!subjectOk) {
+      logger.info('subject keys:', Object.keys(subject));
+      return false;
+    }
+
+    for (const hour of subject.hours) {
+      const hourOk = typeof hour === 'object'
+        && Object.keys(hour).length === 3
+        && typeof hour.type === 'number'
+        && typeof hour.val === 'number'
+        && assertTeachers(hour.teachers);
+      logger.info(`hour ${hour.type} is ok: ${hourOk}`);
+      if (!hourOk) {
+        logger.info('hour keys:', Object.keys(hour));
+        return false;
+      }
+    }
+  }
+
+  for (const type of response.types) {
+    const typeOk = typeof type === 'object'
+      && Object.keys(type).length === 5
+      && typeof type.id === 'number'
+      && typeof type.short_name === 'string'
+      && typeof type.full_name === 'string'
+      && typeof type.id_base === 'number'
+      && typeof type.type === 'string';
+    logger.info(`type ${type.short_name} is ok: ${typeOk}`);
+    if (!typeOk) {
+      logger.info('type keys:', Object.keys(type));
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function assertGroup(obj: any): obj is ApiGroup {
   const group = obj as ApiGroup;
   const groupOk = typeof group === 'object'
@@ -169,4 +279,14 @@ function assertGroup(obj: any): obj is ApiGroup {
     return false;
   }
   return true;
+}
+
+function assertTeachers(arr: any): arr is number[] {
+  const teachers = arr as number[];
+  const teachersOk = Array.isArray(teachers)
+    && teachers.every(t => typeof t === 'number');
+  if (!teachersOk) {
+    logger.info('teachers:', teachers);
+  }
+  return teachersOk;
 }

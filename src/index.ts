@@ -1,18 +1,19 @@
 // IMPORTANT! INSTALLS MONKEY PATCHES
 import './@types';
+import { createContainer, getAsyncInitializers } from './di/container';
 import { TYPES } from './di/types';
+import {
+  CistJsonClient,
+  TimetableType,
+} from './services/cist-json-client.service';
 // initialize exit handlers
 import './services/exit-handler.service';
-import { createContainer, getAsyncInitializers } from './di/container';
-import { CistJsonClient } from './services/cist-json-client.service';
 import { BuildingsService } from './services/google/buildings.service';
-import { GoogleDirectoryAuth } from './services/google/google-directory-auth';
 import { GroupsService } from './services/google/groups.service';
 import { RoomsService } from './services/google/rooms.service';
-import { logger } from './services/logger.service';
 import {
-  assertGroupResponse,
-  assertRoomsResponse,
+  assertEventsResponse,
+  assertGroupsResponse,
 } from './utils/assert-responses';
 
 const container = createContainer();
@@ -27,7 +28,17 @@ async function main() {
   //   return;
   // }
   const groupsResponse = await cistClient.getGroupsResponse();
-  // assertGroupResponse(groupsResponse);
+  if (!assertGroupsResponse(groupsResponse)) {
+    return;
+  }
+
+  const eventsResponse = await cistClient.getEventsResponse(
+    TimetableType.GROUP,
+    4901435,
+  );
+  if (!assertEventsResponse(eventsResponse)) {
+    return;
+  }
 
   const buildingsService = container.get<BuildingsService>(
     TYPES.BuildingsService,
@@ -42,10 +53,10 @@ async function main() {
   // await groupsService.deleteAll();
   // logger.info('Groups are deleted');
 
-  await buildingsService.ensureBuildings(roomsResponse);
-  logger.info('Buildings are loaded');
-  await roomsService.ensureRooms(roomsResponse);
-  logger.info('Rooms are loaded');
-  await groupsService.ensureGroups(groupsResponse);
-  logger.info('Groups are loaded');
+  // await buildingsService.ensureBuildings(roomsResponse);
+  // logger.info('Buildings are loaded');
+  // await roomsService.ensureRooms(roomsResponse);
+  // logger.info('Rooms are loaded');
+  // await groupsService.ensureGroups(groupsResponse);
+  // logger.info('Groups are loaded');
 }

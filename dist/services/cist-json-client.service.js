@@ -39,10 +39,11 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
     getGroupsResponse() {
         return this._axios
             .get(CistJsonClient_1.GROUPS_PATH)
-            .then(response => this.parseGroupResponse(response));
+            .then(response => this.parseGroupsResponse(response));
     }
     getEventsResponse(type, entityId, dateLimits) {
         const queryParams = {
+            api_key: this._apiKey,
             type_id: type,
             timetable_id: entityId,
         };
@@ -58,7 +59,7 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
             .get(CistJsonClient_1.EVENTS_PATH, {
             params: queryParams,
         })
-            .then(response => this.parseGroupResponse(response));
+            .then(response => this.parseEventsResponse(response));
     }
     parseAuditoriesResponse(response) {
         const body = response.data;
@@ -69,7 +70,7 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
         const fixedBody = body.replace(/\[\s*}\s*]/g, '[]');
         return JSON.parse(fixedBody);
     }
-    parseGroupResponse(response) {
+    parseGroupsResponse(response) {
         if (typeof response.data !== 'string') {
             throw new TypeError('Unexpected non-string response');
         }

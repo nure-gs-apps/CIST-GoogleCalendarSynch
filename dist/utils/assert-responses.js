@@ -3,7 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const logger_service_1 = require("../services/logger.service");
 function assertRoomsResponse(body) {
     const response = body;
-    const responseOk = Object.keys(response).length === 1
+    const responseOk = typeof response === 'object'
+        && Object.keys(response).length === 1
         && typeof response.university === 'object';
     logger_service_1.logger.info('response OK', responseOk);
     if (!responseOk) {
@@ -11,7 +12,8 @@ function assertRoomsResponse(body) {
         return false;
     }
     const university = response.university;
-    const universityOk = Object.keys(university).length === 3
+    const universityOk = typeof university === 'object'
+        && Object.keys(university).length === 3
         && typeof university.short_name === 'string'
         && typeof university.full_name === 'string'
         && Array.isArray(university.buildings);
@@ -66,9 +68,10 @@ function assertRoomsResponse(body) {
     return true;
 }
 exports.assertRoomsResponse = assertRoomsResponse;
-function assertGroupResponse(body) {
+function assertGroupsResponse(body) {
     const response = body;
-    const responseOk = Object.keys(response).length === 1
+    const responseOk = typeof response === 'object'
+        && Object.keys(response).length === 1
         && typeof response.university === 'object';
     logger_service_1.logger.info('response OK', responseOk);
     if (!responseOk) {
@@ -76,7 +79,8 @@ function assertGroupResponse(body) {
         return false;
     }
     const university = response.university;
-    const universityOk = Object.keys(university).length === 3
+    const universityOk = typeof university === 'object'
+        && Object.keys(university).length === 3
         && typeof university.short_name === 'string'
         && typeof university.full_name === 'string'
         && Array.isArray(university.faculties);
@@ -141,7 +145,104 @@ function assertGroupResponse(body) {
     }
     return true;
 }
-exports.assertGroupResponse = assertGroupResponse;
+exports.assertGroupsResponse = assertGroupsResponse;
+function assertEventsResponse(body) {
+    const response = body;
+    const responseOk = typeof response === 'object'
+        && Object.keys(response).length === 6
+        && typeof response['time-zone'] === 'string'
+        && Array.isArray(response.events)
+        && Array.isArray(response.groups)
+        && Array.isArray(response.teachers)
+        && Array.isArray(response.subjects)
+        && Array.isArray(response.types);
+    logger_service_1.logger.info('response ok:', responseOk);
+    if (!responseOk) {
+        logger_service_1.logger.info('response keys:', Object.keys(response));
+        return false;
+    }
+    for (const event of response.events) {
+        const eventOk = typeof event === 'object'
+            && Object.keys(event).length === 8
+            && typeof event.subject_id === 'number'
+            && typeof event.start_time === 'number'
+            && typeof event.end_time === 'number'
+            && typeof event.type === 'number'
+            && typeof event.number_pair === 'number'
+            && typeof event.auditory === 'string'
+            && assertTeachers(event.teachers)
+            && Array.isArray(event.groups);
+        logger_service_1.logger.info(`event ${JSON.stringify(event)} is ok: ${eventOk}`);
+        if (!eventOk) {
+            return false;
+        }
+        for (const group of event.groups) {
+            const groupOk = typeof group === 'number';
+            logger_service_1.logger.info(`event group ${group} is ok: ${groupOk}`);
+            if (!groupOk) {
+                return false;
+            }
+        }
+    }
+    for (const group of response.groups) {
+        if (!assertGroup(group)) {
+            return false;
+        }
+    }
+    for (const teacher of response.teachers) {
+        const teacherOk = typeof teacher === 'object'
+            && Object.keys(teacher).length === 3
+            && typeof teacher.id === 'string'
+            && typeof teacher.short_name === 'string'
+            && typeof teacher.full_name === 'string';
+        logger_service_1.logger.info(`teacher ${teacher.short_name} is ok: ${teacherOk}`);
+        if (!teacherOk) {
+            logger_service_1.logger.info('teacher keys:', Object.keys(teacher));
+            return false;
+        }
+    }
+    for (const subject of response.subjects) {
+        const subjectOk = typeof subject === 'object'
+            && Object.keys(subject).length === 4
+            && typeof subject.id === 'number'
+            && typeof subject.brief === 'number'
+            && typeof subject.title === 'number'
+            && Array.isArray(subject.hours);
+        logger_service_1.logger.info(`subject ${subject.brief} is ok: ${subjectOk}`);
+        if (!subjectOk) {
+            logger_service_1.logger.info('subject keys:', Object.keys(subject));
+            return false;
+        }
+        for (const hour of subject.hours) {
+            const hourOk = typeof hour === 'object'
+                && Object.keys(hour).length === 3
+                && typeof hour.type === 'number'
+                && typeof hour.val === 'number'
+                && assertTeachers(hour.teachers);
+            logger_service_1.logger.info(`hour ${hour.type} is ok: ${hourOk}`);
+            if (!hourOk) {
+                logger_service_1.logger.info('hour keys:', Object.keys(hour));
+                return false;
+            }
+        }
+    }
+    for (const type of response.types) {
+        const typeOk = typeof type === 'object'
+            && Object.keys(type).length === 5
+            && typeof type.id === 'number'
+            && typeof type.short_name === 'string'
+            && typeof type.full_name === 'string'
+            && typeof type.id_base === 'number'
+            && typeof type.type === 'string';
+        logger_service_1.logger.info(`type ${type.short_name} is ok: ${typeOk}`);
+        if (!typeOk) {
+            logger_service_1.logger.info('type keys:', Object.keys(type));
+            return false;
+        }
+    }
+    return true;
+}
+exports.assertEventsResponse = assertEventsResponse;
 function assertGroup(obj) {
     const group = obj;
     const groupOk = typeof group === 'object'
@@ -154,5 +255,14 @@ function assertGroup(obj) {
         return false;
     }
     return true;
+}
+function assertTeachers(arr) {
+    const teachers = arr;
+    const teachersOk = Array.isArray(teachers)
+        && teachers.every(t => typeof t === 'number');
+    if (!teachersOk) {
+        logger_service_1.logger.info('teachers:', teachers);
+    }
+    return teachersOk;
 }
 //# sourceMappingURL=assert-responses.js.map
