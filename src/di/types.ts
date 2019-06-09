@@ -17,6 +17,7 @@ export const TYPES = {
   GoogleDirectoryAuth: Symbol.for('GoogleDirectoryAuth'),
   GoogleCalendarAuth: Symbol.for('GoogleCalendarAuth'),
   GoogleDirectoryQuotaLimiter: Symbol.for('GoogleDirectoryQuotaLimiter'),
+  GoogleCalendarQuotaLimiter: Symbol.for('GoogleCalendarQuotaLimiter'),
   GoogleApiDirectory: Symbol.for('GoogleApiDirectory'),
   GoogleApiCalendar: Symbol.for('GoogleApiCalendar'),
 

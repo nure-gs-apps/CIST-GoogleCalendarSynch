@@ -50,6 +50,7 @@ export interface IConfig {
     };
     quotas: {
       directoryApi: IApiQuota;
+      calendarApi: IApiQuota;
     };
   };
 }

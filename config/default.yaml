@@ -13,4 +13,9 @@ google:
       daily: 150_000 # daily limit
       period: 100_000 # ms
       queries: 460 # per period. Fallback to 425 if problems. Actual is 1500, but decreased for reliability
-      burst: false # true: try load all 1500 queries at once and throttle; false: make request with equal interval all the time. False is used because it works more reliable for now
+      burst: false # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time. False is used because it works more reliable for now
+    calendarApi:
+      daily: 1_000_000 # daily limit
+      period: 100_000 # ms
+      queries: 70_000 # per period
+      burst: true # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time.
