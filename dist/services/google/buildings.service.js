@@ -158,6 +158,10 @@ function getFloornamesFromBuilding(building) {
         .toSet()
         .values());
 }
+function isSameIdentity(cistBuilding, googleBuilding, googleBuildingId = getGoogleBuildingId(cistBuilding)) {
+    return googleBuilding.buildingId === googleBuildingId;
+}
+exports.isSameIdentity = isSameIdentity;
 exports.buildingIdPrefix = 'b';
 function getGoogleBuildingId(cistBuilding) {
     return constants_1.prependIdPrefix(`${exports.buildingIdPrefix}.${common_1.toBase64(cistBuilding.id)}`);
@@ -168,8 +172,4 @@ function transformFloorname(floorName) {
     return !emptyFloorName.test(floorName) ? floorName : '_';
 }
 exports.transformFloorname = transformFloorname;
-function isSameIdentity(cistBuilding, googleBuilding, googleBuildingId = getGoogleBuildingId(cistBuilding)) {
-    return googleBuilding.buildingId === googleBuildingId;
-}
-exports.isSameIdentity = isSameIdentity;
 //# sourceMappingURL=buildings.service.js.map

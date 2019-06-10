@@ -64,7 +64,6 @@ export interface IApiQuota {
 }
 
 export interface ICalendarConfig {
-  id: Nullable<string>;
-  summary: string;
+  prefix: Nullable<string>;
   timeZone: string;
 }

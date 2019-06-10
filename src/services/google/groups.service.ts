@@ -1,4 +1,4 @@
-import { admin_directory_v1 } from 'googleapis';
+import { admin_directory_v1, calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
@@ -14,6 +14,8 @@ import { GoogleApiDirectory } from './google-api-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 import Resource$Groups = admin_directory_v1.Resource$Groups;
 import { GaxiosPromise } from 'gaxios';
+import Schema$Calendar = calendar_v3.Schema$Calendar;
+import Schema$CalendarListEntry = calendar_v3.Schema$CalendarListEntry;
 
 @injectable()
 export class GroupsService {
@@ -67,16 +69,27 @@ export class GroupsService {
     this._cacheLastUpdate = null;
   }
 
-  async ensureGroups(cistResponse: ApiGroupsResponse) {
+  async ensureGroups(
+    cistResponse: ApiGroupsResponse,
+    preserveEmailChanges = false,
+  ) {
     const groups = await this.getAllGroups();
 
+    const newToOldNames = preserveEmailChanges
+      ? new Map<string, string>()
+      : null;
     const promises = [] as GaxiosPromise<any>[];
     const insertedGroups = new Set<string>();
     for (const faculty of cistResponse.university.faculties) {
       for (const direction of faculty.directions) {
         if (direction.groups) {
           for (const cistGroup of direction.groups) {
-            const request = this.ensureGroup(groups, cistGroup, insertedGroups);
+            const request = this.ensureGroup(
+              groups,
+              cistGroup,
+              insertedGroups,
+              newToOldNames,
+            );
             if (request) {
               promises.push(request);
             }
@@ -84,7 +97,12 @@ export class GroupsService {
         }
         for (const speciality of direction.specialities) {
           for (const cistGroup of speciality.groups) {
-            const request = this.ensureGroup(groups, cistGroup, insertedGroups);
+            const request = this.ensureGroup(
+              groups,
+              cistGroup,
+              insertedGroups,
+              newToOldNames,
+            );
             if (request) {
               promises.push(request);
             }
@@ -93,7 +111,8 @@ export class GroupsService {
       }
     }
     this.clearCache();
-    return Promise.all(promises);
+    await Promise.all(promises);
+    return newToOldNames;
   }
 
   async deleteAll() {
@@ -197,6 +216,7 @@ export class GroupsService {
     groups: ReadonlyArray<Schema$Group>,
     cistGroup: ApiGroup,
     insertedGroups: Set<string>,
+    newToOldNames: Nullable<Map<string, string>>,
   ) {
     const googleGroupEmail = getGroupEmail(cistGroup);
     const googleGroup = groups.find(
@@ -209,6 +229,9 @@ export class GroupsService {
         googleGroup,
       );
       if (groupPatch) {
+        if (newToOldNames && groupPatch.name) {
+          newToOldNames.set(groupPatch.name, googleGroup.name!);
+        }
         logger.debug(`Patching group ${cistGroup.name}`);
         return this._patch({
           customer,
@@ -276,6 +299,15 @@ function cistGroupToGoogleGroupPatch(
   return hasChanges ? groupPatch : null;
 }
 
+export function isSameIdenity(
+  cistGroup: ApiGroup,
+  googleGroup: Schema$Group,
+) {
+  const emailParts = googleGroup.email!.split('@');
+  const parts = emailParts[emailParts.length - 2].split('.');
+  return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
+}
+
 export const groupEmailPrefix = 'g';
 export function getGroupEmail(cistGroup: ApiGroup) {
   const uniqueHash = cistGroup.id.toString();
@@ -295,12 +327,3 @@ export function getGroupEmail(cistGroup: ApiGroup) {
 //   .split('')
 //   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
 //   .join('');
-
-export function isSameIdenity(
-  cistGroup: ApiGroup,
-  googleGroup: Schema$Group,
-) {
-  const emailParts = googleGroup.email!.split('@');
-  const parts = emailParts[emailParts.length - 2].split('.');
-  return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
-}

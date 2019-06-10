@@ -236,6 +236,14 @@ function getFloornamesFromBuilding(building: ApiBuilding) {
     .values());
 }
 
+export function isSameIdentity(
+  cistBuilding: ApiBuilding,
+  googleBuilding: Schema$Building,
+  googleBuildingId = getGoogleBuildingId(cistBuilding),
+) {
+  return googleBuilding.buildingId === googleBuildingId;
+}
+
 export const buildingIdPrefix = 'b';
 export function getGoogleBuildingId(cistBuilding: ApiBuilding) {
   return prependIdPrefix(`${buildingIdPrefix}.${toBase64(cistBuilding.id)}`);
@@ -244,12 +252,4 @@ export function getGoogleBuildingId(cistBuilding: ApiBuilding) {
 const emptyFloorName = /^\s*$/;
 export function transformFloorname(floorName: string) {
   return !emptyFloorName.test(floorName) ? floorName : '_';
-}
-
-export function isSameIdentity(
-  cistBuilding: ApiBuilding,
-  googleBuilding: Schema$Building,
-  googleBuildingId = getGoogleBuildingId(cistBuilding),
-) {
-  return googleBuilding.buildingId === googleBuildingId;
 }

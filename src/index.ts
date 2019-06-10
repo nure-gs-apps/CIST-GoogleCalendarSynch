@@ -22,15 +22,15 @@ const container = createContainer();
 getAsyncInitializers().then(main);
 
 async function main() {
-  // const cistClient = container
-  //   .get<CistJsonClient>(TYPES.CistJsonClient);
+  const cistClient = container
+    .get<CistJsonClient>(TYPES.CistJsonClient);
 
-  // const roomsResponse = await cistClient.getRoomsResponse();
+  const roomsResponse = await cistClient.getRoomsResponse();
   // if (!assertRoomsResponse(roomsResponse)) {
   //   return;
   // }
 
-  // const groupsResponse = await cistClient.getGroupsResponse();
+  const groupsResponse = await cistClient.getGroupsResponse();
   // if (!assertGroupsResponse(groupsResponse)) {
   //   return;
   // }
@@ -43,11 +43,11 @@ async function main() {
   //   return;
   // }
 
-  // const buildingsService = container.get<BuildingsService>(
-  //   TYPES.BuildingsService,
-  // );
-  // const roomsService = container.get<RoomsService>(TYPES.RoomsService);
-  // const groupsService = container.get<GroupsService>(TYPES.GroupsService);
+  const buildingsService = container.get<BuildingsService>(
+    TYPES.BuildingsService,
+  );
+  const roomsService = container.get<RoomsService>(TYPES.RoomsService);
+  const groupsService = container.get<GroupsService>(TYPES.GroupsService);
 
   // await roomsService.deleteAll();
   // logger.info('Rooms are deleted');
@@ -56,14 +56,22 @@ async function main() {
   // await groupsService.deleteAll();
   // logger.info('Groups are deleted');
 
-  // await buildingsService.ensureBuildings(roomsResponse);
-  // logger.info('Buildings are loaded');
-  // await roomsService.ensureRooms(roomsResponse);
-  // logger.info('Rooms are loaded');
-  // await groupsService.ensureGroups(groupsResponse);
-  // logger.info('Groups are loaded');
+  await buildingsService.ensureBuildings(roomsResponse);
+  logger.info('Buildings are loaded');
+  const roomNameChanges = await roomsService.ensureRooms(roomsResponse, true);
+  logger.info('Rooms are loaded');
+  const groupNameChanges = await groupsService.ensureGroups(
+    groupsResponse,
+    true,
+  );
+  logger.info('Groups are loaded');
 
-  const calendarService = container.get<CalendarService>(TYPES.CalendarService);
-  const calendar = await calendarService.ensureCalendar();
-  logger.info(calendar);
+  // const calendarService = container.get<CalendarService>(TYPES.CalendarService);
+  // const calendars = await calendarService.ensureCalendars(
+  //   groupsResponse,
+  //   roomsResponse,
+  //   groupNameChanges,
+  //   roomNameChanges,
+  // );
+  logger.info('Calendars are created');
 }

@@ -32,9 +32,10 @@ let RoomsService = RoomsService_1 = class RoomsService {
             ? new Date(this._cacheLastUpdate.getTime())
             : null;
     }
-    async ensureRooms(cistResponse) {
+    async ensureRooms(cistResponse, preserveNameChanges = false) {
         const rooms = await this.getAllRooms();
         const promises = [];
+        const newToOldNames = new Map();
         for (const cistBuilding of cistResponse.university.buildings) {
             const buildingId = buildings_service_1.getGoogleBuildingId(cistBuilding);
             for (const cistRoom of cistBuilding.auditories) {
@@ -43,6 +44,9 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 if (googleRoom) {
                     const roomPatch = cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
                     if (roomPatch) {
+                        if (newToOldNames && roomPatch.resourceName) {
+                            newToOldNames.set(roomPatch.resourceName, googleRoom.resourceName);
+                        }
                         logger_service_1.logger.debug(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
                         promises.push(this._patch({
                             customer: constants_1.customer,
@@ -61,7 +65,8 @@ let RoomsService = RoomsService_1 = class RoomsService {
             }
         }
         this.clearCache();
-        return Promise.all(promises);
+        await Promise.all(promises);
+        return newToOldNames;
     }
     async deleteAll() {
         const rooms = await this.getAllRooms();
@@ -187,13 +192,13 @@ function cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
     }
     return hasChanges ? roomPatch : null;
 }
+function isSameIdentity(cistRoom, building, googleRoom, googleRoomId = getRoomId(cistRoom, building)) {
+    return googleRoom.resourceId === googleRoomId;
+}
+exports.isSameIdentity = isSameIdentity;
 exports.roomIdPrefix = 'r';
 function getRoomId(room, building) {
     return constants_1.prependIdPrefix(`${exports.roomIdPrefix}.${common_1.toBase64(building.id)}.${common_1.toBase64(room.id)}`); // using composite id to ensure uniqueness
 }
 exports.getRoomId = getRoomId;
-function isSameIdentity(cistRoom, building, googleRoom, googleRoomId = getRoomId(cistRoom, building)) {
-    return googleRoom.resourceId === googleRoomId;
-}
-exports.isSameIdentity = isSameIdentity;
 //# sourceMappingURL=rooms.service.js.map

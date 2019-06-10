@@ -73,10 +73,12 @@ export class RoomsService {
 
   async ensureRooms(
     cistResponse: ApiAuditoriesResponse,
+    preserveNameChanges = false,
   ) {
     const rooms = await this.getAllRooms();
 
     const promises = [] as GaxiosPromise<any>[];
+    const newToOldNames = new Map<string, string>();
     for (const cistBuilding of cistResponse.university.buildings) {
       const buildingId = getGoogleBuildingId(cistBuilding);
       for (const cistRoom of cistBuilding.auditories) {
@@ -91,6 +93,12 @@ export class RoomsService {
             buildingId,
           );
           if (roomPatch) {
+            if (newToOldNames && roomPatch.resourceName) {
+              newToOldNames.set(
+                roomPatch.resourceName,
+                googleRoom.resourceName!,
+              );
+            }
             logger.debug(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
             promises.push(
               this._patch({
@@ -116,7 +124,8 @@ export class RoomsService {
       }
     }
     this.clearCache();
-    return Promise.all(promises as any);
+    await Promise.all(promises as any);
+    return newToOldNames;
   }
 
   async deleteAll() {
@@ -266,11 +275,6 @@ function cistAuditoryToGoogleRoomPatch(
   return hasChanges ? roomPatch : null;
 }
 
-export const roomIdPrefix = 'r';
-export function getRoomId(room: ApiAuditory, building: ApiBuilding) {
-  return prependIdPrefix(`${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`); // using composite id to ensure uniqueness
-}
-
 export function isSameIdentity(
   cistRoom: ApiAuditory,
   building: ApiBuilding,
@@ -278,4 +282,9 @@ export function isSameIdentity(
   googleRoomId = getRoomId(cistRoom, building),
 ) {
   return googleRoom.resourceId === googleRoomId;
+}
+
+export const roomIdPrefix = 'r';
+export function getRoomId(room: ApiAuditory, building: ApiBuilding) {
+  return prependIdPrefix(`${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`); // using composite id to ensure uniqueness
 }

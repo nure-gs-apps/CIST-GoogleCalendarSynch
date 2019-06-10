@@ -29,15 +29,18 @@ let GroupsService = class GroupsService {
             ? new Date(this._cacheLastUpdate.getTime())
             : null;
     }
-    async ensureGroups(cistResponse) {
+    async ensureGroups(cistResponse, preserveEmailChanges = false) {
         const groups = await this.getAllGroups();
+        const newToOldNames = preserveEmailChanges
+            ? new Map()
+            : null;
         const promises = [];
         const insertedGroups = new Set();
         for (const faculty of cistResponse.university.faculties) {
             for (const direction of faculty.directions) {
                 if (direction.groups) {
                     for (const cistGroup of direction.groups) {
-                        const request = this.ensureGroup(groups, cistGroup, insertedGroups);
+                        const request = this.ensureGroup(groups, cistGroup, insertedGroups, newToOldNames);
                         if (request) {
                             promises.push(request);
                         }
@@ -45,7 +48,7 @@ let GroupsService = class GroupsService {
                 }
                 for (const speciality of direction.specialities) {
                     for (const cistGroup of speciality.groups) {
-                        const request = this.ensureGroup(groups, cistGroup, insertedGroups);
+                        const request = this.ensureGroup(groups, cistGroup, insertedGroups, newToOldNames);
                         if (request) {
                             promises.push(request);
                         }
@@ -54,7 +57,8 @@ let GroupsService = class GroupsService {
             }
         }
         this.clearCache();
-        return Promise.all(promises);
+        await Promise.all(promises);
+        return newToOldNames;
     }
     async deleteAll() {
         const groups = await this.getAllGroups();
@@ -134,13 +138,16 @@ let GroupsService = class GroupsService {
         this._cachedGroups = null;
         this._cacheLastUpdate = null;
     }
-    ensureGroup(groups, cistGroup, insertedGroups) {
+    ensureGroup(groups, cistGroup, insertedGroups, newToOldNames) {
         const googleGroupEmail = getGroupEmail(cistGroup);
         const googleGroup = groups.find(g => isSameIdenity(cistGroup, g));
         if (googleGroup) {
             insertedGroups.add(googleGroupEmail);
             const groupPatch = cistGroupToGoogleGroupPatch(cistGroup, googleGroup);
             if (groupPatch) {
+                if (newToOldNames && groupPatch.name) {
+                    newToOldNames.set(groupPatch.name, googleGroup.name);
+                }
                 logger_service_1.logger.debug(`Patching group ${cistGroup.name}`);
                 return this._patch({
                     customer: constants_1.customer,
@@ -205,6 +212,12 @@ function cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
     }
     return hasChanges ? groupPatch : null;
 }
+function isSameIdenity(cistGroup, googleGroup) {
+    const emailParts = googleGroup.email.split('@');
+    const parts = emailParts[emailParts.length - 2].split('.');
+    return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
+}
+exports.isSameIdenity = isSameIdenity;
 exports.groupEmailPrefix = 'g';
 function getGroupEmail(cistGroup) {
     const uniqueHash = cistGroup.id.toString();
@@ -222,10 +235,4 @@ exports.getGroupEmail = getGroupEmail;
 //   .split('')
 //   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
 //   .join('');
-function isSameIdenity(cistGroup, googleGroup) {
-    const emailParts = googleGroup.email.split('@');
-    const parts = emailParts[emailParts.length - 2].split('.');
-    return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
-}
-exports.isSameIdenity = isSameIdenity;
 //# sourceMappingURL=groups.service.js.map
