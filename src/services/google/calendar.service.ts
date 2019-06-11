@@ -68,7 +68,7 @@ export class CalendarService {
     ) as any;
   }
 
-  async ensureCalendars(
+  async getEnsuredCalendars(
     groupsResponse: ApiGroupsResponse,
     roomsResponse: ApiAuditoriesResponse,
     newToOldGroupNames: Nullable<ReadonlyMap<string, string>>,
@@ -86,7 +86,7 @@ export class CalendarService {
       for (const direction of faculty.directions) {
         if (direction.groups) {
           for (const group of direction.groups) {
-            promises.push(this.ensureGroupCalendar(
+            promises.push(this.getEnsuredGroupCalendar(
               calendars,
               group,
               c.groupCalendars,
@@ -96,7 +96,7 @@ export class CalendarService {
         }
         for (const speciality of direction.specialities) {
           for (const group of speciality.groups) {
-            promises.push(this.ensureGroupCalendar(
+            promises.push(this.getEnsuredGroupCalendar(
               calendars,
               group,
               c.groupCalendars,
@@ -110,7 +110,7 @@ export class CalendarService {
     // Rooms
     for (const building of roomsResponse.university.buildings) {
       for (const room of building.auditories) {
-        promises.push(this.ensureRoomCalendar(
+        promises.push(this.getEnsuredRoomCalendar(
           calendars,
           room,
           c.roomCalendars,
@@ -168,7 +168,7 @@ export class CalendarService {
     return calendars;
   }
 
-  private async ensureGroupCalendar(
+  private async getEnsuredGroupCalendar(
     calendars: ReadonlyArray<Schema$Calendar | Schema$CalendarListEntry>,
     cistGroup: ApiGroup,
     calendarMap: Map<string, Schema$Calendar | Schema$CalendarListEntry>,
@@ -179,6 +179,9 @@ export class CalendarService {
     if (newToOldGroupNames && newToOldGroupNames.has(groupName)) {
       groupName = newToOldGroupNames.get(groupName)!;
       changeName = true;
+    }
+    if (calendarMap.has(groupName)) {
+      return calendarMap.get(groupName)!;
     }
     const groupNameWithPrefix = prependPrefix(groupName);
     let calendar = calendars.find(
@@ -195,12 +198,15 @@ export class CalendarService {
       calendarMap.set(cistGroup.name, calendar);
       return calendar;
     }
-    calendar = await this.createCalendar(cistGroup.name, cistGroup.name);
+    calendar = await this.createCalendar(
+      prependPrefix(cistGroup.name),
+      cistGroup.name,
+    );
     calendarMap.set(cistGroup.name, calendar);
     return calendar;
   }
 
-  private async ensureRoomCalendar(
+  private async getEnsuredRoomCalendar(
     calendars: ReadonlyArray<Schema$Calendar | Schema$CalendarListEntry>,
     cistRoom: ApiAuditory,
     calendarMap: Map<string, Schema$Calendar | Schema$CalendarListEntry>,
@@ -228,7 +234,7 @@ export class CalendarService {
       return calendar;
     }
     calendar = await this.createCalendar(
-      cistRoom.short_name,
+      prependPrefix(cistRoom.short_name),
       cistRoom.short_name,
     );
     calendarMap.set(cistRoom.short_name, calendar);
@@ -289,10 +295,10 @@ export function getGroupCalendarPatch(groupName: string) {
   } as Schema$Calendar;
 }
 
-export function getRoomCalendarPatch(groupName: string) {
+export function getRoomCalendarPatch(roomName: string) {
   return {
-    summary: prependPrefix(groupName),
-    description: groupName,
+    summary: prependPrefix(roomName),
+    description: roomName,
   } as Schema$Calendar;
 }
 

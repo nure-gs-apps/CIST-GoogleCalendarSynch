@@ -28,12 +28,19 @@ class QuotaLimiterService {
                 reservoirIncreaseMaximum: quota.queries,
                 reservoirIncreaseInterval: increaseInterval,
                 reservoirIncreaseAmount: increaseAmount,
+                minTime: typeof quota.perSecond === 'number'
+                    ? 1000 / quota.perSecond
+                    : null,
             });
         }
         else {
+            const minTime = typeof quota.perSecond === 'number'
+                ? 1000 / quota.perSecond
+                : null;
             this.limiter = new bottleneck_1.default({
-                // maxConcurrent: 10,
-                minTime: plusOneInterval,
+                minTime: typeof minTime === 'number' && minTime > plusOneInterval
+                    ? minTime
+                    : plusOneInterval,
             });
         }
         this.limiter.chain(this.dailyLimiter);

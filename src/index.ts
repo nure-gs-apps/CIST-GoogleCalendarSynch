@@ -66,12 +66,12 @@ async function main() {
   );
   logger.info('Groups are loaded');
 
-  // const calendarService = container.get<CalendarService>(TYPES.CalendarService);
-  // const calendars = await calendarService.ensureCalendars(
-  //   groupsResponse,
-  //   roomsResponse,
-  //   groupNameChanges,
-  //   roomNameChanges,
-  // );
+  const calendarService = container.get<CalendarService>(TYPES.CalendarService);
+  const calendars = await calendarService.getEnsuredCalendars(
+    groupsResponse,
+    roomsResponse,
+    groupNameChanges,
+    roomNameChanges,
+  );
   logger.info('Calendars are created');
 }

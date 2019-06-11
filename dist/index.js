@@ -42,13 +42,8 @@ async function main() {
     logger_service_1.logger.info('Rooms are loaded');
     const groupNameChanges = await groupsService.ensureGroups(groupsResponse, true);
     logger_service_1.logger.info('Groups are loaded');
-    // const calendarService = container.get<CalendarService>(TYPES.CalendarService);
-    // const calendars = await calendarService.ensureCalendars(
-    //   groupsResponse,
-    //   roomsResponse,
-    //   groupNameChanges,
-    //   roomNameChanges,
-    // );
+    const calendarService = container.get(types_1.TYPES.CalendarService);
+    const calendars = await calendarService.getEnsuredCalendars(groupsResponse, roomsResponse, groupNameChanges, roomNameChanges);
     logger_service_1.logger.info('Calendars are created');
 }
 //# sourceMappingURL=index.js.map

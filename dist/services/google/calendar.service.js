@@ -19,7 +19,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
         this._patchCalendar = quotaLimiter.limiter.wrap(this._calendar.googleCalendar.calendars.patch.bind(this._calendar.googleCalendar.calendars));
         this._insertAcl = quotaLimiter.limiter.wrap(this._calendar.googleCalendar.acl.insert.bind(this._calendar.googleCalendar.acl));
     }
-    async ensureCalendars(groupsResponse, roomsResponse, newToOldGroupNames, newToOldRoomNames) {
+    async getEnsuredCalendars(groupsResponse, roomsResponse, newToOldGroupNames, newToOldRoomNames) {
         const c = {
             groupCalendars: new Map(),
             roomCalendars: new Map(),
@@ -31,12 +31,12 @@ let CalendarService = CalendarService_1 = class CalendarService {
             for (const direction of faculty.directions) {
                 if (direction.groups) {
                     for (const group of direction.groups) {
-                        promises.push(this.ensureGroupCalendar(calendars, group, c.groupCalendars, newToOldGroupNames));
+                        promises.push(this.getEnsuredGroupCalendar(calendars, group, c.groupCalendars, newToOldGroupNames));
                     }
                 }
                 for (const speciality of direction.specialities) {
                     for (const group of speciality.groups) {
-                        promises.push(this.ensureGroupCalendar(calendars, group, c.groupCalendars, newToOldGroupNames));
+                        promises.push(this.getEnsuredGroupCalendar(calendars, group, c.groupCalendars, newToOldGroupNames));
                     }
                 }
             }
@@ -44,7 +44,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
         // Rooms
         for (const building of roomsResponse.university.buildings) {
             for (const room of building.auditories) {
-                promises.push(this.ensureRoomCalendar(calendars, room, c.roomCalendars, newToOldRoomNames));
+                promises.push(this.getEnsuredRoomCalendar(calendars, room, c.roomCalendars, newToOldRoomNames));
             }
         }
         await Promise.all(promises);
@@ -92,12 +92,15 @@ let CalendarService = CalendarService_1 = class CalendarService {
         } while (calendarPage.data.nextPageToken);
         return calendars;
     }
-    async ensureGroupCalendar(calendars, cistGroup, calendarMap, newToOldGroupNames) {
+    async getEnsuredGroupCalendar(calendars, cistGroup, calendarMap, newToOldGroupNames) {
         let groupName = cistGroup.name;
         let changeName = false;
         if (newToOldGroupNames && newToOldGroupNames.has(groupName)) {
             groupName = newToOldGroupNames.get(groupName);
             changeName = true;
+        }
+        if (calendarMap.has(groupName)) {
+            return calendarMap.get(groupName);
         }
         const groupNameWithPrefix = prependPrefix(groupName);
         let calendar = calendars.find(c => isGroupCorrespondingCalendar(groupNameWithPrefix, c));
@@ -112,11 +115,11 @@ let CalendarService = CalendarService_1 = class CalendarService {
             calendarMap.set(cistGroup.name, calendar);
             return calendar;
         }
-        calendar = await this.createCalendar(cistGroup.name, cistGroup.name);
+        calendar = await this.createCalendar(prependPrefix(cistGroup.name), cistGroup.name);
         calendarMap.set(cistGroup.name, calendar);
         return calendar;
     }
-    async ensureRoomCalendar(calendars, cistRoom, calendarMap, newToOldRoomNames) {
+    async getEnsuredRoomCalendar(calendars, cistRoom, calendarMap, newToOldRoomNames) {
         let roomName = cistRoom.short_name;
         let changeName = false;
         if (newToOldRoomNames && newToOldRoomNames.has(roomName)) {
@@ -136,7 +139,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
             calendarMap.set(cistRoom.short_name, calendar);
             return calendar;
         }
-        calendar = await this.createCalendar(cistRoom.short_name, cistRoom.short_name);
+        calendar = await this.createCalendar(prependPrefix(cistRoom.short_name), cistRoom.short_name);
         calendarMap.set(cistRoom.short_name, calendar);
         return calendar;
     }
@@ -197,10 +200,10 @@ function getGroupCalendarPatch(groupName) {
     };
 }
 exports.getGroupCalendarPatch = getGroupCalendarPatch;
-function getRoomCalendarPatch(groupName) {
+function getRoomCalendarPatch(roomName) {
     return {
-        summary: prependPrefix(groupName),
-        description: groupName,
+        summary: prependPrefix(roomName),
+        description: roomName,
     };
 }
 exports.getRoomCalendarPatch = getRoomCalendarPatch;

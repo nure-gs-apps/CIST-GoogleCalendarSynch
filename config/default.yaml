@@ -20,5 +20,5 @@ google:
     calendarApi:
       daily: 1_000_000 # daily limit
       period: 100_000 # ms
-      queries: 70_000 # per period
-      burst: true # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time.
+      queries: 100 # per period
+      burst: false # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time.
