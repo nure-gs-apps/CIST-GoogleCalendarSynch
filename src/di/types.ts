@@ -7,16 +7,16 @@ export const TYPES = {
 
   CistBaseApi: Symbol.for('CistBaseApi'),
   CistApiKey: Symbol.for('CistApiKey'),
-  GoogleAuthDirectoryKeyFilepath: Symbol.for('GoogleAuthDirectoryKeyFilepath'),
+  GoogleAuthKeyFilepath: Symbol.for('GoogleAuthKeyFilepath'),
   GoogleAuthCalendarKeyFilepath: Symbol.for('GoogleAuthCalendarKeyFilepath'),
   GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
+  GoogleAuthScopes: Symbol.for('GoogleAuthScopes'),
   GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
 
   // class tokens
   CistJsonClient: Symbol.for('CistJsonClient'),
 
-  GoogleDirectoryAuth: Symbol.for('GoogleDirectoryAuth'),
-  GoogleCalendarAuth: Symbol.for('GoogleCalendarAuth'),
+  GoogleAuth: Symbol.for('GoogleAuth'),
   GoogleDirectoryQuotaLimiter: Symbol.for('GoogleDirectoryQuotaLimiter'),
   GoogleCalendarQuotaLimiter: Symbol.for('GoogleCalendarQuotaLimiter'),
   GoogleApiDirectory: Symbol.for('GoogleApiDirectory'),

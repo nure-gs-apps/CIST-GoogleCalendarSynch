@@ -9,7 +9,7 @@ google:
     timeZone: Europe/Kiev # timezone for calendar creation
   auth:
     subjectEmail: yourEmail # Required for admin. email of user belonging to the domain of G Suite.
-    calendarKeyFilepath: ./keys/cist-calendar.json
+    keyFilepath: ./keys/cist-calendar.json
     directoryKeyFilepath: ./keys/cist-calendar.json
   quotas:
     directoryApi:

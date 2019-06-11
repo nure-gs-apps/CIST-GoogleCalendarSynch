@@ -18,7 +18,7 @@ let GoogleApiDirectory = class GoogleApiDirectory {
 };
 GoogleApiDirectory = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleDirectoryAuth)),
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuth)),
     tslib_1.__metadata("design:paramtypes", [Object])
 ], GoogleApiDirectory);
 exports.GoogleApiDirectory = GoogleApiDirectory;

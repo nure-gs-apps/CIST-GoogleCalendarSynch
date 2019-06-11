@@ -4,11 +4,10 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const googleapis_1 = require("googleapis");
 const types_1 = require("../../di/types");
-const constants_1 = require("./constants");
-let GoogleDirectoryAuth = class GoogleDirectoryAuth {
-    constructor(subject, keyFilepath) {
+let GoogleAuth = class GoogleAuth {
+    constructor(subject, keyFilepath, scopes) {
         this[types_1.ASYNC_INIT] = googleapis_1.google.auth.getClient({
-            scopes: constants_1.directoryAuthScopes.slice(),
+            scopes: scopes.slice(),
             keyFilename: keyFilepath,
             clientOptions: {
                 subject,
@@ -22,11 +21,12 @@ let GoogleDirectoryAuth = class GoogleDirectoryAuth {
         return this._authClient;
     }
 };
-GoogleDirectoryAuth = tslib_1.__decorate([
+GoogleAuth = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuthSubject)),
-    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAuthDirectoryKeyFilepath)),
-    tslib_1.__metadata("design:paramtypes", [String, String])
-], GoogleDirectoryAuth);
-exports.GoogleDirectoryAuth = GoogleDirectoryAuth;
-//# sourceMappingURL=google-directory-auth.js.map
+    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAuthKeyFilepath)),
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleAuthScopes)),
+    tslib_1.__metadata("design:paramtypes", [String, String, Array])
+], GoogleAuth);
+exports.GoogleAuth = GoogleAuth;
+//# sourceMappingURL=google-auth.js.map

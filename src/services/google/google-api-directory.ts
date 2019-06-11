@@ -9,7 +9,7 @@ export class GoogleApiDirectory {
   private readonly _googleAuth: IGoogleAuth;
   readonly googleDirectory: Admin;
 
-  constructor(@inject(TYPES.GoogleDirectoryAuth) googleAuth: IGoogleAuth) {
+  constructor(@inject(TYPES.GoogleAuth) googleAuth: IGoogleAuth) {
     this._googleAuth = googleAuth;
     if (!this._googleAuth.authClient) {
       throw new TypeError('Google auth is not initialized');

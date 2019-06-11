@@ -46,8 +46,7 @@ export interface IConfig {
     calendar: ICalendarConfig;
     auth: {
       subjectEmail: string;
-      calendarKeyFilepath: string;
-      directoryKeyFilepath: string;
+      keyFilepath: string;
     };
     quotas: {
       directoryApi: IApiQuota;
