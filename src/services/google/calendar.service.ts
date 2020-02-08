@@ -190,10 +190,12 @@ export class CalendarService {
     if (calendar) {
       if (changeName) {
         const response = await this._patchCalendar({
-          calendarId: calendar.id,
+          calendarId: calendar.id ?? undefined,
           requestBody: getGroupCalendarPatch(cistGroup.name),
         });
         calendar = response.data;
+        if (response.data) {
+        }
       }
       calendarMap.set(cistGroup.name, calendar);
       return calendar;
@@ -225,7 +227,7 @@ export class CalendarService {
     if (calendar) {
       if (changeName) {
         const response = await this._patchCalendar({
-          calendarId: calendar.id,
+          calendarId: calendar.id ?? undefined,
           requestBody: getRoomCalendarPatch(cistRoom.short_name),
         });
         calendar = response.data;

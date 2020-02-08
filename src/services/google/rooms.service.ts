@@ -134,7 +134,7 @@ export class RoomsService {
     for (const room of rooms) {
       promises.push(this._delete({
         customer,
-        calendarResourceId: room.resourceId,
+        calendarResourceId: room.resourceId ?? undefined,
       }));
     }
     this.clearCache();
@@ -217,7 +217,7 @@ export class RoomsService {
         promises.push(
           this._delete({
             customer,
-            calendarResourceId: googleRoom.resourceId,
+            calendarResourceId: googleRoom.resourceId ?? undefined,
           }),
         );
       }

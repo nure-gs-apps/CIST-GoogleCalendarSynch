@@ -120,7 +120,7 @@ export class GroupsService {
     const promises = [];
     for (const group of groups) {
       promises.push(this._delete({
-        groupKey: group.id,
+        groupKey: group.id ?? undefined,
       }));
     }
     this.clearCache();
@@ -257,7 +257,7 @@ export class GroupsService {
       if (ids.has(group.id!)) {
         promises.push(
           this._delete({
-            groupKey: group.id,
+            groupKey: group.id ?? undefined,
           }),
         );
       }

@@ -117,7 +117,7 @@ export class BuildingsService {
     for (const room of buildings) {
       promises.push(this._delete({
         customer,
-        buildingId: room.buildingId,
+        buildingId: room.buildingId ?? undefined,
       }));
     }
     this.clearCache();
@@ -185,7 +185,7 @@ export class BuildingsService {
         promises.push(
           this._delete({
             customer,
-            buildingId: googleBuilding.buildingId,
+            buildingId: googleBuilding.buildingId ?? undefined,
           }),
         );
       }

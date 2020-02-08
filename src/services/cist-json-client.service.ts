@@ -1,7 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import * as Iconv from 'iconv';
 import { inject, injectable } from 'inversify';
-import { oc } from 'ts-optchain';
 import { TYPES } from '../di/types';
 import { dateToSeconds } from '../utils/common';
 
@@ -149,7 +148,7 @@ export class CistJsonClient {
     this._iconv = new (Iconv as any).Iconv('windows-1251', 'utf8');
     this._axios.interceptors.response.use(res => {
       const data = res.data as Buffer;
-      res.data = oc(res.headers['content-type']).toString().toLowerCase().includes('charset=windows-1251')
+      res.data = (res.headers['content-type'] ?? '').toString().toLowerCase().includes('charset=windows-1251')
         ? this._iconv.convert(data).toString('utf8')
         : data.toString('utf8');
       return res;
