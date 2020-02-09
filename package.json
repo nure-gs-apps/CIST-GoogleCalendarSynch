@@ -37,6 +37,7 @@
     "bluebird": "^3.7.2",
     "bluebird-global": "^1.0.1",
     "bottleneck": "^2.19.5",
+    "change-case": "^4.1.1",
     "googleapis": "^47.0.0",
     "iconv": "^2.3.5",
     "inversify": "^5.0.1",
