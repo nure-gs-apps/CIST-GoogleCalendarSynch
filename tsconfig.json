@@ -52,6 +52,6 @@
     "suppressImplicitAnyIndexErrors": false,
     "target": "es2018",
     "typeRoots": ["@types"],
-    "types": ["node", "bluebird-global"]
+    "types": ["node", "bluebird-global", "ts-nameof"]
   }
 }
