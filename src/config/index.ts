@@ -59,10 +59,20 @@ export function getConfigDirectory() {
   return configDirectory;
 }
 
-export async function initializeConfig<T extends IFullAppConfig>(argv: Argv<T>) {
-  if (config) {
-    return false;
+let initializeConfigPromise: Nullable<Promise<boolean>> = null;
+export function initializeConfig<T extends IFullAppConfig>(argv: Argv<T>) {
+  if (initializeConfigPromise) {
+    return initializeConfigPromise;
   }
+  if (config) {
+    return Promise.resolve(false);
+  }
+  initializeConfigPromise = doInitializeConfig(argv).then(() => true);
+
+  return initializeConfigPromise;
+}
+
+async function doInitializeConfig<T extends IFullAppConfig>(argv: Argv<T>) {
   const configDirectoryOverrides = [
     tryGetConfigDirFromEnv(),
     argv.argv.ncgc.configDir,
@@ -92,9 +102,7 @@ export async function initializeConfig<T extends IFullAppConfig>(argv: Argv<T>) 
     throw new TypeError(message);
   }
   configDirectory = configDir;
-  await initializeNconfSync(argv);
-
-  return true;
+  initializeNconfSync(argv);
 }
 
 function normalizeConfigDirPath(possiblePath: string) {
