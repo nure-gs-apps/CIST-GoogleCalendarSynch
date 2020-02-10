@@ -1,7 +1,4 @@
-// NOTE: Make sure to import it in every entry point you have
-import 'bluebird-global';
-// import { shim } from 'array.prototype.flatmap';
-// shim();
+
 
 export type primitive =
   number
@@ -35,25 +32,6 @@ export type DeepPartial<T> = {
 export type DeepNullablePartial<T> = {
   [P in keyof T]?: Nullable<DeepNullablePartial<T[P]>>;
 };
-
-export interface IConfig {
-  cist: {
-    baseUrl: string;
-    apiKey: string;
-  };
-  google: {
-    idPrefix: Nullable<string>;
-    calendar: ICalendarConfig;
-    auth: {
-      subjectEmail: string;
-      keyFilepath: string;
-    };
-    quotas: {
-      directoryApi: IApiQuota;
-      calendarApi: IApiQuota;
-    };
-  };
-}
 
 export interface IApiQuota {
   daily: number;

@@ -1,10 +1,7 @@
-import * as config from 'config';
-import { IConfig } from '../../@types';
+import { getConfig } from '../../config';
 
 export const prependIdPrefix = (() => {
-  const idPrefix = config.get<IConfig['google']['idPrefix']>(
-    'google.idPrefix',
-  );
+  const idPrefix = getConfig().google.idPrefix; // TODO: move to helper service
   const prefixIsValid = idPrefix === null || (
     typeof idPrefix === 'string'
     && /^\w+$/.test(idPrefix)
@@ -18,9 +15,7 @@ export const prependIdPrefix = (() => {
 })();
 
 export const customer = 'my_customer';
-export const domainName = config.get<IConfig['google']['auth']['subjectEmail']>(
-  'google.auth.subjectEmail',
-).split('@')[1].toLowerCase();
+export const domainName = getConfig().google.auth.subjectEmail.split('@')[1].toLowerCase(); // TODO: move to helper service
 
 export const directoryAuthScopes = [
   'https://www.googleapis.com/auth/admin.directory.resource.calendar',

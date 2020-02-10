@@ -1,7 +1,7 @@
 import Bottleneck from 'bottleneck';
-import * as config from 'config';
+import { getConfig } from '../config';
 import { BindingScopeEnum, Container } from 'inversify';
-import { ICalendarConfig, IConfig, Nullable } from '../@types';
+import { ICalendarConfig, Nullable } from '../@types';
 import { CistJsonClient } from '../services/cist-json-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
@@ -52,27 +52,24 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
   if (containerType === ContainerType.FULL) {
     container.bind<string>(TYPES.CistBaseApi).toConstantValue(
-      config.get<IConfig['cist']['baseUrl']>('cist.baseUrl'),
+      getConfig().cist.baseUrl,
     );
     container.bind<string>(TYPES.CistApiKey).toConstantValue(
-      config.get<IConfig['cist']['apiKey']>('cist.apiKey'),
+      getConfig().cist.apiKey,
     );
     container.bind<string>(TYPES.GoogleAuthSubject).toConstantValue(
-      config.get<IConfig['google']['auth']['subjectEmail']>(
-        'google.auth.subjectEmail',
-      ),
+      getConfig().google.auth.subjectEmail,
     );
 
     container.bind<string>(TYPES.GoogleAuthKeyFilepath)
       .toConstantValue(
-        config.get<IConfig['google']['auth']['keyFilepath']>(
-          'google.auth.keyFilepath',
-        ) || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
+        getConfig().google.auth.keyFilepath // TODO: clarify configuration
+          || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
       );
     container.bind<ReadonlyArray<string>>(TYPES.GoogleAuthScopes)
       .toConstantValue(directoryAuthScopes.concat(calenderAuthScopes));
     container.bind<ICalendarConfig>(TYPES.GoogleCalendarConfig).toConstantValue(
-      config.get<IConfig['google']['calendar']>('google.calendar'),
+      getConfig().google.calendar,
     );
 
     container.bind<CistJsonClient>(TYPES.CistJsonClient).to(CistJsonClient);
@@ -82,12 +79,12 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
     container.bind<QuotaLimiterService>(TYPES.GoogleDirectoryQuotaLimiter)
       .toDynamicValue(getQuotaLimiterFactory(
-        config.get<IConfig['google']['quotas']['directoryApi']>('google.quotas.directoryApi'),
+        getConfig().google.quotas.directoryApi,
         defaultScope === BindingScopeEnum.Singleton,
       ));
     container.bind<QuotaLimiterService>(TYPES.GoogleCalendarQuotaLimiter)
       .toDynamicValue(getQuotaLimiterFactory(
-        config.get<IConfig['google']['quotas']['calendarApi']>('google.quotas.calendarApi'),
+        getConfig().google.quotas.calendarApi,
         defaultScope === BindingScopeEnum.Singleton,
       ));
 
@@ -105,10 +102,10 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
     container.bind<EventsService>(TYPES.EventsService).to(EventsService);
   } else if (containerType === ContainerType.CIST_JSON_ONLY) {
     container.bind<string>(TYPES.CistBaseApi).toConstantValue(
-      config.get<IConfig['cist']['baseUrl']>('cist.baseUrl'),
+      getConfig().cist.baseUrl,
     );
     container.bind<string>(TYPES.CistApiKey).toConstantValue(
-      config.get<IConfig['cist']['apiKey']>('cist.apiKey'),
+      getConfig().cist.apiKey,
     );
 
     container.bind<CistJsonClient>(TYPES.CistJsonClient).to(CistJsonClient);

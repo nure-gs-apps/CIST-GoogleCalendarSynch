@@ -10,16 +10,20 @@ import { commonCamelCase, objectKeys } from '../utils/common';
 import * as YAML from 'yaml';
 import * as TOML from '@iarna/toml';
 
-export const appConfigPrefix = nameof<IFullAppConfig['ncgc']>();
+const config: Nullable<IFullAppConfig> = null;
+
+export const appConfigPrefix = nameof(config!.ncgc);
 export const environmentVariableDepthSeparator = '__';
 const lowerCaseEnvVariableStart = `${appConfigPrefix}${environmentVariableDepthSeparator}`.toLowerCase();
-export const configDirectoryKey = nameof<IFullAppConfig['ncgc']['configDir']>();
 export const defaultConfigDirectory = path.join(appRootPath, 'config');
 
 export function tryGetConfigDirFromEnv() {
-  return process.env[transformAppEnvConfigKey(iterate(objectKeys(process.env))
-      .filter(key => isAppEnvConfigKey(key)).take(1).toArray()[0],
-  )];
+  const configDirectoryEnvKey = `${lowerCaseEnvVariableStart}${nameof(config!.ncgc.configDir)}`;
+  return process.env[iterate(objectKeys(process.env))
+    .filter(key => isAppEnvConfigKey(key))
+    .map(transformAppEnvConfigKey)
+    .filter(key => key === configDirectoryEnvKey)
+    .take(1).toArray()[0]];
 }
 
 export enum Environment {
@@ -31,7 +35,6 @@ export enum Environment {
 export const environment: Environment | string = process.env.NODE_ENV?.trim()
   .toLowerCase() || Environment.Development;
 
-const config: Nullable<IFullAppConfig> = null;
 let configDirectory: Nullable<string> = null;
 
 export function isConfigInitialized() {
@@ -43,6 +46,10 @@ export function getFullConfig() {
     throwNotInitialized();
   }
   return config;
+}
+
+export function getConfig() {
+  return getFullConfig().ncgc;
 }
 
 export function getConfigDirectory() {
@@ -97,6 +104,14 @@ function normalizeConfigDirPath(possiblePath: string) {
     : path.resolve(configDirectory);
 }
 
+type ExtensionAndFormat = [string, nconf.IFormat];
+const fileExtensionsAndFormats = [
+  ['.json', JSON] as ExtensionAndFormat,
+  ['.yaml', YAML] as ExtensionAndFormat,
+  ['.yml', YAML] as ExtensionAndFormat,
+  ['.toml', TOML] as ExtensionAndFormat,
+] as ReadonlyArray<ExtensionAndFormat>;
+
 function initializeNconfSync<T extends IFullAppConfig>(argv: Argv<T>) {
   nconf.argv(argv).env({
     transform(obj: { key: string, value: any}) {
@@ -114,18 +129,17 @@ function initializeNconfSync<T extends IFullAppConfig>(argv: Argv<T>) {
     environment,
     'local',
     `local-${environment}`,
-  ].flatMap(
-    b => [
-      ['.json', JSON],
-      ['.yaml', YAML],
-      ['.yml', YAML],
-      ['.toml', TOML],
-    ].map(ext => `${b}${ext}`),
-  ).map(f => path.join(getConfigDirectory(), f));
+  ].flatMap(b => fileExtensionsAndFormats.map(
+      ([ext, format]) => [`${b}${ext}`, format] as ExtensionAndFormat,
+  )).map(([extension, format]) => [
+    path.join(getConfigDirectory(), extension),
+    format,
+  ] as ExtensionAndFormat);
   const directory = getConfigDirectory();
-  for (const fileName of files) {
+  for (const [fileName, format] of files) {
     // NOTE: `dir: string` and `search: boolean` may be added to sniff child directories for configs
     nconf.file(fileName, {
+      format,
       file: path.join(directory, fileName),
     });
   }

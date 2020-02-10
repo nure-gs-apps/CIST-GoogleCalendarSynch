@@ -1,7 +1,7 @@
 import { calendar_v3 } from 'googleapis';
-import * as config from 'config';
+import { getConfig } from '../../config';
 import { inject, injectable } from 'inversify';
-import { ICalendarConfig, IConfig, Nullable } from '../../@types';
+import { ICalendarConfig, Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
 import {
   ApiAuditoriesResponse, ApiAuditory, ApiGroup,
@@ -305,9 +305,7 @@ export function getRoomCalendarPatch(roomName: string) {
 }
 
 const prependPrefix = (() => {
-  const calenarConfig = config.get<IConfig['google']['calendar']>(
-    'google.calendar',
-  );
+  const calenarConfig = getConfig().google.calendar; // TODO: move to helper service
   return calenarConfig.prefix
     ? (value: string) => calenarConfig.prefix + value
     : (value: string) => value;

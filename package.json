@@ -1,7 +1,7 @@
 {
   "name": "cist-google-calendar-sync",
   "version": "1.0.0",
-  "description": "A project for synchronizating CIST with Google Calendar",
+  "description": "A project for synchronizing NURE CIST with Google Calendar",
   "main": "dist/index.js",
   "engines": {
     "node": "^10.15.3"
