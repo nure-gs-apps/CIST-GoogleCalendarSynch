@@ -14,6 +14,24 @@ function getQuotaLimiterFactory(config, isSingleton) {
 exports.getQuotaLimiterFactory = getQuotaLimiterFactory;
 class QuotaLimiterService {
     constructor(quota) {
+        Object.defineProperty(this, "dailyLimiter", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: dailyLimiter
+        });
+        Object.defineProperty(this, "limiter", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: limiter
+        });
+        Object.defineProperty(this, "_disposed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _disposed
+        });
         this.dailyLimiter = new bottleneck_1.default({
             reservoir: quota.daily,
             reservoirRefreshInterval: QuotaLimiterService.DAY_MS,
@@ -59,5 +77,10 @@ class QuotaLimiterService {
     }
 }
 exports.QuotaLimiterService = QuotaLimiterService;
-QuotaLimiterService.DAY_MS = 24 * 60 * 60 * 1000;
+Object.defineProperty(QuotaLimiterService, "DAY_MS", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 24 * 60 * 60 * 1000
+});
 //# sourceMappingURL=quota-limiter.service.js.map

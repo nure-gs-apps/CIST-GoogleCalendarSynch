@@ -15,6 +15,18 @@ var TimetableType;
 })(TimetableType = exports.TimetableType || (exports.TimetableType = {}));
 let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
     constructor(baseApiUrl, apiKey) {
+        Object.defineProperty(this, "_axios", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _axios
+        });
+        Object.defineProperty(this, "_apiKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _apiKey
+        });
         this._axios = axios_1.default.create({
             baseURL: baseApiUrl || CistJsonClient_1.BASE_API_URL,
             responseType: 'arraybuffer',
@@ -81,10 +93,30 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
         return JSON.parse(response.data);
     }
 };
-CistJsonClient.BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
-CistJsonClient.ROOMS_PATH = 'P_API_AUDITORIES_JSON';
-CistJsonClient.GROUPS_PATH = 'P_API_GROUP_JSON';
-CistJsonClient.EVENTS_PATH = 'P_API_EVENT_JSON';
+Object.defineProperty(CistJsonClient, "BASE_API_URL", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'http://cist.nure.ua/ias/app/tt/'
+});
+Object.defineProperty(CistJsonClient, "ROOMS_PATH", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'P_API_AUDITORIES_JSON'
+});
+Object.defineProperty(CistJsonClient, "GROUPS_PATH", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'P_API_GROUP_JSON'
+});
+Object.defineProperty(CistJsonClient, "EVENTS_PATH", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'P_API_EVENT_JSON'
+});
 CistJsonClient = CistJsonClient_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.CistBaseApi)),

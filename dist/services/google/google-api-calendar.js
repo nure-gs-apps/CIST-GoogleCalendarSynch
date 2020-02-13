@@ -6,6 +6,18 @@ const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 let GoogleApiCalendar = class GoogleApiCalendar {
     constructor(googleAuth) {
+        Object.defineProperty(this, "_googleAuth", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _googleAuth
+        });
+        Object.defineProperty(this, "googleCalendar", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: googleCalendar
+        });
         this._googleAuth = googleAuth;
         if (!this._googleAuth.authClient) {
             throw new TypeError('Google auth is not initialized');

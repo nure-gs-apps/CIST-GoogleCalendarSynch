@@ -12,6 +12,60 @@ const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
     constructor(googleApiDirectory, quotaLimiter) {
+        Object.defineProperty(this, "_directory", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _directory
+        });
+        Object.defineProperty(this, "_quotaLimiter", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _quotaLimiter
+        });
+        Object.defineProperty(this, "_buildings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _buildings
+        });
+        Object.defineProperty(this, "_insert", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _insert
+        });
+        Object.defineProperty(this, "_patch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _patch
+        });
+        Object.defineProperty(this, "_delete", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _delete
+        });
+        Object.defineProperty(this, "_list", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _list
+        });
+        Object.defineProperty(this, "_cachedBuildings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _cachedBuildings
+        });
+        Object.defineProperty(this, "_cacheLastUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _cacheLastUpdate
+        });
         this._directory = googleApiDirectory;
         this._buildings = this._directory.googleDirectory.resources.buildings;
         this._quotaLimiter = quotaLimiter;
@@ -117,7 +171,12 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         return promises;
     }
 };
-BuildingsService.BUILDING_PAGE_SIZE = 100;
+Object.defineProperty(BuildingsService, "BUILDING_PAGE_SIZE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 100
+});
 BuildingsService = BuildingsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),

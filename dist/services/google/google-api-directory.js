@@ -6,6 +6,18 @@ const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 let GoogleApiDirectory = class GoogleApiDirectory {
     constructor(googleAuth) {
+        Object.defineProperty(this, "_googleAuth", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _googleAuth
+        });
+        Object.defineProperty(this, "googleDirectory", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: googleDirectory
+        });
         this._googleAuth = googleAuth;
         if (!this._googleAuth.authClient) {
             throw new TypeError('Google auth is not initialized');

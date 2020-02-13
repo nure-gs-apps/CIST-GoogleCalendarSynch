@@ -13,6 +13,60 @@ const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
 let RoomsService = RoomsService_1 = class RoomsService {
     constructor(googleApiDirectory, quotaLimiter) {
+        Object.defineProperty(this, "_directory", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _directory
+        });
+        Object.defineProperty(this, "_quotaLimiter", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _quotaLimiter
+        });
+        Object.defineProperty(this, "_rooms", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _rooms
+        });
+        Object.defineProperty(this, "_insert", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _insert
+        });
+        Object.defineProperty(this, "_patch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _patch
+        });
+        Object.defineProperty(this, "_delete", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _delete
+        });
+        Object.defineProperty(this, "_list", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _list
+        });
+        Object.defineProperty(this, "_cachedRooms", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _cachedRooms
+        });
+        Object.defineProperty(this, "_cacheLastUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _cacheLastUpdate
+        });
         this._directory = googleApiDirectory;
         this._rooms = this._directory.googleDirectory.resources.calendars;
         this._quotaLimiter = quotaLimiter;
@@ -144,8 +198,18 @@ let RoomsService = RoomsService_1 = class RoomsService {
         return promises;
     }
 };
-RoomsService.ROOMS_PAGE_SIZE = 500; // maximum
-RoomsService.CONFERENCE_ROOM = 'CONFERENCE_ROOM';
+Object.defineProperty(RoomsService, "ROOMS_PAGE_SIZE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 500
+}); // maximum
+Object.defineProperty(RoomsService, "CONFERENCE_ROOM", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'CONFERENCE_ROOM'
+});
 RoomsService = RoomsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),
