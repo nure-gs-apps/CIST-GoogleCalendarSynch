@@ -53,10 +53,19 @@ function getConfigDirectory() {
     return configDirectory;
 }
 exports.getConfigDirectory = getConfigDirectory;
-async function initializeConfig(argv) {
-    if (config) {
-        return false;
+let initializeConfigPromise = null;
+function initializeConfig(argv) {
+    if (initializeConfigPromise) {
+        return initializeConfigPromise;
     }
+    if (config) {
+        return Promise.resolve(false);
+    }
+    initializeConfigPromise = doInitializeConfig(argv).then(() => true);
+    return initializeConfigPromise;
+}
+exports.initializeConfig = initializeConfig;
+async function doInitializeConfig(argv) {
     const configDirectoryOverrides = [
         tryGetConfigDirFromEnv(),
         argv.argv.ncgc.configDir,
@@ -81,10 +90,8 @@ async function initializeConfig(argv) {
         throw new TypeError(message);
     }
     configDirectory = configDir;
-    await initializeNconfSync(argv);
-    return true;
+    initializeNconfSync(argv);
 }
-exports.initializeConfig = initializeConfig;
 function normalizeConfigDirPath(possiblePath) {
     const configDirectory = path.normalize(possiblePath.trim());
     return path.isAbsolute(configDirectory)

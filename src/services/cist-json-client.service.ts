@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import * as Iconv from 'iconv';
+import * as iconv from 'iconv-lite';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../di/types';
 import { dateToSeconds } from '../utils/common';
@@ -132,9 +132,8 @@ export class CistJsonClient {
   static readonly GROUPS_PATH = 'P_API_GROUP_JSON';
   static readonly EVENTS_PATH = 'P_API_EVENT_JSON';
 
-  private _axios: AxiosInstance;
-  private _iconv: Iconv.Iconv;
-  private _apiKey: string;
+  private readonly _axios: AxiosInstance;
+  private readonly _apiKey: string;
 
   constructor(
     @inject(TYPES.CistBaseApi) baseApiUrl: string,
@@ -145,11 +144,10 @@ export class CistJsonClient {
       responseType: 'arraybuffer',
     });
     this._apiKey = apiKey;
-    this._iconv = new (Iconv as any).Iconv('windows-1251', 'utf8');
     this._axios.interceptors.response.use(res => {
       const data = res.data as Buffer;
       res.data = (res.headers['content-type'] ?? '').toString().toLowerCase().includes('charset=windows-1251')
-        ? this._iconv.convert(data).toString('utf8')
+        ? iconv.decode(res.data, 'win1251')
         : data.toString('utf8');
       return res;
     });

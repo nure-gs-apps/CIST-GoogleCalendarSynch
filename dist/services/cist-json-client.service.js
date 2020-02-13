@@ -3,7 +3,7 @@ var CistJsonClient_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const axios_1 = require("axios");
-const Iconv = require("iconv");
+const iconv = require("iconv-lite");
 const inversify_1 = require("inversify");
 const types_1 = require("../di/types");
 const common_1 = require("../utils/common");
@@ -20,12 +20,11 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
             responseType: 'arraybuffer',
         });
         this._apiKey = apiKey;
-        this._iconv = new Iconv.Iconv('windows-1251', 'utf8');
         this._axios.interceptors.response.use(res => {
             var _a;
             const data = res.data;
             res.data = (_a = res.headers['content-type'], (_a !== null && _a !== void 0 ? _a : '')).toString().toLowerCase().includes('charset=windows-1251')
-                ? this._iconv.convert(data).toString('utf8')
+                ? iconv.decode(res.data, 'win1251')
                 : data.toString('utf8');
             return res;
         });
