@@ -39,7 +39,7 @@
     "noImplicitThis": true,
     "noImplicitUseStrict": false,
     "noStrictGenericChecks": false,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "outDir": "./dist",
     "plugins": [
       { "transform": "ts-nameof", "type": "raw" }

@@ -1,9 +1,9 @@
 import * as nconf from 'nconf';
 import * as path from 'path';
 import { promises as fs } from 'fs';
-import { path as appRootPath } from 'app-root-path';
 import { Argv } from 'yargs';
-import { IFullAppConfig } from './types';
+import { defaultConfigDirectory } from './constants';
+import { AppConfig, IFullAppConfig } from './types';
 import iterate from 'iterare';
 import { Nullable } from '../@types';
 import { commonCamelCase, objectKeys } from '../utils/common';
@@ -12,12 +12,13 @@ import * as TOML from '@iarna/toml';
 
 const config: Nullable<IFullAppConfig> = null;
 
+// tslint:disable-next-line:no-non-null-assertion
 export const appConfigPrefix = nameof(config!.ncgc);
 export const environmentVariableDepthSeparator = '__';
 const lowerCaseEnvVariableStart = `${appConfigPrefix}${environmentVariableDepthSeparator}`.toLowerCase();
-export const defaultConfigDirectory = path.join(appRootPath, 'config');
 
 export function tryGetConfigDirFromEnv() {
+  // tslint:disable-next-line:no-non-null-assertion
   const configDirectoryEnvKey = `${lowerCaseEnvVariableStart}${nameof(config!.ncgc.configDir)}`;
   return process.env[iterate(objectKeys(process.env))
     .filter(key => isAppEnvConfigKey(key))
@@ -48,7 +49,7 @@ export function getFullConfig() {
   return config;
 }
 
-export function getConfig() {
+export function getConfig(): AppConfig {
   return getFullConfig().ncgc;
 }
 
