@@ -1,16 +1,16 @@
 import * as nconf from 'nconf';
 import * as path from 'path';
-import { promises as fs } from 'fs';
+import { promises as fs, constants } from 'fs';
 import { Argv } from 'yargs';
-import { defaultConfigDirectory } from './constants';
+import { getDefaultConfigDirectory } from './constants';
 import { AppConfig, IFullAppConfig } from './types';
 import iterate from 'iterare';
-import { DeepPartial, Nullable, t } from '../@types';
+import { DeepPartial, DeepReadonly, Nullable, t } from '../@types';
 import { commonCamelCase, objectEntries } from '../utils/common';
 import * as YAML from 'yaml';
 import * as TOML from '@iarna/toml';
 
-const config: Nullable<IFullAppConfig> = null;
+let config: Nullable<IFullAppConfig> = null;
 
 // tslint:disable-next-line:no-non-null-assertion
 export const appConfigPrefix = nameof<IFullAppConfig>(c => c.ncgc);
@@ -46,7 +46,7 @@ export function getFullConfig() {
   if (!config) {
     throwNotInitialized();
   }
-  return config;
+  return config as DeepReadonly<IFullAppConfig>;
 }
 
 export function getConfig(): AppConfig {
@@ -76,54 +76,6 @@ export function initializeConfig<T extends IFullAppConfig>(argv: Argv<T>) {
 async function doInitializeConfig<T extends DeepPartial<IFullAppConfig>>(
   argv: Argv<T>
 ) {
-  const configDirectoryOverrides = [
-    argv.argv?.ncgc?.configDir,
-    tryGetConfigDirFromEnv(),
-  ].filter(v => typeof v === 'string');
-  const configDir = normalizeConfigDirPath(
-    configDirectoryOverrides[0] || defaultConfigDirectory,
-  );
-
-  const stat = await fs.stat(configDir);
-  if (!stat.isDirectory()) {
-    const invalidCommandLine = 'Command line argument is invalid.';
-    let message = `Could not find path to config directory: ${configDir}. `;
-    switch (configDirectoryOverrides.length) {
-      case 0:
-        message += 'No overrides found, default directory does not exist!';
-        break;
-
-      case 1:
-        message += typeof argv.argv?.ncgc?.configDir === 'string'
-          ? invalidCommandLine
-          : 'Environmental variable is invalid.';
-        break;
-
-      case 2:
-        message += invalidCommandLine;
-    }
-    throw new TypeError(message);
-  }
-  configDirectory = configDir;
-  initializeNconfSync(argv);
-}
-
-function normalizeConfigDirPath(possiblePath: string) {
-  const configDirectory = path.normalize(possiblePath.trim());
-  return path.isAbsolute(configDirectory)
-    ? configDirectory
-    : path.resolve(configDirectory);
-}
-
-type ExtensionAndFormat = [string, nconf.IFormat];
-const fileExtensionsAndFormats = [
-  ['.json', JSON] as ExtensionAndFormat,
-  ['.yaml', YAML] as ExtensionAndFormat,
-  ['.yml', YAML] as ExtensionAndFormat,
-  ['.toml', TOML] as ExtensionAndFormat,
-] as ReadonlyArray<ExtensionAndFormat>;
-
-function initializeNconfSync<T extends DeepPartial<IFullAppConfig>>(argv: Argv<T>) {
   nconf.argv(argv).env({
     transform(obj: { key: string, value: any}) {
       if (isAppEnvConfigKey(obj.key)) {
@@ -134,27 +86,59 @@ function initializeNconfSync<T extends DeepPartial<IFullAppConfig>>(argv: Argv<T
     separator: environmentVariableDepthSeparator,
     parseValues: true,
     readOnly: true,
-  });
+  }).defaults({
+    ncgc: {
+      configDir: getDefaultConfigDirectory()
+    }
+  } as DeepPartial<IFullAppConfig>);
+  const configDir = normalizeConfigDirPath(
+    (nconf.get() as IFullAppConfig).ncgc.configDir
+  );
+
+  if (
+    await fs.access(configDir, constants.R_OK | constants.F_OK)
+      .catch(() => true)
+    || !(await fs.stat(configDir)).isDirectory()
+  ) {
+    throw new TypeError(`Could not find path to config directory: ${configDir}`);
+  }
+  configDirectory = configDir;
+  nconf.set(
+    nameof.full<IFullAppConfig>(c => c.ncgc.configDir).replace(/\./g, ':'),
+    configDirectory
+  );
+
   const files = [
-    'default',
-    environment,
-    'local',
     `local-${environment}`,
+    'local',
+    environment,
+    'default',
   ].flatMap(b => fileExtensionsAndFormats.map(
-      ([ext, format]) => [`${b}${ext}`, format] as ExtensionAndFormat,
-  )).map(([extension, format]) => [
-    path.join(getConfigDirectory(), extension),
-    format,
-  ] as ExtensionAndFormat);
-  const directory = getConfigDirectory();
+    ([ext, format]) => t(`${b}${ext}`, format),
+  ));
   for (const [fileName, format] of files) {
     // NOTE: `dir: string` and `search: boolean` may be added to sniff child directories for configs
     nconf.file(fileName, {
       format,
-      file: path.join(directory, fileName),
+      file: path.join(configDirectory, fileName),
     });
   }
+  config = nconf.get();
 }
+
+function normalizeConfigDirPath(possiblePath: string) {
+  const configDirectory = path.normalize(possiblePath.trim());
+  return path.isAbsolute(configDirectory)
+    ? configDirectory
+    : path.resolve(configDirectory);
+}
+
+const fileExtensionsAndFormats = [
+  t('.toml', TOML),
+  t('.yml', YAML),
+  t('.yaml', YAML),
+  t('.json', JSON),
+] as ReadonlyArray<[string, nconf.IFormat]>;
 
 function isAppEnvConfigKey(key: string) {
   return key.slice(

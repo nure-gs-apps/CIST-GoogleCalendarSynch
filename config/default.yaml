@@ -1,24 +1,25 @@
-cist:
-  baseUrl: http://cist.nure.ua/ias/app/tt/
-  apiKey: yourKey # Required if classes are loaded
+ncgc:
+  cist:
+    baseUrl: http://cist.nure.ua/ias/app/tt/
+    apiKey: yourKey # Required if classes are loaded
 
-google:
-  idPrefix: cist
-  calendar:
-    prefix: 'CIST ' # basically name for calendar. Can be used for searching if id is not overriden
-    timeZone: Europe/Kiev # timezone for calendar creation
-  auth:
-    subjectEmail: yourEmail # Required for admin. email of user belonging to the domain of G Suite.
-    keyFilepath: ./keys/cist-calendar.json
-    directoryKeyFilepath: ./keys/cist-calendar.json
-  quotas:
-    directoryApi:
-      daily: 150_000 # daily limit
-      period: 100_000 # ms
-      queries: 460 # per period. Fallback to 425 if problems. Actual is 1500, but decreased for reliability
-      burst: false # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time. False is used because it works more reliable for now
-    calendarApi:
-      daily: 1_000_000 # daily limit
-      period: 100_000 # ms
-      queries: 100 # per period
-      burst: false # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time.
+  google:
+    idPrefix: cist
+    calendar:
+      prefix: 'CIST ' # basically name for calendar. Can be used for searching if id is not overriden
+      timeZone: Europe/Kiev # timezone for calendar creation
+    auth:
+      subjectEmail: yourEmail # Required for admin. email of user belonging to the domain of G Suite.
+      keyFilepath: ./keys/cist-calendar.json
+      directoryKeyFilepath: ./keys/cist-calendar.json
+    quotas:
+      directoryApi:
+        daily: 150_000 # daily limit
+        period: 100_000 # ms
+        queries: 460 # per period. Fallback to 425 if problems. Actual is 1500, but decreased for reliability
+        burst: false # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time. False is used because it works more reliable for now
+      calendarApi:
+        daily: 1_000_000 # daily limit
+        period: 100_000 # ms
+        queries: 100 # per period
+        burst: false # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time.

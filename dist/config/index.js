@@ -10,7 +10,7 @@ const _types_1 = require("../@types");
 const common_1 = require("../utils/common");
 const YAML = require("yaml");
 const TOML = require("@iarna/toml");
-const config = null;
+let config = null;
 // tslint:disable-next-line:no-non-null-assertion
 exports.appConfigPrefix = "ncgc";
 exports.environmentVariableDepthSeparator = '__';
@@ -69,46 +69,6 @@ function initializeConfig(argv) {
 }
 exports.initializeConfig = initializeConfig;
 async function doInitializeConfig(argv) {
-    var _a, _b, _c, _d;
-    const configDirectoryOverrides = [
-        (_b = (_a = argv.argv) === null || _a === void 0 ? void 0 : _a.ncgc) === null || _b === void 0 ? void 0 : _b.configDir,
-        tryGetConfigDirFromEnv(),
-    ].filter(v => typeof v === 'string');
-    const configDir = normalizeConfigDirPath(configDirectoryOverrides[0] || constants_1.defaultConfigDirectory);
-    const stat = await fs_1.promises.stat(configDir);
-    if (!stat.isDirectory()) {
-        const invalidCommandLine = 'Command line argument is invalid.';
-        let message = `Could not find path to config directory: ${configDir}. `;
-        switch (configDirectoryOverrides.length) {
-            case 0:
-                message += 'No overrides found, default directory does not exist!';
-                break;
-            case 1:
-                message += typeof ((_d = (_c = argv.argv) === null || _c === void 0 ? void 0 : _c.ncgc) === null || _d === void 0 ? void 0 : _d.configDir) === 'string'
-                    ? invalidCommandLine
-                    : 'Environmental variable is invalid.';
-                break;
-            case 2:
-                message += invalidCommandLine;
-        }
-        throw new TypeError(message);
-    }
-    configDirectory = configDir;
-    initializeNconfSync(argv);
-}
-function normalizeConfigDirPath(possiblePath) {
-    const configDirectory = path.normalize(possiblePath.trim());
-    return path.isAbsolute(configDirectory)
-        ? configDirectory
-        : path.resolve(configDirectory);
-}
-const fileExtensionsAndFormats = [
-    ['.json', JSON],
-    ['.yaml', YAML],
-    ['.yml', YAML],
-    ['.toml', TOML],
-];
-function initializeNconfSync(argv) {
     nconf.argv(argv).env({
         transform(obj) {
             if (isAppEnvConfigKey(obj.key)) {
@@ -119,16 +79,25 @@ function initializeNconfSync(argv) {
         separator: exports.environmentVariableDepthSeparator,
         parseValues: true,
         readOnly: true,
+    }).defaults({
+        ncgc: {
+            configDir: constants_1.getDefaultConfigDirectory()
+        }
     });
+    const configDir = normalizeConfigDirPath(nconf.get().ncgc.configDir);
+    if (await fs_1.promises.access(configDir, fs_1.constants.R_OK | fs_1.constants.F_OK)
+        .catch(() => true)
+        || !(await fs_1.promises.stat(configDir)).isDirectory()) {
+        throw new TypeError(`Could not find path to config directory: ${configDir}`);
+    }
+    configDirectory = configDir;
+    nconf.set("ncgc.configDir".replace(/\./g, ':'), configDir);
     const files = [
-        'default',
-        exports.environment,
-        'local',
         `local-${exports.environment}`,
-    ].flatMap(b => fileExtensionsAndFormats.map(([ext, format]) => [`${b}${ext}`, format])).map(([extension, format]) => [
-        path.join(getConfigDirectory(), extension),
-        format,
-    ]);
+        'local',
+        exports.environment,
+        'default',
+    ].flatMap(b => fileExtensionsAndFormats.map(([ext, format]) => _types_1.t(`${b}${ext}`, format)));
     const directory = getConfigDirectory();
     for (const [fileName, format] of files) {
         // NOTE: `dir: string` and `search: boolean` may be added to sniff child directories for configs
@@ -137,7 +106,21 @@ function initializeNconfSync(argv) {
             file: path.join(directory, fileName),
         });
     }
+    // (nconf as any).loadFilesSync();
+    config = nconf.get();
 }
+function normalizeConfigDirPath(possiblePath) {
+    const configDirectory = path.normalize(possiblePath.trim());
+    return path.isAbsolute(configDirectory)
+        ? configDirectory
+        : path.resolve(configDirectory);
+}
+const fileExtensionsAndFormats = [
+    _types_1.t('.toml', TOML),
+    _types_1.t('.yml', YAML),
+    _types_1.t('.yaml', YAML),
+    _types_1.t('.json', JSON),
+];
 function isAppEnvConfigKey(key) {
     return key.slice(0, lowerCaseEnvVariableStart.length).toLowerCase() === lowerCaseEnvVariableStart;
 }

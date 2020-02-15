@@ -9,8 +9,9 @@
   "scripts": {
     "test": "jest",
     "lint": "tslint -p .",
-    "build": "rimraf ./dist && ttsc",
     "start": "node ./dist",
+    "clear": "rimraf ./dist",
+    "build": "npm run clear && ttsc",
     "start:b": "npm run build && npm start",
     "start:brk": "node --inspect-brk ./dist",
     "start:b:brk": "npm run build && npm run start:brk",
