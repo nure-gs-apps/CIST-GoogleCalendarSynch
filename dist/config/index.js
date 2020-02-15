@@ -5,7 +5,6 @@ const nconf = require("nconf");
 const path = require("path");
 const fs_1 = require("fs");
 const constants_1 = require("./constants");
-const iterare_1 = require("iterare");
 const _types_1 = require("../@types");
 const common_1 = require("../utils/common");
 const YAML = require("yaml");
@@ -15,17 +14,6 @@ let config = null;
 exports.appConfigPrefix = "ncgc";
 exports.environmentVariableDepthSeparator = '__';
 const lowerCaseEnvVariableStart = `${exports.appConfigPrefix}${exports.environmentVariableDepthSeparator}`.toLowerCase();
-function tryGetConfigDirFromEnv() {
-    var _a;
-    // tslint:disable-next-line:no-non-null-assertion
-    const configDirectoryEnvKey = `${lowerCaseEnvVariableStart}${"configDir"}`;
-    return _a = iterare_1.default(common_1.objectEntries(process.env))
-        .filter(([key]) => isAppEnvConfigKey(key))
-        .map(([key, value]) => _types_1.t(transformAppEnvConfigKey(key), value))
-        .filter(([key]) => key === configDirectoryEnvKey)
-        .take(1).map(([, value]) => value).toArray()[0], (_a !== null && _a !== void 0 ? _a : null);
-}
-exports.tryGetConfigDirFromEnv = tryGetConfigDirFromEnv;
 var Environment;
 (function (Environment) {
     Environment["Development"] = "development";
@@ -91,22 +79,20 @@ async function doInitializeConfig(argv) {
         throw new TypeError(`Could not find path to config directory: ${configDir}`);
     }
     configDirectory = configDir;
-    nconf.set("ncgc.configDir".replace(/\./g, ':'), configDir);
+    nconf.set("ncgc.configDir".replace(/\./g, ':'), configDirectory);
     const files = [
         `local-${exports.environment}`,
         'local',
         exports.environment,
         'default',
     ].flatMap(b => fileExtensionsAndFormats.map(([ext, format]) => _types_1.t(`${b}${ext}`, format)));
-    const directory = getConfigDirectory();
     for (const [fileName, format] of files) {
         // NOTE: `dir: string` and `search: boolean` may be added to sniff child directories for configs
         nconf.file(fileName, {
             format,
-            file: path.join(directory, fileName),
+            file: path.join(configDirectory, fileName),
         });
     }
-    // (nconf as any).loadFilesSync();
     config = nconf.get();
 }
 function normalizeConfigDirPath(possiblePath) {

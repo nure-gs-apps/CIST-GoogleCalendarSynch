@@ -3,7 +3,10 @@ import './polyfills';
 import { getConfig, initializeConfig } from './config';
 import { getBasicCliConfiguration } from './config/types';
 
-initializeConfig(getBasicCliConfiguration()).then(() => {
+const yargs = getBasicCliConfiguration()
+  .help();
+
+initializeConfig(yargs).then(() => {
   // import('./main').catch(failStart);
   console.log(getConfig());
 }).catch(failStart);

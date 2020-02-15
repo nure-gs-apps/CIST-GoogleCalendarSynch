@@ -4,7 +4,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("./polyfills");
 const config_1 = require("./config");
 const types_1 = require("./config/types");
-config_1.initializeConfig(types_1.getBasicCliConfiguration()).then(() => {
+const yargs = types_1.getBasicCliConfiguration()
+    .help();
+config_1.initializeConfig(yargs).then(() => {
     // import('./main').catch(failStart);
     console.log(config_1.getConfig());
 }).catch(failStart);

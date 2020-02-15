@@ -4,9 +4,8 @@ import { promises as fs, constants } from 'fs';
 import { Argv } from 'yargs';
 import { getDefaultConfigDirectory } from './constants';
 import { AppConfig, IFullAppConfig } from './types';
-import iterate from 'iterare';
 import { DeepPartial, DeepReadonly, Nullable, t } from '../@types';
-import { commonCamelCase, objectEntries } from '../utils/common';
+import { commonCamelCase } from '../utils/common';
 import * as YAML from 'yaml';
 import * as TOML from '@iarna/toml';
 
@@ -16,16 +15,6 @@ let config: Nullable<IFullAppConfig> = null;
 export const appConfigPrefix = nameof<IFullAppConfig>(c => c.ncgc);
 export const environmentVariableDepthSeparator = '__';
 const lowerCaseEnvVariableStart = `${appConfigPrefix}${environmentVariableDepthSeparator}`.toLowerCase();
-
-export function tryGetConfigDirFromEnv() {
-  // tslint:disable-next-line:no-non-null-assertion
-  const configDirectoryEnvKey = `${lowerCaseEnvVariableStart}${nameof<AppConfig>(c => c.configDir)}`;
-  return iterate(objectEntries(process.env))
-    .filter(([key]) => isAppEnvConfigKey(key as string))
-    .map(([key, value]) => t(transformAppEnvConfigKey(key as string), value))
-    .filter(([key]) => key === configDirectoryEnvKey)
-    .take(1).map(([, value]) => value).toArray()[0] ?? null;
-}
 
 export enum Environment {
   Development = 'development',
@@ -61,7 +50,7 @@ export function getConfigDirectory() {
 }
 
 let initializeConfigPromise: Nullable<Promise<boolean>> = null;
-export function initializeConfig<T extends IFullAppConfig>(argv: Argv<T>) {
+export function initializeConfig<T extends DeepPartial<IFullAppConfig>>(argv: Argv<T>) {
   if (initializeConfigPromise) {
     return initializeConfigPromise;
   }
