@@ -1,4 +1,4 @@
-import {camelCase, camelCaseTransformMerge} from "change-case";
+import { camelCase, camelCaseTransformMerge } from 'change-case';
 
 export function arrayContentEqual<T>(
   first: ReadonlyArray<T>,

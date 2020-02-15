@@ -4,7 +4,6 @@ import { createContainer, getAsyncInitializers } from './di/container';
 import { TYPES } from './di/types';
 import {
   CistJsonClient,
-  TimetableType,
 } from './services/cist-json-client.service';
 // initialize exit handlers
 import './services/exit-handler.service';
@@ -13,10 +12,6 @@ import { CalendarService } from './services/google/calendar.service';
 import { GroupsService } from './services/google/groups.service';
 import { RoomsService } from './services/google/rooms.service';
 import { logger } from './services/logger.service';
-import {
-  assertEventsResponse,
-  assertGroupsResponse,
-} from './utils/assert-responses';
 
 const container = createContainer();
 getAsyncInitializers().then(main);
@@ -73,5 +68,6 @@ async function main() {
     groupNameChanges,
     roomNameChanges,
   );
+  logger.info(calendars);
   logger.info('Calendars are created');
 }

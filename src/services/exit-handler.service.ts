@@ -1,4 +1,4 @@
-import { Maybe, Nullable } from '../@types';
+import { Nullable } from '../@types';
 import { logger } from './logger.service';
 
 class ListNode {
@@ -33,6 +33,7 @@ class List {
       node.next = this.head;
       this.head = node;
     } else {
+      // tslint:disable-next-line:no-non-null-assertion
       this.tail!.next = node;
     }
     this._length += 1;
@@ -42,10 +43,12 @@ class List {
     if (this._length === 0) {
       return false;
     }
+    // tslint:disable-next-line:no-non-null-assertion
     if (this.head!.handler === handler) {
       this.head = this.tail = null;
       return true;
     }
+    // tslint:disable-next-line:no-non-null-assertion
     let prev = this.head!;
     while (prev.next) {
       if (prev.next.handler === handler) {

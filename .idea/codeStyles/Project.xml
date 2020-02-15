@@ -15,7 +15,6 @@
     </TypeScriptCodeStyleSettings>
     <codeStyleSettings language="TypeScript">
       <option name="RIGHT_MARGIN" value="80" />
-      <option name="LINE_COMMENT_ADD_SPACE" value="false" />
       <option name="KEEP_FIRST_COLUMN_COMMENT" value="false" />
       <option name="CALL_PARAMETERS_WRAP" value="5" />
       <option name="PREFER_PARAMETERS_WRAP" value="true" />

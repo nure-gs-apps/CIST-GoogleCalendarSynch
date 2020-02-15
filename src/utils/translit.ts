@@ -34,7 +34,7 @@ const dict: [string, string][] = [
   ['Ю', 'Yu'], ['ю', 'iu'],
   ['Я', 'Ya'], ['я', 'ia'],
   ['Ь', ''], ['ь', ''],
-  ["'", ''], ['"', ''], ['`', ''],
+  ['\'', ''], ['"', ''], ['`', ''],
 ];
 const cyrillicToEnglish: ReadonlyMap<string, string> = new Map(dict);
 
@@ -46,6 +46,7 @@ export function toTranslit(
   const newValue = [];
   for (const c of value) {
     const transliterated = cyrillicToEnglish.has(c)
+      // tslint:disable-next-line:no-non-null-assertion
       ? cyrillicToEnglish.get(c)!
       : c;
     newValue.push(transliterated);

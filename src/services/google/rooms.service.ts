@@ -96,6 +96,7 @@ export class RoomsService {
             if (newToOldNames && roomPatch.resourceName) {
               newToOldNames.set(
                 roomPatch.resourceName,
+                // tslint:disable-next-line:no-non-null-assertion
                 googleRoom.resourceName!,
               );
             }
@@ -156,6 +157,7 @@ export class RoomsService {
           }
         }
         return true;
+        // tslint:disable-next-line:no-non-null-assertion
       }).map(r => r.resourceId!).toSet(),
     ));
   }
@@ -175,6 +177,7 @@ export class RoomsService {
           }
         }
         return false;
+        // tslint:disable-next-line:no-non-null-assertion
       }).map(r => r.resourceId!).toSet(),
     ));
   }
@@ -213,6 +216,7 @@ export class RoomsService {
     promises = [] as GaxiosPromise<void>[],
   ) {
     for (const googleRoom of rooms) {
+      // tslint:disable-next-line:no-non-null-assertion
       if (ids.has(googleRoom.resourceId!)) {
         promises.push(
           this._delete({

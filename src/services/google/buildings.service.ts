@@ -133,6 +133,7 @@ export class BuildingsService {
         !cistResponse.university.buildings.some(
           b => isSameIdentity(b, building),
         )
+        // tslint:disable-next-line:no-non-null-assertion
       )).map(b => b.buildingId!).toSet(),
     ));
   }
@@ -146,6 +147,7 @@ export class BuildingsService {
         cistResponse.university.buildings.some(
           b => isSameIdentity(b, building),
         )
+        // tslint:disable-next-line:no-non-null-assertion
       )).map(b => b.buildingId!).toSet(),
     ));
   }
@@ -181,6 +183,7 @@ export class BuildingsService {
     promises = [] as GaxiosPromise<void>[],
   ) {
     for (const googleBuilding of buildings) {
+      // tslint:disable-next-line:no-non-null-assertion
       if (ids.has(googleBuilding.buildingId!)) {
         promises.push(
           this._delete({
@@ -221,6 +224,7 @@ function cistBuildingToGoogleBuildingPatch(
     hasChanges = true;
   }
   const floorNames = getFloornamesFromBuilding(cistBuilding);
+  // tslint:disable-next-line:no-non-null-assertion
   if (!arrayContentEqual(googleBuilding.floorNames!, floorNames)) {
     buildingPatch.floorNames = floorNames;
     hasChanges = true;

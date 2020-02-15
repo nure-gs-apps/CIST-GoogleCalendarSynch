@@ -5,26 +5,26 @@ import { Argv } from 'yargs';
 import { defaultConfigDirectory } from './constants';
 import { AppConfig, IFullAppConfig } from './types';
 import iterate from 'iterare';
-import { Nullable } from '../@types';
-import { commonCamelCase, objectKeys } from '../utils/common';
+import { DeepPartial, Nullable, t } from '../@types';
+import { commonCamelCase, objectEntries } from '../utils/common';
 import * as YAML from 'yaml';
 import * as TOML from '@iarna/toml';
 
 const config: Nullable<IFullAppConfig> = null;
 
 // tslint:disable-next-line:no-non-null-assertion
-export const appConfigPrefix = nameof(config!.ncgc);
+export const appConfigPrefix = nameof<IFullAppConfig>(c => c.ncgc);
 export const environmentVariableDepthSeparator = '__';
 const lowerCaseEnvVariableStart = `${appConfigPrefix}${environmentVariableDepthSeparator}`.toLowerCase();
 
 export function tryGetConfigDirFromEnv() {
   // tslint:disable-next-line:no-non-null-assertion
-  const configDirectoryEnvKey = `${lowerCaseEnvVariableStart}${nameof(config!.ncgc.configDir)}`;
-  return process.env[iterate(objectKeys(process.env))
-    .filter(key => isAppEnvConfigKey(key))
-    .map(transformAppEnvConfigKey)
-    .filter(key => key === configDirectoryEnvKey)
-    .take(1).toArray()[0]];
+  const configDirectoryEnvKey = `${lowerCaseEnvVariableStart}${nameof<AppConfig>(c => c.configDir)}`;
+  return iterate(objectEntries(process.env))
+    .filter(([key]) => isAppEnvConfigKey(key as string))
+    .map(([key, value]) => t(transformAppEnvConfigKey(key as string), value))
+    .filter(([key]) => key === configDirectoryEnvKey)
+    .take(1).map(([, value]) => value).toArray()[0] ?? null;
 }
 
 export enum Environment {
@@ -73,10 +73,12 @@ export function initializeConfig<T extends IFullAppConfig>(argv: Argv<T>) {
   return initializeConfigPromise;
 }
 
-async function doInitializeConfig<T extends IFullAppConfig>(argv: Argv<T>) {
+async function doInitializeConfig<T extends DeepPartial<IFullAppConfig>>(
+  argv: Argv<T>
+) {
   const configDirectoryOverrides = [
+    argv.argv?.ncgc?.configDir,
     tryGetConfigDirFromEnv(),
-    argv.argv.ncgc.configDir,
   ].filter(v => typeof v === 'string');
   const configDir = normalizeConfigDirPath(
     configDirectoryOverrides[0] || defaultConfigDirectory,
@@ -92,7 +94,7 @@ async function doInitializeConfig<T extends IFullAppConfig>(argv: Argv<T>) {
         break;
 
       case 1:
-        message += typeof argv.argv.ncgc.configDir === 'string'
+        message += typeof argv.argv?.ncgc?.configDir === 'string'
           ? invalidCommandLine
           : 'Environmental variable is invalid.';
         break;
@@ -121,7 +123,7 @@ const fileExtensionsAndFormats = [
   ['.toml', TOML] as ExtensionAndFormat,
 ] as ReadonlyArray<ExtensionAndFormat>;
 
-function initializeNconfSync<T extends IFullAppConfig>(argv: Argv<T>) {
+function initializeNconfSync<T extends DeepPartial<IFullAppConfig>>(argv: Argv<T>) {
   nconf.argv(argv).env({
     transform(obj: { key: string, value: any}) {
       if (isAppEnvConfigKey(obj.key)) {

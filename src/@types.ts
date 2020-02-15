@@ -68,6 +68,13 @@ export type Mutable<T> = {
   -readonly [P in keyof T]: T[P];
 };
 
+export function t<A>(...args: [A]): [A];
+export function t<A, B>(...args: [A, B]): [A, B];
+export function t<A, B, C>(...args: [A, B, C]): [A, B, C];
+export function t(...args: any[]): any[] {
+  return args;
+}
+
 export interface IApiQuota {
   daily: number;
   period: number;

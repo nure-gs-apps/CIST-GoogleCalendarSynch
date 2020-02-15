@@ -7,14 +7,11 @@ import {
   ApiAuditoriesResponse, ApiAuditory, ApiGroup,
   ApiGroupsResponse,
 } from '../cist-json-client.service';
-import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { domainName } from './constants';
 import { GoogleApiCalendar } from './google-api-calendar';
-import { getGroupEmail } from './groups.service';
 import Schema$Calendar = calendar_v3.Schema$Calendar;
 import Schema$CalendarListEntry = calendar_v3.Schema$CalendarListEntry;
-import { GaxiosPromise } from 'gaxios';
 
 export interface ICalendars {
   groupCalendars: Map<string, Schema$Calendar | Schema$CalendarListEntry>;
@@ -46,6 +43,7 @@ export class CalendarService {
         this._calendar.googleCalendar.calendars,
       ),
     ) as any;
+    console.log(this._getCalendar); // TODO: remove
     this._listCalendarList = quotaLimiter.limiter.wrap(
       this._calendar.googleCalendar.calendarList.list.bind(
         this._calendar.googleCalendar.calendarList,
@@ -177,10 +175,12 @@ export class CalendarService {
     let groupName = cistGroup.name;
     let changeName = false;
     if (newToOldGroupNames && newToOldGroupNames.has(groupName)) {
+      // tslint:disable-next-line:no-non-null-assertion
       groupName = newToOldGroupNames.get(groupName)!;
       changeName = true;
     }
     if (calendarMap.has(groupName)) {
+      // tslint:disable-next-line:no-non-null-assertion
       return calendarMap.get(groupName)!;
     }
     const groupNameWithPrefix = prependPrefix(groupName);
@@ -217,6 +217,7 @@ export class CalendarService {
     let roomName = cistRoom.short_name;
     let changeName = false;
     if (newToOldRoomNames && newToOldRoomNames.has(roomName)) {
+      // tslint:disable-next-line:no-non-null-assertion
       roomName = newToOldRoomNames.get(roomName)!;
       changeName = true;
     }
@@ -253,6 +254,7 @@ export class CalendarService {
     });
     await Promise.all([
       this._insertAcl({
+        // tslint:disable-next-line:no-non-null-assertion
         calendarId: response.data.id!,
         requestBody: {
           role: 'reader',
@@ -262,6 +264,7 @@ export class CalendarService {
         },
       }),
       this._insertAcl({
+        // tslint:disable-next-line:no-non-null-assertion
         calendarId: response.data.id!,
         requestBody: {
           role: 'reader',

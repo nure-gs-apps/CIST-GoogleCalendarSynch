@@ -1,10 +1,8 @@
-import { admin_directory_v1, calendar_v3 } from 'googleapis';
+import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
-import { toBase64 } from '../../utils/common';
-import * as v from 'voca';
 import { toTranslit } from '../../utils/translit';
 import { ApiGroup, ApiGroupsResponse } from '../cist-json-client.service';
 import { logger } from '../logger.service';
@@ -14,8 +12,6 @@ import { GoogleApiDirectory } from './google-api-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 import Resource$Groups = admin_directory_v1.Resource$Groups;
 import { GaxiosPromise } from 'gaxios';
-import Schema$Calendar = calendar_v3.Schema$Calendar;
-import Schema$CalendarListEntry = calendar_v3.Schema$CalendarListEntry;
 
 @injectable()
 export class GroupsService {
@@ -153,6 +149,7 @@ export class GroupsService {
           }
         }
         return false;
+        // tslint:disable-next-line:no-non-null-assertion
       }).map(g => g.id!).toSet(),
     );
   }
@@ -183,6 +180,7 @@ export class GroupsService {
           }
         }
         return true;
+        // tslint:disable-next-line:no-non-null-assertion
       }).map(g => g.id!).toSet(),
     );
   }
@@ -230,6 +228,7 @@ export class GroupsService {
       );
       if (groupPatch) {
         if (newToOldNames && groupPatch.name) {
+          // tslint:disable-next-line:no-non-null-assertion
           newToOldNames.set(groupPatch.name, googleGroup.name!);
         }
         logger.debug(`Patching group ${cistGroup.name}`);
@@ -254,6 +253,7 @@ export class GroupsService {
   private doDeleteByIds(groups: ReadonlyArray<Schema$Group>, ids: Set<string>) {
     const promises = [];
     for (const group of groups) {
+      // tslint:disable-next-line:no-non-null-assertion
       if (ids.has(group.id!)) {
         promises.push(
           this._delete({
@@ -303,6 +303,7 @@ export function isSameIdenity(
   cistGroup: ApiGroup,
   googleGroup: Schema$Group,
 ) {
+  // tslint:disable-next-line:no-non-null-assertion
   const emailParts = googleGroup.email!.split('@');
   const parts = emailParts[emailParts.length - 2].split('.');
   return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);

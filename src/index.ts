@@ -1,9 +1,11 @@
 // IMPORTANT! INSTALLS MONKEY PATCHES
 import './polyfills';
-import { initializeConfig } from './config';
+import { getConfig, initializeConfig } from './config';
+import { getBasicCliConfiguration } from './config/types';
 
-initializeConfig(null as any).then(() => {
-  import('./main').catch(failStart);
+initializeConfig(getBasicCliConfiguration()).then(() => {
+  // import('./main').catch(failStart);
+  console.log(getConfig());
 }).catch(failStart);
 
 function failStart(error: any) {

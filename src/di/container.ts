@@ -1,4 +1,3 @@
-import Bottleneck from 'bottleneck';
 import { getConfig } from '../config';
 import { BindingScopeEnum, Container } from 'inversify';
 import { ICalendarConfig, Nullable } from '../@types';
@@ -64,6 +63,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
     container.bind<string>(TYPES.GoogleAuthKeyFilepath)
       .toConstantValue(
         getConfig().google.auth.keyFilepath // TODO: clarify configuration
+        // tslint:disable-next-line:no-non-null-assertion
           || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
       );
     container.bind<ReadonlyArray<string>>(TYPES.GoogleAuthScopes)
@@ -136,6 +136,7 @@ export function getAsyncInitializers() {
     );
   }
 
+  // tslint:disable-next-line:no-non-null-assertion
   initPromise = Promise.all(promises!);
   return initPromise;
 }

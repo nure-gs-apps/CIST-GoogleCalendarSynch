@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "jest",
+    "lint": "tslint -p .",
     "build": "rimraf ./dist && ttsc",
     "start": "node ./dist",
     "start:b": "npm run build && npm start",

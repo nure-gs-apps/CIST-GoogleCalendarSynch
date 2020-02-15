@@ -20,7 +20,7 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,
-    "incremental": true,
+    "incremental": false,
     "inlineSources": false,
     "isolatedModules": false,
     "keyofStringsOnly": false,
@@ -39,7 +39,7 @@
     "noImplicitThis": true,
     "noImplicitUseStrict": false,
     "noStrictGenericChecks": false,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "outDir": "./dist",
     "plugins": [
       { "transform": "ts-nameof", "type": "raw" }
