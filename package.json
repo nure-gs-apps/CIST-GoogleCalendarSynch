@@ -31,6 +31,7 @@
   "homepage": "https://github.com/nure-gs-apps/CIST-GoogleCalendarSynch#readme",
   "dependencies": {
     "@iarna/toml": "^2.2.3",
+    "@types/moment-timezone": "^0.5.12",
     "app-root-path": "^3.0.0",
     "axios": "^0.19.2",
     "bluebird": "^3.7.2",
@@ -43,6 +44,8 @@
     "inversify": "^5.0.1",
     "iterare": "^1.2.0",
     "js-yaml": "^3.13.1",
+    "moment": "^2.24.0",
+    "moment-timezone": "^0.5.27",
     "nconf": "^0.10.0",
     "readonly-date": "^1.0.0",
     "reflect-metadata": "^0.1.13",

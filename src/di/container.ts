@@ -2,7 +2,7 @@ import { getConfig } from '../config';
 import { BindingScopeEnum, Container } from 'inversify';
 import { ICalendarConfig, Nullable } from '../@types';
 import { ConfigService } from '../config/config.service';
-import { CistJsonClient } from '../services/cist-json-client.service';
+import { CistJsonClient } from '../services/cist/cist-json-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
 import {

@@ -9,7 +9,7 @@ import { arrayContentEqual } from '../../utils/common';
 import {
   ApiAuditoriesResponse,
   ApiBuilding,
-} from '../cist-json-client.service';
+} from '../cist/cist-json-client.service';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';

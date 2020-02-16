@@ -6,7 +6,7 @@ import { TYPES } from '../../di/types';
 import {
   ApiAuditoriesResponse, ApiAuditory, ApiGroup,
   ApiGroupsResponse,
-} from '../cist-json-client.service';
+} from '../cist/cist-json-client.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { GoogleApiCalendar } from './google-api-calendar';
 import { UtilsService } from './utils.service';

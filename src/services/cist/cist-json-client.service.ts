@@ -1,8 +1,8 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import * as iconv from 'iconv-lite';
 import { inject, injectable } from 'inversify';
-import { TYPES } from '../di/types';
-import { dateToSeconds } from '../utils/common';
+import { TYPES } from '../../di/types';
+import { dateToSeconds } from '../../utils/common';
 
 export interface ApiAuditoriesResponse {
   university: {

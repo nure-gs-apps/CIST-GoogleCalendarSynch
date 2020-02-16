@@ -4,7 +4,7 @@ import { createContainer, getAsyncInitializers } from './di/container';
 import { TYPES } from './di/types';
 import {
   CistJsonClient,
-} from './services/cist-json-client.service';
+} from './services/cist/cist-json-client.service';
 // initialize exit handlers
 import './services/exit-handler.service';
 import { BuildingsService } from './services/google/buildings.service';
