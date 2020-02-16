@@ -8,8 +8,8 @@ import {
   ApiGroupsResponse,
 } from '../cist-json-client.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
-import { domainName } from './constants';
 import { GoogleApiCalendar } from './google-api-calendar';
+import { UtilsService } from './utils.service';
 import Schema$Calendar = calendar_v3.Schema$Calendar;
 import Schema$CalendarListEntry = calendar_v3.Schema$CalendarListEntry;
 
@@ -21,6 +21,7 @@ export interface ICalendars {
 @injectable()
 export class CalendarService {
   static readonly CALENDAR_LIST_PAGE_SIZE = 250; // maximum
+  private readonly _utils: UtilsService;
   private readonly _calendar: GoogleApiCalendar;
   private readonly _calendarConfig: ICalendarConfig;
 
@@ -34,7 +35,10 @@ export class CalendarService {
     @inject(TYPES.GoogleApiCalendar) googleApiCalendar: GoogleApiCalendar,
     @inject(TYPES.GoogleCalendarQuotaLimiter) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleCalendarConfig) calendarConfig: ICalendarConfig,
+    @inject(TYPES.GoogleUtils) utils: UtilsService,
   ) {
+    this._utils = utils;
+
     this._calendar = googleApiCalendar;
     this._calendarConfig = calendarConfig;
 
@@ -270,7 +274,7 @@ export class CalendarService {
           role: 'reader',
           scope: {
             type: 'domain',
-            value: domainName,
+            value: this._utils.domainName,
           },
         },
       }),
@@ -308,7 +312,7 @@ export function getRoomCalendarPatch(roomName: string) {
 }
 
 const prependPrefix = (() => {
-  const calenarConfig = getConfig().google.calendar; // TODO: move to helper service
+  const calenarConfig = getConfig().google.calendar; // TODO: move to helper service or remove
   return calenarConfig.prefix
     ? (value: string) => calenarConfig.prefix + value
     : (value: string) => value;

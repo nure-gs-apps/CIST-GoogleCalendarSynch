@@ -1,6 +1,7 @@
 import { getConfig } from '../config';
 import { BindingScopeEnum, Container } from 'inversify';
 import { ICalendarConfig, Nullable } from '../@types';
+import { ConfigService } from '../config/config.service';
 import { CistJsonClient } from '../services/cist-json-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
@@ -15,6 +16,7 @@ import { GoogleApiDirectory } from '../services/google/google-api-directory';
 import { GroupsService } from '../services/google/groups.service';
 import { IGoogleAuth } from '../services/google/interfaces';
 import { RoomsService } from '../services/google/rooms.service';
+import { UtilsService } from '../services/google/utils.service';
 import {
   getQuotaLimiterFactory,
   QuotaLimiterService,
@@ -110,6 +112,8 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
     container.bind<CistJsonClient>(TYPES.CistJsonClient).to(CistJsonClient);
   }
+  container.bind<UtilsService>(TYPES.GoogleUtils).to(UtilsService);
+  container.bind<ConfigService>(TYPES.Config).to(ConfigService);
   return container;
 }
 

@@ -4,9 +4,28 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const constants_1 = require("./constants");
 const change_case_1 = require("change-case");
+const index_1 = require("./index");
 function getBasicCliConfiguration() {
-    // FIXME: add overrides for quotas object (seems to long options)
+    // FIXME: add overrides for quotas object (seems too long options)
     return yargs
+        .parserConfiguration({
+        'sort-commands': false,
+        'boolean-negation': true,
+        'camel-case-expansion': true,
+        'combine-arrays': true,
+        'dot-notation': true,
+        'duplicate-arguments-array': true,
+        'flatten-duplicate-arrays': false,
+        'halt-at-non-option': false,
+        'negation-prefix': 'no-',
+        'parse-numbers': true,
+        'populate--': false,
+        'set-placeholder-key': false,
+        'short-option-groups': true,
+        'strip-aliased': true,
+        'strip-dashed': true,
+        'unknown-options-as-args': true // allows usage of undocumented options (not in help)
+    })
         .option(o("ncgc.configDir"), {
         alias: 'd',
         type: 'string',
@@ -40,6 +59,15 @@ function getBasicCliConfiguration() {
     });
 }
 exports.getBasicCliConfiguration = getBasicCliConfiguration;
+function assertConfig() {
+    const idPrefix = index_1.getConfig().google.idPrefix; // TODO: move to helper service
+    const prefixIsValid = idPrefix === null || idPrefix === '' || (typeof idPrefix === 'string'
+        && /^\w+$/.test(idPrefix));
+    if (!prefixIsValid) {
+        throw new TypeError('idPrefix must be a alphanumeral string or null to omit');
+    }
+}
+exports.assertConfig = assertConfig;
 function o(paramName) {
     return paramName
         .split('.')

@@ -1,24 +1,27 @@
+import { GaxiosPromise } from 'gaxios';
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
-import { arrayContentEqual, toBase64 } from '../../utils/common';
+import { getFloornamesFromBuilding } from '../../utils/cist';
+import { arrayContentEqual } from '../../utils/common';
 import {
   ApiAuditoriesResponse,
   ApiBuilding,
 } from '../cist-json-client.service';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
-import { customer, prependIdPrefix } from './constants';
+import { customer } from './constants';
 import { GoogleApiDirectory } from './google-api-directory';
-import Schema$Building = admin_directory_v1.Schema$Building;
+import { UtilsService } from './utils.service';
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
-import { GaxiosPromise } from 'gaxios';
+import Schema$Building = admin_directory_v1.Schema$Building;
 
 @injectable()
 export class BuildingsService {
   static readonly BUILDING_PAGE_SIZE = 100;
+  private readonly _utils: UtilsService;
   private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
@@ -46,7 +49,10 @@ export class BuildingsService {
     @inject(
       TYPES.GoogleDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
+    @inject(TYPES.GoogleUtils) utils: UtilsService,
   ) {
+    this._utils = utils;
+
     this._directory = googleApiDirectory;
     this._buildings = this._directory.googleDirectory.resources.buildings;
     this._quotaLimiter = quotaLimiter;
@@ -75,9 +81,9 @@ export class BuildingsService {
 
     const promises = [] as GaxiosPromise<any>[];
     for (const cistBuilding of cistResponse.university.buildings) {
-      const googleBuildingId = getGoogleBuildingId(cistBuilding);
+      const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
       const googleBuilding = buildings.find(
-        b => isSameIdentity(cistBuilding, b, googleBuildingId),
+        b => b.buildingId === googleBuildingId,
       );
       if (googleBuilding) {
         const buildingPatch = cistBuildingToGoogleBuildingPatch(
@@ -99,7 +105,7 @@ export class BuildingsService {
         promises.push(
           this._insert({
             customer,
-            requestBody: cistBuildingToInsertGoogleBuilding(
+            requestBody: this.cistBuildingToInsertGoogleBuilding(
               cistBuilding,
               googleBuildingId,
             ),
@@ -131,7 +137,7 @@ export class BuildingsService {
       buildings,
       iterate(buildings).filter(building => (
         !cistResponse.university.buildings.some(
-          b => isSameIdentity(b, building),
+          b => this._utils.isSameBuildingIdentity(b, building),
         )
         // tslint:disable-next-line:no-non-null-assertion
       )).map(b => b.buildingId!).toSet(),
@@ -145,7 +151,7 @@ export class BuildingsService {
       buildings,
       iterate(buildings).filter(building => (
         cistResponse.university.buildings.some(
-          b => isSameIdentity(b, building),
+          b => this._utils.isSameBuildingIdentity(b, building),
         )
         // tslint:disable-next-line:no-non-null-assertion
       )).map(b => b.buildingId!).toSet(),
@@ -195,18 +201,18 @@ export class BuildingsService {
     }
     return promises;
   }
-}
 
-function cistBuildingToInsertGoogleBuilding(
-  cistBuilding: ApiBuilding,
-  id = getGoogleBuildingId(cistBuilding),
-): Schema$Building {
-  return {
-    buildingId: id,
-    buildingName: cistBuilding.short_name,
-    description: cistBuilding.full_name,
-    floorNames: getFloornamesFromBuilding(cistBuilding),
-  };
+  private cistBuildingToInsertGoogleBuilding(
+    cistBuilding: ApiBuilding,
+    id = this._utils.getGoogleBuildingId(cistBuilding),
+  ): Schema$Building {
+    return {
+      buildingId: id,
+      buildingName: cistBuilding.short_name,
+      description: cistBuilding.full_name,
+      floorNames: getFloornamesFromBuilding(cistBuilding),
+    };
+  }
 }
 
 function cistBuildingToGoogleBuildingPatch(
@@ -230,30 +236,4 @@ function cistBuildingToGoogleBuildingPatch(
     hasChanges = true;
   }
   return hasChanges ? buildingPatch : null;
-}
-
-// FIXME: maybe move to other place
-function getFloornamesFromBuilding(building: ApiBuilding) {
-  return Array.from(iterate(building.auditories)
-    .map(r => transformFloorname(r.floor))
-    .toSet()
-    .values());
-}
-
-export function isSameIdentity(
-  cistBuilding: ApiBuilding,
-  googleBuilding: Schema$Building,
-  googleBuildingId = getGoogleBuildingId(cistBuilding),
-) {
-  return googleBuilding.buildingId === googleBuildingId;
-}
-
-export const buildingIdPrefix = 'b';
-export function getGoogleBuildingId(cistBuilding: ApiBuilding) {
-  return prependIdPrefix(`${buildingIdPrefix}.${toBase64(cistBuilding.id)}`);
-}
-
-const emptyFloorName = /^\s*$/;
-export function transformFloorname(floorName: string) {
-  return !emptyFloorName.test(floorName) ? floorName : '_';
 }

@@ -14,9 +14,11 @@ export const TYPES = {
   GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
 
   // class tokens
+  Config: Symbol.for('Config'),
   CistJsonClient: Symbol.for('CistJsonClient'),
 
   GoogleAuth: Symbol.for('GoogleAuth'),
+  GoogleUtils: Symbol.for('GoogleUtils'),
   GoogleDirectoryQuotaLimiter: Symbol.for('GoogleDirectoryQuotaLimiter'),
   GoogleCalendarQuotaLimiter: Symbol.for('GoogleCalendarQuotaLimiter'),
   GoogleApiDirectory: Symbol.for('GoogleApiDirectory'),

@@ -3,19 +3,20 @@ import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
-import { toTranslit } from '../../utils/translit';
 import { ApiGroup, ApiGroupsResponse } from '../cist-json-client.service';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
-import { customer, domainName } from './constants';
+import { customer } from './constants';
 import { GoogleApiDirectory } from './google-api-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 import Resource$Groups = admin_directory_v1.Resource$Groups;
 import { GaxiosPromise } from 'gaxios';
+import { isSameGroupIdenity, UtilsService } from './utils.service';
 
 @injectable()
 export class GroupsService {
   static readonly ROOMS_PAGE_SIZE = 200; // max limit
+  private readonly _utils: UtilsService;
   private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
@@ -43,7 +44,10 @@ export class GroupsService {
     @inject(
       TYPES.GoogleDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
+    @inject(TYPES.GoogleUtils) utils: UtilsService,
   ) {
+    this._utils = utils;
+
     this._directory = googleApiDirectory;
     this._groups = this._directory.googleDirectory.groups;
     this._quotaLimiter = quotaLimiter;
@@ -132,7 +136,7 @@ export class GroupsService {
           for (const direction of faculty.directions) {
             if (direction.groups) {
               const isRelevant = direction.groups.some(
-                cistGroup => isSameIdenity(cistGroup, g),
+                cistGroup =>   isSameGroupIdenity(cistGroup, g),
               );
               if (isRelevant) {
                 return true;
@@ -140,7 +144,7 @@ export class GroupsService {
             }
             for (const speciality of direction.specialities) {
               const isRelevant = speciality.groups.some(
-                cistGroup => isSameIdenity(cistGroup, g),
+                cistGroup => isSameGroupIdenity(cistGroup, g),
               );
               if (isRelevant) {
                 return true;
@@ -163,7 +167,7 @@ export class GroupsService {
           for (const direction of faculty.directions) {
             if (direction.groups) {
               const isRelevant = direction.groups.some(
-                cistGroup => isSameIdenity(cistGroup, g),
+                cistGroup => isSameGroupIdenity(cistGroup, g),
               );
               if (isRelevant) {
                 return false;
@@ -171,7 +175,7 @@ export class GroupsService {
             }
             for (const speciality of direction.specialities) {
               const isRelevant = speciality.groups.some(
-                cistGroup => isSameIdenity(cistGroup, g),
+                cistGroup => isSameGroupIdenity(cistGroup, g),
               );
               if (isRelevant) {
                 return false;
@@ -216,13 +220,13 @@ export class GroupsService {
     insertedGroups: Set<string>,
     newToOldNames: Nullable<Map<string, string>>,
   ) {
-    const googleGroupEmail = getGroupEmail(cistGroup);
+    const googleGroupEmail = this._utils.getGroupEmail(cistGroup);
     const googleGroup = groups.find(
-      g => isSameIdenity(cistGroup, g),
+      g => isSameGroupIdenity(cistGroup, g),
     );
     if (googleGroup) {
       insertedGroups.add(googleGroupEmail);
-      const groupPatch = cistGroupToGoogleGroupPatch(
+      const groupPatch = this.cistGroupToGoogleGroupPatch(
         cistGroup,
         googleGroup,
       );
@@ -246,7 +250,7 @@ export class GroupsService {
     logger.debug(`Inserting group ${cistGroup.name}`);
     insertedGroups.add(googleGroupEmail);
     return this._insert({
-      requestBody: cistGroupToInsertGoogleGroup(cistGroup, googleGroupEmail),
+      requestBody: this.cistGroupToInsertGoogleGroup(cistGroup, googleGroupEmail),
     });
   }
 
@@ -264,67 +268,37 @@ export class GroupsService {
     }
     return Promise.all(promises);
   }
-}
 
-function cistGroupToInsertGoogleGroup(
-  cistGroup: ApiGroup,
-  email = getGroupEmail(cistGroup),
-): Schema$Group {
-  return {
-    email, // TODO: integrate with existing if any
-    name: cistGroup.name,
-    description: cistGroup.name, // TODO: add faculty, direction and speciality info
-  };
-}
-
-function cistGroupToGoogleGroupPatch(
-  cistGroup: ApiGroup,
-  googleGroup: Schema$Group,
-) {
-  let hasChanges = false;
-  const groupPatch = {} as Schema$Group;
-  if (cistGroup.name !== googleGroup.name) {
-    groupPatch.name = cistGroup.name;
-    hasChanges = true;
+  private cistGroupToInsertGoogleGroup(
+    cistGroup: ApiGroup,
+    email = this._utils.getGroupEmail(cistGroup),
+  ): Schema$Group {
+    return {
+      email, // TODO: integrate with existing if any
+      name: cistGroup.name,
+      description: cistGroup.name, // TODO: add faculty, direction and speciality info
+    };
   }
-  if (cistGroup.name !== googleGroup.description) {
-    groupPatch.name = cistGroup.name;
-    hasChanges = true;
-  }
-  const email = getGroupEmail(cistGroup);
-  if (email !== googleGroup.email) {
-    groupPatch.email = email;
-    hasChanges = true;
-  }
-  return hasChanges ? groupPatch : null;
-}
 
-export function isSameIdenity(
-  cistGroup: ApiGroup,
-  googleGroup: Schema$Group,
-) {
-  // tslint:disable-next-line:no-non-null-assertion
-  const emailParts = googleGroup.email!.split('@');
-  const parts = emailParts[emailParts.length - 2].split('.');
-  return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
+  private cistGroupToGoogleGroupPatch(
+    cistGroup: ApiGroup,
+    googleGroup: Schema$Group,
+  ) {
+    let hasChanges = false;
+    const groupPatch = {} as Schema$Group;
+    if (cistGroup.name !== googleGroup.name) {
+      groupPatch.name = cistGroup.name;
+      hasChanges = true;
+    }
+    if (cistGroup.name !== googleGroup.description) {
+      groupPatch.name = cistGroup.name;
+      hasChanges = true;
+    }
+    const email = this._utils.getGroupEmail(cistGroup);
+    if (email !== googleGroup.email) {
+      groupPatch.email = email;
+      hasChanges = true;
+    }
+    return hasChanges ? groupPatch : null;
+  }
 }
-
-export const groupEmailPrefix = 'g';
-export function getGroupEmail(cistGroup: ApiGroup) {
-  const uniqueHash = cistGroup.id.toString();
-  const localPartTemplate = [`${groupEmailPrefix}_`, `.${uniqueHash}`];
-  // is OK for google email, but causes collisions
-  const groupName = toTranslit(
-    cistGroup.name,
-    64 - (localPartTemplate[0].length + localPartTemplate[1].length), // undergo google email limit
-  )
-    .replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_')
-    .toLowerCase();
-  return `${localPartTemplate.join(groupName)}@${domainName}`;
-}
-// // There is another way of making a unique hash
-// // is Unique but too long and unneeded
-// const uniqueHash = toBase64(cistGroup.name)
-//   .split('')
-//   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
-//   .join('');

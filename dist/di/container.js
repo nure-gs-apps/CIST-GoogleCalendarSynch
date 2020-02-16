@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const config_1 = require("../config");
 const inversify_1 = require("inversify");
+const config_service_1 = require("../config/config.service");
 const cist_json_client_service_1 = require("../services/cist-json-client.service");
 const buildings_service_1 = require("../services/google/buildings.service");
 const calendar_service_1 = require("../services/google/calendar.service");
@@ -12,6 +13,7 @@ const google_auth_1 = require("../services/google/google-auth");
 const google_api_directory_1 = require("../services/google/google-api-directory");
 const groups_service_1 = require("../services/google/groups.service");
 const rooms_service_1 = require("../services/google/rooms.service");
+const utils_service_1 = require("../services/google/utils.service");
 const quota_limiter_service_1 = require("../services/quota-limiter.service");
 const types_1 = require("./types");
 let container = null;
@@ -68,6 +70,8 @@ function createContainer(options) {
         container.bind(types_1.TYPES.CistApiKey).toConstantValue(config_1.getConfig().cist.apiKey);
         container.bind(types_1.TYPES.CistJsonClient).to(cist_json_client_service_1.CistJsonClient);
     }
+    container.bind(types_1.TYPES.GoogleUtils).to(utils_service_1.UtilsService);
+    container.bind(types_1.TYPES.Config).to(config_service_1.ConfigService);
     return container;
 }
 exports.createContainer = createContainer;

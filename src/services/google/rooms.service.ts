@@ -3,23 +3,23 @@ import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
-import { toBase64 } from '../../utils/common';
 import {
   ApiAuditoriesResponse,
-  ApiAuditory, ApiBuilding,
+  ApiAuditory,
 } from '../cist-json-client.service';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
-import { getGoogleBuildingId, transformFloorname } from './buildings.service';
-import { customer, prependIdPrefix } from './constants';
+import { customer } from './constants';
 import { GoogleApiDirectory } from './google-api-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise } from 'gaxios';
+import { transformFloorname, UtilsService } from './utils.service';
 
 @injectable()
 export class RoomsService {
   static readonly ROOMS_PAGE_SIZE = 500; // maximum
   static readonly CONFERENCE_ROOM = 'CONFERENCE_ROOM';
+  private readonly _utils: UtilsService;
   private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
@@ -49,7 +49,10 @@ export class RoomsService {
     @inject(
       TYPES.GoogleDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
+    @inject(TYPES.GoogleUtils) utils: UtilsService,
   ) {
+    this._utils = utils;
+
     this._directory = googleApiDirectory;
     this._rooms = this._directory.googleDirectory.resources.calendars;
     this._quotaLimiter = quotaLimiter;
@@ -80,11 +83,11 @@ export class RoomsService {
     const promises = [] as GaxiosPromise<any>[];
     const newToOldNames = new Map<string, string>();
     for (const cistBuilding of cistResponse.university.buildings) {
-      const buildingId = getGoogleBuildingId(cistBuilding);
+      const buildingId = this._utils.getGoogleBuildingId(cistBuilding);
       for (const cistRoom of cistBuilding.auditories) {
-        const cistRoomId = getRoomId(cistRoom, cistBuilding);
+        const cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding);
         const googleRoom = rooms.find(
-          r => isSameIdentity(cistRoom, cistBuilding, r, cistRoomId),
+          r => r.resourceId === cistRoomId,
         );
         if (googleRoom) {
           const roomPatch = cistAuditoryToGoogleRoomPatch(
@@ -150,7 +153,7 @@ export class RoomsService {
       iterate(rooms).filter(r => {
         for (const building of cistResponse.university.buildings) {
           const isRelevant = building.auditories.some(
-            a => isSameIdentity(a, building, r),
+            a => this._utils.isSameIdentity(a, building, r),
           );
           if (isRelevant) {
             return false;
@@ -170,7 +173,7 @@ export class RoomsService {
       iterate(rooms).filter(r => {
         for (const building of cistResponse.university.buildings) {
           const isRelevant = building.auditories.some(
-          a => isSameIdentity(a, building, r),
+          a => this._utils.isSameIdentity(a, building, r),
           );
           if (isRelevant) {
             return true;
@@ -277,18 +280,4 @@ function cistAuditoryToGoogleRoomPatch(
     hasChanges = true;
   }
   return hasChanges ? roomPatch : null;
-}
-
-export function isSameIdentity(
-  cistRoom: ApiAuditory,
-  building: ApiBuilding,
-  googleRoom: Schema$CalendarResource,
-  googleRoomId = getRoomId(cistRoom, building),
-) {
-  return googleRoom.resourceId === googleRoomId;
-}
-
-export const roomIdPrefix = 'r';
-export function getRoomId(room: ApiAuditory, building: ApiBuilding) {
-  return prependIdPrefix(`${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`); // using composite id to ensure uniqueness
 }

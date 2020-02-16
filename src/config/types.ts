@@ -3,6 +3,7 @@ import * as yargs from 'yargs';
 import { DeepPartial, IApiQuota, ICalendarConfig, Nullable } from '../@types';
 import { getDefaultConfigDirectory } from './constants';
 import { paramCase } from 'change-case';
+import { getConfig } from './index';
 
 export interface IFullAppConfig {
   // Keep the key in common camel case or environment config will break
@@ -31,7 +32,7 @@ export type AppConfig = IFullAppConfig['ncgc'];
 
 export function getBasicCliConfiguration(
 ): yargs.Argv<DeepPartial<IFullAppConfig>> {
-  // FIXME: add overrides for quotas object (seems to long options)
+  // FIXME: add overrides for quotas object (seems too long options)
   return yargs
     .parserConfiguration({
       'sort-commands': false,
@@ -91,6 +92,17 @@ export function getBasicCliConfiguration(
         description: 'Google G-Suite\'s path to file with JSON key', // TODO: add regex for path
       }
     );
+}
+
+export function assertConfig() {
+  const idPrefix = getConfig().google.idPrefix; // TODO: move to helper service
+  const prefixIsValid = idPrefix === null || idPrefix === '' || (
+    typeof idPrefix === 'string'
+    && /^\w+$/.test(idPrefix)
+  );
+  if (!prefixIsValid) {
+    throw new TypeError('idPrefix must be a alphanumeral string or null to omit');
+  }
 }
 
 function o(paramName: string) {

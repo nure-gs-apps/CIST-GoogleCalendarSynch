@@ -4,13 +4,19 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
-const translit_1 = require("../../utils/translit");
 const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
+const utils_service_1 = require("./utils.service");
 let GroupsService = class GroupsService {
-    constructor(googleApiDirectory, quotaLimiter) {
+    constructor(googleApiDirectory, quotaLimiter, utils) {
+        Object.defineProperty(this, "_utils", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _utils
+        });
         Object.defineProperty(this, "_directory", {
             enumerable: true,
             configurable: true,
@@ -65,6 +71,7 @@ let GroupsService = class GroupsService {
             writable: true,
             value: _cacheLastUpdate
         });
+        this._utils = utils;
         this._directory = googleApiDirectory;
         this._groups = this._directory.googleDirectory.groups;
         this._quotaLimiter = quotaLimiter;
@@ -132,13 +139,13 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => isSameIdenity(cistGroup, g));
+                        const isRelevant = direction.groups.some(cistGroup => utils_service_1.isSameGroupIdenity(cistGroup, g));
                         if (isRelevant) {
                             return true;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => isSameIdenity(cistGroup, g));
+                        const isRelevant = speciality.groups.some(cistGroup => utils_service_1.isSameGroupIdenity(cistGroup, g));
                         if (isRelevant) {
                             return true;
                         }
@@ -155,13 +162,13 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => isSameIdenity(cistGroup, g));
+                        const isRelevant = direction.groups.some(cistGroup => utils_service_1.isSameGroupIdenity(cistGroup, g));
                         if (isRelevant) {
                             return false;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => isSameIdenity(cistGroup, g));
+                        const isRelevant = speciality.groups.some(cistGroup => utils_service_1.isSameGroupIdenity(cistGroup, g));
                         if (isRelevant) {
                             return false;
                         }
@@ -196,11 +203,11 @@ let GroupsService = class GroupsService {
         this._cacheLastUpdate = null;
     }
     ensureGroup(groups, cistGroup, insertedGroups, newToOldNames) {
-        const googleGroupEmail = getGroupEmail(cistGroup);
-        const googleGroup = groups.find(g => isSameIdenity(cistGroup, g));
+        const googleGroupEmail = this._utils.getGroupEmail(cistGroup);
+        const googleGroup = groups.find(g => utils_service_1.isSameGroupIdenity(cistGroup, g));
         if (googleGroup) {
             insertedGroups.add(googleGroupEmail);
-            const groupPatch = cistGroupToGoogleGroupPatch(cistGroup, googleGroup);
+            const groupPatch = this.cistGroupToGoogleGroupPatch(cistGroup, googleGroup);
             if (groupPatch) {
                 if (newToOldNames && groupPatch.name) {
                     // tslint:disable-next-line:no-non-null-assertion
@@ -221,7 +228,7 @@ let GroupsService = class GroupsService {
         logger_service_1.logger.debug(`Inserting group ${cistGroup.name}`);
         insertedGroups.add(googleGroupEmail);
         return this._insert({
-            requestBody: cistGroupToInsertGoogleGroup(cistGroup, googleGroupEmail),
+            requestBody: this.cistGroupToInsertGoogleGroup(cistGroup, googleGroupEmail),
         });
     }
     doDeleteByIds(groups, ids) {
@@ -237,6 +244,31 @@ let GroupsService = class GroupsService {
         }
         return Promise.all(promises);
     }
+    cistGroupToInsertGoogleGroup(cistGroup, email = this._utils.getGroupEmail(cistGroup)) {
+        return {
+            email,
+            name: cistGroup.name,
+            description: cistGroup.name,
+        };
+    }
+    cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
+        let hasChanges = false;
+        const groupPatch = {};
+        if (cistGroup.name !== googleGroup.name) {
+            groupPatch.name = cistGroup.name;
+            hasChanges = true;
+        }
+        if (cistGroup.name !== googleGroup.description) {
+            groupPatch.name = cistGroup.name;
+            hasChanges = true;
+        }
+        const email = this._utils.getGroupEmail(cistGroup);
+        if (email !== googleGroup.email) {
+            groupPatch.email = email;
+            hasChanges = true;
+        }
+        return hasChanges ? groupPatch : null;
+    }
 };
 Object.defineProperty(GroupsService, "ROOMS_PAGE_SIZE", {
     enumerable: true,
@@ -248,57 +280,10 @@ GroupsService = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleDirectoryQuotaLimiter)),
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
-        quota_limiter_service_1.QuotaLimiterService])
+        quota_limiter_service_1.QuotaLimiterService,
+        utils_service_1.UtilsService])
 ], GroupsService);
 exports.GroupsService = GroupsService;
-function cistGroupToInsertGoogleGroup(cistGroup, email = getGroupEmail(cistGroup)) {
-    return {
-        email,
-        name: cistGroup.name,
-        description: cistGroup.name,
-    };
-}
-function cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
-    let hasChanges = false;
-    const groupPatch = {};
-    if (cistGroup.name !== googleGroup.name) {
-        groupPatch.name = cistGroup.name;
-        hasChanges = true;
-    }
-    if (cistGroup.name !== googleGroup.description) {
-        groupPatch.name = cistGroup.name;
-        hasChanges = true;
-    }
-    const email = getGroupEmail(cistGroup);
-    if (email !== googleGroup.email) {
-        groupPatch.email = email;
-        hasChanges = true;
-    }
-    return hasChanges ? groupPatch : null;
-}
-function isSameIdenity(cistGroup, googleGroup) {
-    // tslint:disable-next-line:no-non-null-assertion
-    const emailParts = googleGroup.email.split('@');
-    const parts = emailParts[emailParts.length - 2].split('.');
-    return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
-}
-exports.isSameIdenity = isSameIdenity;
-exports.groupEmailPrefix = 'g';
-function getGroupEmail(cistGroup) {
-    const uniqueHash = cistGroup.id.toString();
-    const localPartTemplate = [`${exports.groupEmailPrefix}_`, `.${uniqueHash}`];
-    // is OK for google email, but causes collisions
-    const groupName = translit_1.toTranslit(cistGroup.name, 64 - (localPartTemplate[0].length + localPartTemplate[1].length))
-        .replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_')
-        .toLowerCase();
-    return `${localPartTemplate.join(groupName)}@${constants_1.domainName}`;
-}
-exports.getGroupEmail = getGroupEmail;
-// // There is another way of making a unique hash
-// // is Unique but too long and unneeded
-// const uniqueHash = toBase64(cistGroup.name)
-//   .split('')
-//   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
-//   .join('');
 //# sourceMappingURL=groups.service.js.map

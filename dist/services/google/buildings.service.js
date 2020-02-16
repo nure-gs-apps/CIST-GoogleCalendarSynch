@@ -5,13 +5,21 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
+const cist_1 = require("../../utils/cist");
 const common_1 = require("../../utils/common");
 const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
+const utils_service_1 = require("./utils.service");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
-    constructor(googleApiDirectory, quotaLimiter) {
+    constructor(googleApiDirectory, quotaLimiter, utils) {
+        Object.defineProperty(this, "_utils", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _utils
+        });
         Object.defineProperty(this, "_directory", {
             enumerable: true,
             configurable: true,
@@ -66,6 +74,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
             writable: true,
             value: _cacheLastUpdate
         });
+        this._utils = utils;
         this._directory = googleApiDirectory;
         this._buildings = this._directory.googleDirectory.resources.buildings;
         this._quotaLimiter = quotaLimiter;
@@ -88,8 +97,8 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         const buildings = await this.getAllBuildings();
         const promises = [];
         for (const cistBuilding of cistResponse.university.buildings) {
-            const googleBuildingId = getGoogleBuildingId(cistBuilding);
-            const googleBuilding = buildings.find(b => isSameIdentity(cistBuilding, b, googleBuildingId));
+            const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
+            const googleBuilding = buildings.find(b => b.buildingId === googleBuildingId);
             if (googleBuilding) {
                 const buildingPatch = cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding);
                 if (buildingPatch) {
@@ -105,7 +114,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
                 logger_service_1.logger.debug(`Inserting building ${cistBuilding.short_name}`);
                 promises.push(this._insert({
                     customer: constants_1.customer,
-                    requestBody: cistBuildingToInsertGoogleBuilding(cistBuilding, googleBuildingId),
+                    requestBody: this.cistBuildingToInsertGoogleBuilding(cistBuilding, googleBuildingId),
                 }));
             }
         }
@@ -128,14 +137,14 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
     async deleteIrrelevant(cistResponse) {
         const buildings = await this.getAllBuildings();
         this.clearCache();
-        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (!cistResponse.university.buildings.some(b => isSameIdentity(b, building))
+        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (!cistResponse.university.buildings.some(b => this._utils.isSameBuildingIdentity(b, building))
         // tslint:disable-next-line:no-non-null-assertion
         )).map(b => b.buildingId).toSet()));
     }
     async deleteRelevant(cistResponse) {
         const buildings = await this.getAllBuildings();
         this.clearCache();
-        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (cistResponse.university.buildings.some(b => isSameIdentity(b, building))
+        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (cistResponse.university.buildings.some(b => this._utils.isSameBuildingIdentity(b, building))
         // tslint:disable-next-line:no-non-null-assertion
         )).map(b => b.buildingId).toSet()));
     }
@@ -175,6 +184,14 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         }
         return promises;
     }
+    cistBuildingToInsertGoogleBuilding(cistBuilding, id = this._utils.getGoogleBuildingId(cistBuilding)) {
+        return {
+            buildingId: id,
+            buildingName: cistBuilding.short_name,
+            description: cistBuilding.full_name,
+            floorNames: cist_1.getFloornamesFromBuilding(cistBuilding),
+        };
+    }
 };
 Object.defineProperty(BuildingsService, "BUILDING_PAGE_SIZE", {
     enumerable: true,
@@ -186,18 +203,12 @@ BuildingsService = BuildingsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleDirectoryQuotaLimiter)),
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
-        quota_limiter_service_1.QuotaLimiterService])
+        quota_limiter_service_1.QuotaLimiterService,
+        utils_service_1.UtilsService])
 ], BuildingsService);
 exports.BuildingsService = BuildingsService;
-function cistBuildingToInsertGoogleBuilding(cistBuilding, id = getGoogleBuildingId(cistBuilding)) {
-    return {
-        buildingId: id,
-        buildingName: cistBuilding.short_name,
-        description: cistBuilding.full_name,
-        floorNames: getFloornamesFromBuilding(cistBuilding),
-    };
-}
 function cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding) {
     let hasChanges = false;
     const buildingPatch = {};
@@ -209,7 +220,7 @@ function cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding) {
         buildingPatch.description = cistBuilding.full_name;
         hasChanges = true;
     }
-    const floorNames = getFloornamesFromBuilding(cistBuilding);
+    const floorNames = cist_1.getFloornamesFromBuilding(cistBuilding);
     // tslint:disable-next-line:no-non-null-assertion
     if (!common_1.arrayContentEqual(googleBuilding.floorNames, floorNames)) {
         buildingPatch.floorNames = floorNames;
@@ -217,25 +228,4 @@ function cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding) {
     }
     return hasChanges ? buildingPatch : null;
 }
-// FIXME: maybe move to other place
-function getFloornamesFromBuilding(building) {
-    return Array.from(iterare_1.iterate(building.auditories)
-        .map(r => transformFloorname(r.floor))
-        .toSet()
-        .values());
-}
-function isSameIdentity(cistBuilding, googleBuilding, googleBuildingId = getGoogleBuildingId(cistBuilding)) {
-    return googleBuilding.buildingId === googleBuildingId;
-}
-exports.isSameIdentity = isSameIdentity;
-exports.buildingIdPrefix = 'b';
-function getGoogleBuildingId(cistBuilding) {
-    return constants_1.prependIdPrefix(`${exports.buildingIdPrefix}.${common_1.toBase64(cistBuilding.id)}`);
-}
-exports.getGoogleBuildingId = getGoogleBuildingId;
-const emptyFloorName = /^\s*$/;
-function transformFloorname(floorName) {
-    return !emptyFloorName.test(floorName) ? floorName : '_';
-}
-exports.transformFloorname = transformFloorname;
 //# sourceMappingURL=buildings.service.js.map

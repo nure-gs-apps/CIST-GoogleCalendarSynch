@@ -6,10 +6,16 @@ const config_1 = require("../../config");
 const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 const quota_limiter_service_1 = require("../quota-limiter.service");
-const constants_1 = require("./constants");
 const google_api_calendar_1 = require("./google-api-calendar");
+const utils_service_1 = require("./utils.service");
 let CalendarService = CalendarService_1 = class CalendarService {
-    constructor(googleApiCalendar, quotaLimiter, calendarConfig) {
+    constructor(googleApiCalendar, quotaLimiter, calendarConfig, utils) {
+        Object.defineProperty(this, "_utils", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _utils
+        });
         Object.defineProperty(this, "_calendar", {
             enumerable: true,
             configurable: true,
@@ -52,6 +58,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
             writable: true,
             value: _insertAcl
         });
+        this._utils = utils;
         this._calendar = googleApiCalendar;
         this._calendarConfig = calendarConfig;
         this._getCalendar = quotaLimiter.limiter.wrap(this._calendar.googleCalendar.calendars.get.bind(this._calendar.googleCalendar.calendars));
@@ -218,7 +225,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
                     role: 'reader',
                     scope: {
                         type: 'domain',
-                        value: constants_1.domainName,
+                        value: this._utils.domainName,
                     },
                 },
             }),
@@ -237,8 +244,9 @@ CalendarService = CalendarService_1 = tslib_1.__decorate([
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiCalendar)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleCalendarQuotaLimiter)),
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleCalendarConfig)),
+    tslib_1.__param(3, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_calendar_1.GoogleApiCalendar,
-        quota_limiter_service_1.QuotaLimiterService, Object])
+        quota_limiter_service_1.QuotaLimiterService, Object, utils_service_1.UtilsService])
 ], CalendarService);
 exports.CalendarService = CalendarService;
 function isGroupCorrespondingCalendar(groupNameWithPrefix, calendar) {
@@ -264,7 +272,7 @@ function getRoomCalendarPatch(roomName) {
 }
 exports.getRoomCalendarPatch = getRoomCalendarPatch;
 const prependPrefix = (() => {
-    const calenarConfig = config_1.getConfig().google.calendar; // TODO: move to helper service
+    const calenarConfig = config_1.getConfig().google.calendar; // TODO: move to helper service or remove
     return calenarConfig.prefix
         ? (value) => calenarConfig.prefix + value
         : (value) => value;

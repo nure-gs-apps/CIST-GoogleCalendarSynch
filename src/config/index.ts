@@ -3,7 +3,7 @@ import * as path from 'path';
 import { promises as fs, constants } from 'fs';
 import { Argv } from 'yargs';
 import { getDefaultConfigDirectory } from './constants';
-import { AppConfig, IFullAppConfig } from './types';
+import { AppConfig, assertConfig, IFullAppConfig } from './types';
 import { DeepPartial, DeepReadonly, Nullable, t } from '../@types';
 import { commonCamelCase } from '../utils/common';
 import * as YAML from 'yaml';
@@ -62,6 +62,17 @@ export function initializeConfig<T extends DeepPartial<IFullAppConfig>>(argv: Ar
   return initializeConfigPromise;
 }
 
+const fileExtensionsAndFormats = [
+  t('.toml', TOML),
+  t('.yml', YAML),
+  t('.yaml', YAML),
+  t('.json', JSON),
+] as ReadonlyArray<[string, Readonly<nconf.IFormat>]>;
+
+export function getSupportedConfigExtensionsInPriorityOrder() {
+  return fileExtensionsAndFormats.map(([ext]) => ext) as ReadonlyArray<string>;
+}
+
 async function doInitializeConfig<T extends DeepPartial<IFullAppConfig>>(
   argv: Argv<T>
 ) {
@@ -113,6 +124,7 @@ async function doInitializeConfig<T extends DeepPartial<IFullAppConfig>>(
     });
   }
   config = nconf.get();
+  assertConfig();
 }
 
 function normalizeConfigDirPath(possiblePath: string) {
@@ -121,13 +133,6 @@ function normalizeConfigDirPath(possiblePath: string) {
     ? configDirectory
     : path.resolve(configDirectory);
 }
-
-const fileExtensionsAndFormats = [
-  t('.toml', TOML),
-  t('.yml', YAML),
-  t('.yaml', YAML),
-  t('.json', JSON),
-] as ReadonlyArray<[string, nconf.IFormat]>;
 
 function isAppEnvConfigKey(key: string) {
   return key.slice(

@@ -5,6 +5,7 @@ const nconf = require("nconf");
 const path = require("path");
 const fs_1 = require("fs");
 const constants_1 = require("./constants");
+const types_1 = require("./types");
 const _types_1 = require("../@types");
 const common_1 = require("../utils/common");
 const YAML = require("yaml");
@@ -56,6 +57,16 @@ function initializeConfig(argv) {
     return initializeConfigPromise;
 }
 exports.initializeConfig = initializeConfig;
+const fileExtensionsAndFormats = [
+    _types_1.t('.toml', TOML),
+    _types_1.t('.yml', YAML),
+    _types_1.t('.yaml', YAML),
+    _types_1.t('.json', JSON),
+];
+function getSupportedConfigExtensionsInPriorityOrder() {
+    return fileExtensionsAndFormats.map(([ext]) => ext);
+}
+exports.getSupportedConfigExtensionsInPriorityOrder = getSupportedConfigExtensionsInPriorityOrder;
 async function doInitializeConfig(argv) {
     nconf.argv(argv).env({
         transform(obj) {
@@ -94,6 +105,7 @@ async function doInitializeConfig(argv) {
         });
     }
     config = nconf.get();
+    types_1.assertConfig();
 }
 function normalizeConfigDirPath(possiblePath) {
     const configDirectory = path.normalize(possiblePath.trim());
@@ -101,12 +113,6 @@ function normalizeConfigDirPath(possiblePath) {
         ? configDirectory
         : path.resolve(configDirectory);
 }
-const fileExtensionsAndFormats = [
-    _types_1.t('.toml', TOML),
-    _types_1.t('.yml', YAML),
-    _types_1.t('.yaml', YAML),
-    _types_1.t('.json', JSON),
-];
 function isAppEnvConfigKey(key) {
     return key.slice(0, lowerCaseEnvVariableStart.length).toLowerCase() === lowerCaseEnvVariableStart;
 }

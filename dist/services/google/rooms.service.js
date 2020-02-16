@@ -5,14 +5,19 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
-const common_1 = require("../../utils/common");
 const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
-const buildings_service_1 = require("./buildings.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
+const utils_service_1 = require("./utils.service");
 let RoomsService = RoomsService_1 = class RoomsService {
-    constructor(googleApiDirectory, quotaLimiter) {
+    constructor(googleApiDirectory, quotaLimiter, utils) {
+        Object.defineProperty(this, "_utils", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: _utils
+        });
         Object.defineProperty(this, "_directory", {
             enumerable: true,
             configurable: true,
@@ -67,6 +72,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
             writable: true,
             value: _cacheLastUpdate
         });
+        this._utils = utils;
         this._directory = googleApiDirectory;
         this._rooms = this._directory.googleDirectory.resources.calendars;
         this._quotaLimiter = quotaLimiter;
@@ -90,10 +96,10 @@ let RoomsService = RoomsService_1 = class RoomsService {
         const promises = [];
         const newToOldNames = new Map();
         for (const cistBuilding of cistResponse.university.buildings) {
-            const buildingId = buildings_service_1.getGoogleBuildingId(cistBuilding);
+            const buildingId = this._utils.getGoogleBuildingId(cistBuilding);
             for (const cistRoom of cistBuilding.auditories) {
-                const cistRoomId = getRoomId(cistRoom, cistBuilding);
-                const googleRoom = rooms.find(r => isSameIdentity(cistRoom, cistBuilding, r, cistRoomId));
+                const cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding);
+                const googleRoom = rooms.find(r => r.resourceId === cistRoomId);
                 if (googleRoom) {
                     const roomPatch = cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
                     if (roomPatch) {
@@ -141,7 +147,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
         this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
-                const isRelevant = building.auditories.some(a => isSameIdentity(a, building, r));
+                const isRelevant = building.auditories.some(a => this._utils.isSameIdentity(a, building, r));
                 if (isRelevant) {
                     return false;
                 }
@@ -155,7 +161,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
         this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
-                const isRelevant = building.auditories.some(a => isSameIdentity(a, building, r));
+                const isRelevant = building.auditories.some(a => this._utils.isSameIdentity(a, building, r));
                 if (isRelevant) {
                     return true;
                 }
@@ -219,8 +225,10 @@ RoomsService = RoomsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleDirectoryQuotaLimiter)),
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
-        quota_limiter_service_1.QuotaLimiterService])
+        quota_limiter_service_1.QuotaLimiterService,
+        utils_service_1.UtilsService])
 ], RoomsService);
 exports.RoomsService = RoomsService;
 function cistAuditoryToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
@@ -231,7 +239,7 @@ function cistAuditoryToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
         capacity: 999,
         resourceDescription: cistRoom.short_name,
         userVisibleDescription: cistRoom.short_name,
-        floorName: buildings_service_1.transformFloorname(cistRoom.floor),
+        floorName: utils_service_1.transformFloorname(cistRoom.floor),
         resourceCategory: 'CONFERENCE_ROOM',
     };
     return room;
@@ -255,20 +263,11 @@ function cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
         roomPatch.userVisibleDescription = cistRoom.short_name;
         hasChanges = true;
     }
-    const floorName = buildings_service_1.transformFloorname(cistRoom.floor);
+    const floorName = utils_service_1.transformFloorname(cistRoom.floor);
     if (floorName !== googleRoom.floorName) {
         roomPatch.floorName = floorName;
         hasChanges = true;
     }
     return hasChanges ? roomPatch : null;
 }
-function isSameIdentity(cistRoom, building, googleRoom, googleRoomId = getRoomId(cistRoom, building)) {
-    return googleRoom.resourceId === googleRoomId;
-}
-exports.isSameIdentity = isSameIdentity;
-exports.roomIdPrefix = 'r';
-function getRoomId(room, building) {
-    return constants_1.prependIdPrefix(`${exports.roomIdPrefix}.${common_1.toBase64(building.id)}.${common_1.toBase64(room.id)}`); // using composite id to ensure uniqueness
-}
-exports.getRoomId = getRoomId;
 //# sourceMappingURL=rooms.service.js.map
