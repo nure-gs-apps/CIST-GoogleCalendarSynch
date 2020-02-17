@@ -32,8 +32,8 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
   private _expiration: ReadonlyDate;
 
   private _clearTimeout: Nullable<NodeJS.Timeout>;
-  private clearListener!: CacheClearedListener;
-  private updateListener!: CacheUpdatedListener<T>;
+  private readonly clearListener: CacheClearedListener;
+  private readonly updateListener: CacheUpdatedListener<T>;
 
   get source(): Nullable<Cache<T>> {
     if (!this.needsSource) {
@@ -55,15 +55,6 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
   get expiration() {
     return this._expiration;
   }
-  set expiration(date) {
-    if (date.valueOf() > getMaxExpiration().valueOf()) {
-      throw new TypeError('Expiration cannot exceed 5 hours in the morning');
-    }
-    if (!this.canUseExpiration(date)) {
-      throw new TypeError('Cannot set expiration longer than parent has');
-    }
-    this.doSetExpiration(date);
-  }
 
   get isInitialized() {
     return this.needsSource || !!this.clearListener && !!this.updateListener;
@@ -76,26 +67,41 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
     this._expiration = getMaxExpiration();
 
     this._clearTimeout = null;
+    this.clearListener = () => {
+      this.clearCache();
+    };
+    this.updateListener = (value, expiration) => {
+      this.saveValue(value, expiration).then(() => {
+        this._value = value;
+        this.doSetExpiration(expiration, value);
+        this.emit(CacheEvents.CacheUpdated, this._value, this._expiration);
+      });
+    };
   }
 
   canUseExpiration(possibleExpiration: ReadonlyDate) {
     return !this.needsSource || !this._source || (
-      this._source.expiration.valueOf() >= possibleExpiration.valueOf()
+      this._source._expiration.valueOf() >= possibleExpiration.valueOf()
     );
+  }
+
+  async setExpiration(date: ReadonlyDate) {
+    if (date.valueOf() > getMaxExpiration().valueOf()) {
+      throw new TypeError('Expiration cannot exceed 5 hours in the morning');
+    }
+    if (!this.canUseExpiration(date)) {
+      throw new TypeError('Cannot set expiration longer than parent has');
+    }
+    if (this._expiration.valueOf() < Date.now()) {
+      await this.clearCache();
+    }
+    this.doSetExpiration(date);
   }
 
   async init(): Promise<Nullable<T>> {
     if (this.isInitialized) {
       throw new TypeError('Cache is already initialized');
     }
-    this.clearListener = () => {
-      this.clearCache();
-    };
-    this.updateListener = (value, expiration) => {
-      this._value = value;
-      this.doSetExpiration(expiration, value);
-      this.emit(CacheEvents.CacheUpdated, this._value, this._expiration);
-    };
     const tuple = await this.doInit();
     tuple[1] = clampExpiration(
       tuple[1],
@@ -107,7 +113,7 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
     return this._value;
   }
 
-  setSource(source: Nullable<Cache<T>> = null) {
+  async setSource(source: Nullable<Cache<T>> = null) {
     if (!this.needsSource) {
       throw new TypeError('This cache does not require source');
     }
@@ -118,29 +124,40 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
     if (this._source) {
       this._source.off(CacheEvents.CacheUpdated, this.updateListener);
       this._source.off(CacheEvents.CacheCleared, this.clearListener);
-      this.clearCache();
+      await this.clearCache();
     }
     const oldSource = this._source;
     this._source = source;
-    this.emit(CacheEvents.SourceChanged, this._source, oldSource);
     if (this._source) {
       this._source.on(CacheEvents.CacheCleared, this.clearListener);
       this._source.on(CacheEvents.CacheUpdated, this.updateListener);
-      if (this._expiration.valueOf() < this._source.expiration.valueOf()) {
-        this.doSetExpiration(this._source.expiration, this._source?.value);
-      }
+      const shouldSetExpiration = (
+        this._expiration.valueOf() < this._source.expiration.valueOf()
+      );
       if (this._source.hasValue) {
-        this._value = this.value;
-        this.emit(CacheEvents.CacheUpdated, this.value, this.expiration);
+        await this.saveValue(
+          this._source.value,
+          shouldSetExpiration ? this._source.expiration : this._expiration
+        );
+        this._value = this._source.value;
+        this.emit(CacheEvents.CacheUpdated, this._value, this._expiration);
+      }
+      if (shouldSetExpiration) {
+        this.doSetExpiration(
+          this._source.expiration,
+          this._source._value ?? this._value
+        );
       }
     }
+    this.emit(CacheEvents.SourceChanged, this._source, oldSource);
     return true;
   }
 
-  clearCache() {
+  async clearCache(): Promise<boolean> {
     if (this._value === null) {
       return false;
     }
+    await this.doClearCache();
     this._value = null;
     this.emit(CacheEvents.CacheCleared);
     this._expiration = this._source?.expiration ?? getMaxExpiration();
@@ -158,7 +175,7 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
     );
     const [newValue, expiration] = tuple;
     this._value = newValue;
-    if (expiration.valueOf() < this.expiration.valueOf()) {
+    if (expiration.valueOf() < this._expiration.valueOf()) {
       this.doSetExpiration(expiration);
       if (this._expiration.valueOf() > Date.now()) {
         this.emit(CacheEvents.CacheUpdated, this._value, this._expiration);
@@ -170,18 +187,31 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
   }
 
   protected doInit(): Promise<[Nullable<T>, ReadonlyDate]> {
-    return Promise.resolve([null, this.expiration]);
+    return Promise.resolve([null, this._expiration]);
   }
 
   protected doLoadValue(): Promise<[Nullable<T>, ReadonlyDate]> {
-    const source = this.source;
+    const source = this._source;
     if (!source) {
       throw new TypeError('source is not set');
     }
-    return source.loadValue().then(v => [v, source.expiration]);
+    return source.loadValue().then(v => [v, source._expiration]);
   }
 
-  private doSetExpiration(newDate: ReadonlyDate, value = this.value) {
+  protected saveValue(
+    value: Nullable<T>, expiration: ReadonlyDate
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  protected doClearCache(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  private doSetExpiration(
+    newDate: ReadonlyDate,
+    value: Nullable<T> = this._value
+  ) {
     if (newDate.valueOf() === this._expiration.valueOf()) {
       return;
     }
