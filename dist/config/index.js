@@ -105,7 +105,7 @@ async function doInitializeConfig(argv) {
         });
     }
     config = nconf.get();
-    types_1.assertConfig();
+    types_1.assertConfigPrefixId();
 }
 function normalizeConfigDirPath(possiblePath) {
     const configDirectory = path.normalize(possiblePath.trim());

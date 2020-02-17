@@ -13,9 +13,13 @@ export const TYPES = {
   GoogleAuthScopes: Symbol.for('GoogleAuthScopes'),
   GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
 
+  CacheMaxExpiration: Symbol.for('CacheMaxExpiration'),
+
   // class tokens
   Config: Symbol.for('Config'),
   CistJsonClient: Symbol.for('CistJsonClient'),
+
+  CacheUtils: Symbol.for('CacheUtils'),
 
   GoogleAuth: Symbol.for('GoogleAuth'),
   GoogleUtils: Symbol.for('GoogleUtils'),

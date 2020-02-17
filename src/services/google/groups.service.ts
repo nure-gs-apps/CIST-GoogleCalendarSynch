@@ -27,18 +27,6 @@ export class GroupsService {
   private readonly _delete: Resource$Groups['delete'];
   private readonly _list: Resource$Groups['list'];
 
-  private _cachedGroups: Nullable<Schema$Group[]>;
-  private _cacheLastUpdate: Nullable<Date>;
-
-  get cachedGroups() {
-    return this._cachedGroups as Nullable<ReadonlyArray<Schema$Group>>;
-  }
-  get cacheLastUpdate() {
-    return this._cacheLastUpdate
-      ? new Date(this._cacheLastUpdate.getTime())
-      : null;
-  }
-
   constructor(
     @inject(TYPES.GoogleApiDirectory) googleApiDirectory: GoogleApiDirectory,
     @inject(
@@ -64,9 +52,6 @@ export class GroupsService {
     this._list = this._quotaLimiter.limiter.wrap(
       this._groups.list.bind(this._groups),
     ) as any;
-
-    this._cachedGroups = null;
-    this._cacheLastUpdate = null;
   }
 
   async ensureGroups(
@@ -110,7 +95,6 @@ export class GroupsService {
         }
       }
     }
-    this.clearCache();
     await Promise.all(promises);
     return newToOldNames;
   }
@@ -123,7 +107,6 @@ export class GroupsService {
         groupKey: group.id ?? undefined,
       }));
     }
-    this.clearCache();
     return Promise.all(promises);
   }
 
@@ -202,16 +185,7 @@ export class GroupsService {
         groups = groups.concat(groupsPage.data.groups);
       }
     } while (groupsPage.data.nextPageToken);
-    if (cacheResults) {
-      this._cachedGroups = groups;
-      this._cacheLastUpdate = new Date();
-    }
     return groups;
-  }
-
-  clearCache() {
-    this._cachedGroups = null;
-    this._cacheLastUpdate = null;
   }
 
   private ensureGroup(
@@ -250,7 +224,9 @@ export class GroupsService {
     logger.debug(`Inserting group ${cistGroup.name}`);
     insertedGroups.add(googleGroupEmail);
     return this._insert({
-      requestBody: this.cistGroupToInsertGoogleGroup(cistGroup, googleGroupEmail),
+      requestBody: this.cistGroupToInsertGoogleGroup(
+        cistGroup, googleGroupEmail
+      ),
     });
   }
 

@@ -59,18 +59,6 @@ let GroupsService = class GroupsService {
             writable: true,
             value: _list
         });
-        Object.defineProperty(this, "_cachedGroups", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: _cachedGroups
-        });
-        Object.defineProperty(this, "_cacheLastUpdate", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: _cacheLastUpdate
-        });
         this._utils = utils;
         this._directory = googleApiDirectory;
         this._groups = this._directory.googleDirectory.groups;
@@ -79,16 +67,6 @@ let GroupsService = class GroupsService {
         this._patch = this._quotaLimiter.limiter.wrap(this._groups.patch.bind(this._groups));
         this._delete = this._quotaLimiter.limiter.wrap(this._groups.delete.bind(this._groups));
         this._list = this._quotaLimiter.limiter.wrap(this._groups.list.bind(this._groups));
-        this._cachedGroups = null;
-        this._cacheLastUpdate = null;
-    }
-    get cachedGroups() {
-        return this._cachedGroups;
-    }
-    get cacheLastUpdate() {
-        return this._cacheLastUpdate
-            ? new Date(this._cacheLastUpdate.getTime())
-            : null;
     }
     async ensureGroups(cistResponse, preserveEmailChanges = false) {
         const groups = await this.getAllGroups();
@@ -117,7 +95,6 @@ let GroupsService = class GroupsService {
                 }
             }
         }
-        this.clearCache();
         await Promise.all(promises);
         return newToOldNames;
     }
@@ -130,7 +107,6 @@ let GroupsService = class GroupsService {
                 groupKey: (_a = group.id, (_a !== null && _a !== void 0 ? _a : undefined)),
             }));
         }
-        this.clearCache();
         return Promise.all(promises);
     }
     async deleteRelevant(cistResponse) {
@@ -192,15 +168,7 @@ let GroupsService = class GroupsService {
                 groups = groups.concat(groupsPage.data.groups);
             }
         } while (groupsPage.data.nextPageToken);
-        if (cacheResults) {
-            this._cachedGroups = groups;
-            this._cacheLastUpdate = new Date();
-        }
         return groups;
-    }
-    clearCache() {
-        this._cachedGroups = null;
-        this._cacheLastUpdate = null;
     }
     ensureGroup(groups, cistGroup, insertedGroups, newToOldNames) {
         const googleGroupEmail = this._utils.getGroupEmail(cistGroup);

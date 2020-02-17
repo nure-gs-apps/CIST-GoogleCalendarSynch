@@ -1,7 +1,6 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
-import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
 import {
   ApiAuditoriesResponse,
@@ -30,20 +29,6 @@ export class RoomsService {
   private readonly _delete: admin_directory_v1.Resource$Resources$Calendars['delete'];
   private readonly _list: admin_directory_v1.Resource$Resources$Calendars['list'];
 
-  private _cachedRooms: Nullable<Schema$CalendarResource[]>;
-  private _cacheLastUpdate: Nullable<Date>;
-
-  get cachedRooms() {
-    return this._cachedRooms as Nullable<
-      ReadonlyArray<Schema$CalendarResource>
-    >;
-  }
-  get cacheLastUpdate() {
-    return this._cacheLastUpdate
-      ? new Date(this._cacheLastUpdate.getTime())
-      : null;
-  }
-
   constructor(
     @inject(TYPES.GoogleApiDirectory) googleApiDirectory: GoogleApiDirectory,
     @inject(
@@ -69,9 +54,6 @@ export class RoomsService {
     this._list = this._quotaLimiter.limiter.wrap(
       this._rooms.list.bind(this._rooms),
     ) as any;
-
-    this._cachedRooms = null;
-    this._cacheLastUpdate = null;
   }
 
   async ensureRooms(
@@ -127,7 +109,6 @@ export class RoomsService {
         }
       }
     }
-    this.clearCache();
     await Promise.all(promises as any);
     return newToOldNames;
   }
@@ -141,13 +122,11 @@ export class RoomsService {
         calendarResourceId: room.resourceId ?? undefined,
       }));
     }
-    this.clearCache();
     return Promise.all(promises);
   }
 
   async deleteIrrelevant(cistResponse: ApiAuditoriesResponse) {
     const rooms = await this.getAllRooms();
-    this.clearCache();
     return Promise.all(this.doDeleteByIds(
       rooms,
       iterate(rooms).filter(r => {
@@ -167,7 +146,6 @@ export class RoomsService {
 
   async deleteRelevant(cistResponse: ApiAuditoriesResponse) {
     const rooms = await this.getAllRooms();
-    this.clearCache();
     return Promise.all(this.doDeleteByIds(
       rooms,
       iterate(rooms).filter(r => {
@@ -201,16 +179,7 @@ export class RoomsService {
         );
       }
     } while (roomsPage.data.nextPageToken);
-    if (cacheResults) {
-      this._cachedRooms = rooms;
-      this._cacheLastUpdate = new Date();
-    }
     return rooms;
-  }
-
-  clearCache() {
-    this._cachedRooms = null;
-    this._cacheLastUpdate = null;
   }
 
   private doDeleteByIds(

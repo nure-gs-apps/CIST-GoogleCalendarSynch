@@ -1,7 +1,8 @@
 import { getConfig } from '../config';
 import { BindingScopeEnum, Container } from 'inversify';
-import { ICalendarConfig, Nullable } from '../@types';
+import { ICalendarConfig, IMaxCacheExpiration, Nullable } from '../@types';
 import { ConfigService } from '../config/config.service';
+import { CacheUtilsService } from '../services/cache-utils.service';
 import { CistJsonClient } from '../services/cist/cist-json-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
@@ -114,6 +115,10 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   }
   container.bind<UtilsService>(TYPES.GoogleUtils).to(UtilsService);
   container.bind<ConfigService>(TYPES.Config).to(ConfigService);
+  container.bind<CacheUtilsService>(TYPES.CacheUtils).to(CacheUtilsService);
+  container.bind<IMaxCacheExpiration>(TYPES.CacheMaxExpiration).toConstantValue(
+    getConfig().maxCacheExpiration
+  );
   return container;
 }
 

@@ -59,15 +59,16 @@ function getBasicCliConfiguration() {
     });
 }
 exports.getBasicCliConfiguration = getBasicCliConfiguration;
-function assertConfig() {
-    const idPrefix = index_1.getConfig().google.idPrefix; // TODO: move to helper service
+function assertConfigPrefixId() {
+    const config = index_1.getConfig();
+    const idPrefix = config.google.idPrefix; // TODO: move to helper service
     const prefixIsValid = idPrefix === null || idPrefix === '' || (typeof idPrefix === 'string'
         && /^\w+$/.test(idPrefix));
     if (!prefixIsValid) {
         throw new TypeError('idPrefix must be a alphanumeral string or null to omit');
     }
 }
-exports.assertConfig = assertConfig;
+exports.assertConfigPrefixId = assertConfigPrefixId;
 function o(paramName) {
     return paramName
         .split('.')

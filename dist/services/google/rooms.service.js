@@ -60,18 +60,6 @@ let RoomsService = RoomsService_1 = class RoomsService {
             writable: true,
             value: _list
         });
-        Object.defineProperty(this, "_cachedRooms", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: _cachedRooms
-        });
-        Object.defineProperty(this, "_cacheLastUpdate", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: _cacheLastUpdate
-        });
         this._utils = utils;
         this._directory = googleApiDirectory;
         this._rooms = this._directory.googleDirectory.resources.calendars;
@@ -80,16 +68,6 @@ let RoomsService = RoomsService_1 = class RoomsService {
         this._patch = this._quotaLimiter.limiter.wrap(this._rooms.patch.bind(this._rooms));
         this._delete = this._quotaLimiter.limiter.wrap(this._rooms.delete.bind(this._rooms));
         this._list = this._quotaLimiter.limiter.wrap(this._rooms.list.bind(this._rooms));
-        this._cachedRooms = null;
-        this._cacheLastUpdate = null;
-    }
-    get cachedRooms() {
-        return this._cachedRooms;
-    }
-    get cacheLastUpdate() {
-        return this._cacheLastUpdate
-            ? new Date(this._cacheLastUpdate.getTime())
-            : null;
     }
     async ensureRooms(cistResponse, preserveNameChanges = false) {
         const rooms = await this.getAllRooms();
@@ -125,7 +103,6 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 }
             }
         }
-        this.clearCache();
         await Promise.all(promises);
         return newToOldNames;
     }
@@ -139,12 +116,10 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 calendarResourceId: (_a = room.resourceId, (_a !== null && _a !== void 0 ? _a : undefined)),
             }));
         }
-        this.clearCache();
         return Promise.all(promises);
     }
     async deleteIrrelevant(cistResponse) {
         const rooms = await this.getAllRooms();
-        this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
                 const isRelevant = building.auditories.some(a => this._utils.isSameIdentity(a, building, r));
@@ -158,7 +133,6 @@ let RoomsService = RoomsService_1 = class RoomsService {
     }
     async deleteRelevant(cistResponse) {
         const rooms = await this.getAllRooms();
-        this.clearCache();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
             for (const building of cistResponse.university.buildings) {
                 const isRelevant = building.auditories.some(a => this._utils.isSameIdentity(a, building, r));
@@ -185,15 +159,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 roomsPage.data.items.filter(i => !i.resourceType));
             }
         } while (roomsPage.data.nextPageToken);
-        if (cacheResults) {
-            this._cachedRooms = rooms;
-            this._cacheLastUpdate = new Date();
-        }
         return rooms;
-    }
-    clearCache() {
-        this._cachedRooms = null;
-        this._cacheLastUpdate = null;
     }
     doDeleteByIds(rooms, ids, promises = []) {
         var _a;

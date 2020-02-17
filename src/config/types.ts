@@ -1,6 +1,12 @@
 /* tslint:disable:ter-indent */
 import * as yargs from 'yargs';
-import { DeepPartial, IApiQuota, ICalendarConfig, Nullable } from '../@types';
+import {
+  DeepPartial,
+  IApiQuota,
+  ICalendarConfig,
+  IMaxCacheExpiration,
+  Nullable,
+} from '../@types';
 import { getDefaultConfigDirectory } from './constants';
 import { paramCase } from 'change-case';
 import { getConfig } from './index';
@@ -9,6 +15,7 @@ export interface IFullAppConfig {
   // Keep the key in common camel case or environment config will break
   ncgc: {
     configDir: string;
+    maxCacheExpiration: IMaxCacheExpiration;
     cist: {
       baseUrl: string;
       apiKey: string;
@@ -94,8 +101,9 @@ export function getBasicCliConfiguration(
     );
 }
 
-export function assertConfig() {
-  const idPrefix = getConfig().google.idPrefix; // TODO: move to helper service
+export function assertConfigPrefixId() {
+  const config = getConfig();
+  const idPrefix = config.google.idPrefix; // TODO: move to helper service
   const prefixIsValid = idPrefix === null || idPrefix === '' || (
     typeof idPrefix === 'string'
     && /^\w+$/.test(idPrefix)

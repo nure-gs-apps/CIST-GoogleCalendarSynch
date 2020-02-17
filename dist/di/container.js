@@ -3,7 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const config_1 = require("../config");
 const inversify_1 = require("inversify");
 const config_service_1 = require("../config/config.service");
-const cist_json_client_service_1 = require("../services/cist-json-client.service");
+const cache_utils_service_1 = require("../services/cache-utils.service");
+const cist_json_client_service_1 = require("../services/cist/cist-json-client.service");
 const buildings_service_1 = require("../services/google/buildings.service");
 const calendar_service_1 = require("../services/google/calendar.service");
 const constants_1 = require("../services/google/constants");
@@ -72,6 +73,8 @@ function createContainer(options) {
     }
     container.bind(types_1.TYPES.GoogleUtils).to(utils_service_1.UtilsService);
     container.bind(types_1.TYPES.Config).to(config_service_1.ConfigService);
+    container.bind(types_1.TYPES.CacheUtils).to(cache_utils_service_1.CacheUtilsService);
+    container.bind(types_1.TYPES.CacheMaxExpiration).toConstantValue(config_1.getConfig().maxCacheExpiration);
     return container;
 }
 exports.createContainer = createContainer;

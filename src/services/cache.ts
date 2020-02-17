@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { ReadonlyDate } from 'readonly-date';
-import { Nullable } from '../../@types';
-import * as moment from 'moment-timezone';
+import { Nullable } from '../@types';
+import { CacheUtilsService } from './cache-utils.service';
 
 export enum CacheEvents {
   CacheUpdated = 'cache-updated',
@@ -27,6 +27,8 @@ export type SourceChangedListener<T> = (
 
 export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitter<T> {
   abstract readonly needsSource: boolean;
+  private readonly _utils: CacheUtilsService;
+
   private _source: Nullable<Cache<T>>;
   private _value: Nullable<T>;
   private _expiration: ReadonlyDate;
@@ -60,11 +62,12 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
     return this.needsSource || !!this.clearListener && !!this.updateListener;
   }
 
-  protected constructor() {
+  protected constructor(utils: CacheUtilsService) {
     super();
+    this._utils = utils;
     this._source = null;
     this._value = null;
-    this._expiration = getMaxExpiration();
+    this._expiration = this._utils.getMaxExpiration();
 
     this._clearTimeout = null;
     this.clearListener = () => {
@@ -86,7 +89,7 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
   }
 
   async setExpiration(date: ReadonlyDate) {
-    if (date.valueOf() > getMaxExpiration().valueOf()) {
+    if (date.valueOf() > this._utils.getMaxExpiration().valueOf()) {
       throw new TypeError('Expiration cannot exceed 5 hours in the morning');
     }
     if (!this.canUseExpiration(date)) {
@@ -103,9 +106,9 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
       throw new TypeError('Cache is already initialized');
     }
     const tuple = await this.doInit();
-    tuple[1] = clampExpiration(
+    tuple[1] = this._utils.clampExpiration(
       tuple[1],
-      this._source?.expiration ?? getMaxExpiration()
+      this._source?.expiration ?? this._utils.getMaxExpiration()
     );
     const [value, expiration] = tuple;
     this._value = value;
@@ -160,7 +163,7 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
     await this.doClearCache();
     this._value = null;
     this.emit(CacheEvents.CacheCleared);
-    this._expiration = this._source?.expiration ?? getMaxExpiration();
+    this._expiration = this._source?.expiration ?? this._utils.getMaxExpiration();
     if (this._clearTimeout) {
       clearTimeout(this._clearTimeout);
     }
@@ -169,9 +172,9 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
 
   async loadValue() {
     const tuple = await this.doLoadValue();
-    tuple[1] = clampExpiration(
+    tuple[1] = this._utils.clampExpiration(
       tuple[1],
-      this._source?.expiration ?? getMaxExpiration()
+      this._source?.expiration ?? this._utils.getMaxExpiration()
     );
     const [newValue, expiration] = tuple;
     this._value = newValue;
@@ -228,20 +231,4 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
       }
     }
   }
-}
-
-export function getMaxExpiration(date = new ReadonlyDate()) {
-  const expiration = moment(date.valueOf()).tz('Europe/Kiev');
-  if (expiration.hours() >= 5) {
-    expiration.add(1, 'day');
-  }
-  expiration.hours(5).minutes(0).second(0).milliseconds(0);
-  return expiration.toDate() as ReadonlyDate;
-}
-
-export function clampExpiration(
-  date = new ReadonlyDate(),
-  max = getMaxExpiration()
-) {
-  return max.valueOf() > date.valueOf() ? date : max;
 }

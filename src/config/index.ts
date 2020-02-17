@@ -3,7 +3,7 @@ import * as path from 'path';
 import { promises as fs, constants } from 'fs';
 import { Argv } from 'yargs';
 import { getDefaultConfigDirectory } from './constants';
-import { AppConfig, assertConfig, IFullAppConfig } from './types';
+import { AppConfig, assertConfigPrefixId, IFullAppConfig } from './types';
 import { DeepPartial, DeepReadonly, Nullable, t } from '../@types';
 import { commonCamelCase } from '../utils/common';
 import * as YAML from 'yaml';
@@ -124,7 +124,7 @@ async function doInitializeConfig<T extends DeepPartial<IFullAppConfig>>(
     });
   }
   config = nconf.get();
-  assertConfig();
+  assertConfigPrefixId();
 }
 
 function normalizeConfigDirPath(possiblePath: string) {

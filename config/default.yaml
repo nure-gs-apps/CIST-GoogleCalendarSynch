@@ -4,6 +4,9 @@ ncgc:
     apiKey: yourKey # Required if classes are loaded
 
   google:
+    maxCacheExpiration:
+      hours: 5
+      minutes: 30
     idPrefix: cist
     calendar:
       prefix: 'CIST ' # basically name for calendar. Can be used for searching if id is not overriden

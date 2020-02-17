@@ -5,8 +5,8 @@ const tslib_1 = require("tslib");
 const axios_1 = require("axios");
 const iconv = require("iconv-lite");
 const inversify_1 = require("inversify");
-const types_1 = require("../di/types");
-const common_1 = require("../utils/common");
+const types_1 = require("../../di/types");
+const common_1 = require("../../utils/common");
 var TimetableType;
 (function (TimetableType) {
     TimetableType[TimetableType["GROUP"] = 1] = "GROUP";
