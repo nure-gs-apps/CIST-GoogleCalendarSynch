@@ -81,7 +81,7 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
 
   canUseExpiration(possibleExpiration: ReadonlyDate) {
     return !this.needsSource || !this._source || (
-      this._source._expiration.valueOf() >= possibleExpiration.valueOf()
+      this._source.expiration.valueOf() >= possibleExpiration.valueOf()
     );
   }
 
@@ -195,7 +195,7 @@ export abstract class Cache<T> extends EventEmitter implements ICacheEventEmitte
     if (!source) {
       throw new TypeError('source is not set');
     }
-    return source.loadValue().then(v => [v, source._expiration]);
+    return source.loadValue().then(v => [v, source.expiration]);
   }
 
   protected saveValue(
