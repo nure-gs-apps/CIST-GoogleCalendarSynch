@@ -61,3 +61,27 @@ export function* objectEntries<K extends string | number | symbol, V>(
     yield [prop, object[prop]];
   }
 }
+
+export type AsyncFunction<A extends any[] = any[], R = any> = (...args: A) => Promise<R>;
+export function normalizeErrorIfAny<A extends any[] = any, R = any, E = any>(
+  fn: AsyncFunction<A, R>, mapError: (err: any) => E, ...args: A
+): Promise<R> | never {
+  try {
+    return fn(...args).catch(err => {
+      throw mapError(err);
+    });
+  } catch (err) {
+    throw mapError(err);
+  }
+}
+export function throwAsyncIfAny<A extends any[] = any, R = any, E = any>(
+  fn: AsyncFunction<A, R>, mapError: (err: any) => E, ...args: A
+): Promise<R> {
+  try {
+    return fn(...args).catch(err => {
+      throw mapError(err);
+    });
+  } catch (err) {
+    return Promise.reject(mapError(err));
+  }
+}

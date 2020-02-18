@@ -76,7 +76,7 @@ class Cache extends events_1.EventEmitter {
     }
     get source() {
         if (!this.needsSource) {
-            throw new TypeError('Cache doesn\'t support sources!');
+            throw new TypeError('CachedValue doesn\'t support sources!');
         }
         return this._source;
     }
@@ -113,7 +113,7 @@ class Cache extends events_1.EventEmitter {
     async init() {
         var _a, _b;
         if (this.isInitialized) {
-            throw new TypeError('Cache is already initialized');
+            throw new TypeError('CachedValue is already initialized');
         }
         const tuple = await this.doInit();
         tuple[1] = this._utils.clampExpiration(tuple[1], (_b = (_a = this._source) === null || _a === void 0 ? void 0 : _a.expiration, (_b !== null && _b !== void 0 ? _b : this._utils.getMaxExpiration())));
