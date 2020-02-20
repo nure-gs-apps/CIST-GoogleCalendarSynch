@@ -3,7 +3,7 @@ var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const nconf = require("nconf");
 const path = require("path");
-const fs_1 = require("fs");
+const graceful_fs_1 = require("graceful-fs");
 const constants_1 = require("./constants");
 const types_1 = require("./types");
 const _types_1 = require("../@types");
@@ -84,9 +84,9 @@ async function doInitializeConfig(argv) {
         }
     });
     const configDir = normalizeConfigDirPath(nconf.get().ncgc.configDir);
-    if (await fs_1.promises.access(configDir, fs_1.constants.R_OK | fs_1.constants.F_OK)
+    if (await graceful_fs_1.promises.access(configDir, graceful_fs_1.constants.R_OK | graceful_fs_1.constants.F_OK)
         .catch(() => true)
-        || !(await fs_1.promises.stat(configDir)).isDirectory()) {
+        || !(await graceful_fs_1.promises.stat(configDir)).isDirectory()) {
         throw new TypeError(`Could not find path to config directory: ${configDir}`);
     }
     configDirectory = configDir;

@@ -75,6 +75,17 @@ export function t(...args: any[]): any[] {
   return args;
 }
 
+export interface IDisposable {
+  readonly isDisposed: boolean;
+  dispose(): Promise<void>;
+}
+
+export function isDisposable(obj: object): obj is IDisposable {
+  const value = obj as any;
+  return typeof value.dispose === 'function'
+    && typeof value.isDisposed === 'boolean';
+}
+
 export interface IApiQuota {
   daily: number;
   period: number;

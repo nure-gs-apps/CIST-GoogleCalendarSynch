@@ -1,6 +1,6 @@
 import * as nconf from 'nconf';
 import * as path from 'path';
-import { promises as fs, constants } from 'fs';
+import { promises as fs, constants } from 'graceful-fs';
 import { Argv } from 'yargs';
 import { getDefaultConfigDirectory } from './constants';
 import { AppConfig, assertConfigPrefixId, IFullAppConfig } from './types';

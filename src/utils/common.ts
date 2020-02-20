@@ -1,4 +1,5 @@
 import { camelCase, camelCaseTransformMerge } from 'change-case';
+import { isObjectLike as _isObjectLike } from 'lodash';
 
 export function arrayContentEqual<T>(
   first: ReadonlyArray<T>,
@@ -84,4 +85,12 @@ export function throwAsyncIfAny<A extends any[] = any, R = any, E = any>(
   } catch (err) {
     return Promise.reject(mapError(err));
   }
+}
+
+export function isObjectLike<T extends object>(value: unknown): value is T {
+  return _isObjectLike(value);
+}
+
+export function asyncNoop() {
+  return Promise.resolve();
 }

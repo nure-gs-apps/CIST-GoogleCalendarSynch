@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const change_case_1 = require("change-case");
+const lodash_1 = require("lodash");
 function arrayContentEqual(first, second) {
     return first.length === second.length && first.every(e => second.includes(e));
 }
@@ -51,4 +52,34 @@ function* objectEntries(object, onlyOwnProperties = true) {
     }
 }
 exports.objectEntries = objectEntries;
+function normalizeErrorIfAny(fn, mapError, ...args) {
+    try {
+        return fn(...args).catch(err => {
+            throw mapError(err);
+        });
+    }
+    catch (err) {
+        throw mapError(err);
+    }
+}
+exports.normalizeErrorIfAny = normalizeErrorIfAny;
+function throwAsyncIfAny(fn, mapError, ...args) {
+    try {
+        return fn(...args).catch(err => {
+            throw mapError(err);
+        });
+    }
+    catch (err) {
+        return Promise.reject(mapError(err));
+    }
+}
+exports.throwAsyncIfAny = throwAsyncIfAny;
+function isObjectLike(value) {
+    return lodash_1.isObjectLike(value);
+}
+exports.isObjectLike = isObjectLike;
+function asyncNoop() {
+    return Promise.resolve();
+}
+exports.asyncNoop = asyncNoop;
 //# sourceMappingURL=common.js.map

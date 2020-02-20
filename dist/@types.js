@@ -6,6 +6,12 @@ function t(...args) {
     return args;
 }
 exports.t = t;
+function isDisposable(obj) {
+    const value = obj;
+    return typeof value.dispose === 'function'
+        && typeof value.isDisposed === 'boolean';
+}
+exports.isDisposable = isDisposable;
 function assertMaxCacheExpiration(config) {
     if (typeof config !== 'object'
         || typeof config.hours !== 'number'
