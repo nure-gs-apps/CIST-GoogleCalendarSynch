@@ -11,11 +11,37 @@ import { getDefaultConfigDirectory } from './constants';
 import { paramCase } from 'change-case';
 import { getConfig } from './index';
 
+export enum Cache {
+  File = 'file',
+  Http = 'http'
+}
+
 export interface IFullAppConfig {
   // Keep the key in common camel case or environment config will break
   ncgc: {
     configDir: string;
-    maxCacheExpiration: IMaxCacheExpiration;
+    caching: {
+      maxExpiration: IMaxCacheExpiration;
+      priorities: {
+        cist: {
+          auditories: Cache[];
+          groups: Cache[];
+          events: Cache[];
+        };
+      };
+      config: {
+        [Cache.File]: {
+          directories: {
+            cist: string;
+            google: string;
+          };
+          paths: {
+            unix: string;
+            win: string;
+          };
+        };
+      };
+    };
     cist: {
       baseUrl: string;
       apiKey: string;

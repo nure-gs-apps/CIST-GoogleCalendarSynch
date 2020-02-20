@@ -117,7 +117,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   container.bind<ConfigService>(TYPES.Config).to(ConfigService);
   container.bind<CacheUtilsService>(TYPES.CacheUtils).to(CacheUtilsService);
   container.bind<IMaxCacheExpiration>(TYPES.CacheMaxExpiration).toConstantValue(
-    getConfig().maxCacheExpiration
+    getConfig().caching.maxExpiration
   );
   return container;
 }

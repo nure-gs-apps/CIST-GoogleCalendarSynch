@@ -38,7 +38,7 @@ export function getFullConfig() {
   return config as DeepReadonly<IFullAppConfig>;
 }
 
-export function getConfig(): AppConfig {
+export function getConfig(): DeepReadonly<AppConfig> {
   return getFullConfig().ncgc;
 }
 
