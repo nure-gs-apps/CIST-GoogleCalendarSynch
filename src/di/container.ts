@@ -75,7 +75,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       getConfig().google.calendar,
     );
 
-    container.bind<CistJsonClient>(TYPES.CistJsonClient).to(CistJsonClient);
+    container.bind<CistJsonClient>(TYPES.CistJsonHttpClient).to(CistJsonClient);
 
     container.bind<IGoogleAuth>(TYPES.GoogleAuth)
       .to(GoogleAuth);
@@ -111,7 +111,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       getConfig().cist.apiKey,
     );
 
-    container.bind<CistJsonClient>(TYPES.CistJsonClient).to(CistJsonClient);
+    container.bind<CistJsonClient>(TYPES.CistJsonHttpClient).to(CistJsonClient);
   }
   container.bind<UtilsService>(TYPES.GoogleUtils).to(UtilsService);
   container.bind<ConfigService>(TYPES.Config).to(ConfigService);

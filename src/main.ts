@@ -18,7 +18,7 @@ getAsyncInitializers().then(main);
 
 async function main() {
   const cistClient = container
-    .get<CistJsonClient>(TYPES.CistJsonClient);
+    .get<CistJsonClient>(TYPES.CistJsonHttpClient);
 
   const roomsResponse = await cistClient.getRoomsResponse();
   // if (!assertRoomsResponse(roomsResponse)) {

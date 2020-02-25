@@ -31,7 +31,7 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
             baseURL: baseApiUrl || CistJsonClient_1.BASE_API_URL,
             responseType: 'arraybuffer',
         });
-        this._apiKey = apiKey;
+        this.apiKey = apiKey;
         this._axios.interceptors.response.use(res => {
             var _a;
             const data = res.data;
@@ -53,7 +53,7 @@ let CistJsonClient = CistJsonClient_1 = class CistJsonClient {
     }
     getEventsResponse(type, entityId, dateLimits) {
         const queryParams = {
-            api_key: this._apiKey,
+            api_key: this.apiKey,
             type_id: type,
             timetable_id: entityId,
         };

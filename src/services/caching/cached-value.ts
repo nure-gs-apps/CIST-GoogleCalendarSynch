@@ -260,6 +260,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async loadFromCache(): Promise<Nullable<T>> {
+    if (!this.needsSource) {
+      throw new TypeError('This CachedValue does not require source');
+    }
     const tuple = await this.doLoadFromCache();
     tuple[1] = this._utils.clampExpiration(
       tuple[1],

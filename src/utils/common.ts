@@ -1,5 +1,6 @@
 import { camelCase, camelCaseTransformMerge } from 'change-case';
 import { isObjectLike as _isObjectLike } from 'lodash';
+import { ReadonlyDate } from 'readonly-date';
 
 export function arrayContentEqual<T>(
   first: ReadonlyArray<T>,
@@ -12,7 +13,7 @@ export function toBase64(value: string) {
   return Buffer.from(value).toString('base64');
 }
 
-export function dateToSeconds(date: Date) {
+export function dateToSeconds(date: ReadonlyDate) {
   return Math.round(date.getTime() / 1000);
 }
 
