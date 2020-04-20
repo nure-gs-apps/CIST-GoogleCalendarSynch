@@ -12,7 +12,6 @@ export enum CacheEvent {
 
 export interface IReadonlyCachedValue<T> extends ICacheEventEmitter<T>, IDisposable {
   readonly isInitialized: boolean;
-  readonly value: Nullable<T>;
   readonly expiration: ReadonlyDate;
   init(loadFromCache?: true): Promise<boolean>;
   init(loadFromCache: boolean): Promise<boolean>;
@@ -72,7 +71,6 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   protected readonly _utils: CacheUtilsService;
 
   private _source: Nullable<CachedValue<T>>;
-  private _value: Nullable<T>;
   private _expiration: ReadonlyDate;
   private _isInitialized: boolean;
 
@@ -83,13 +81,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   get source(): Nullable<CachedValue<T>> {
     if (!this.needsSource) {
-      throw new TypeError('CachedValue doesn\'t support sources!');
+      throw new TypeError(`${this.constructor.name} doesn\'t support sources!`);
     }
     return this._source;
-  }
-
-  get value(): Nullable<T> {
-    return this._value;
   }
 
   get expiration() {
@@ -109,7 +103,6 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     this[asReadonly] = this;
     this._utils = utils;
     this._source = null;
-    this._value = null;
     this._expiration = this._utils.getMaxExpiration();
     this._isInitialized = false;
 
@@ -123,10 +116,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     ).catch(error => this.emit('error', error));
     this.updateListener = (value, expiration) => throwAsyncIfAny(
       () => this.saveValue(value, expiration).then(() => {
-        this._value = value;
-        return this.doSetExpiration(expiration, value);
+        return this.doSetExpiration(expiration, value !== null);
       }).then(() => {
-        this.emit(CacheEvent.CacheUpdated, this._value, this._expiration);
+        this.emit(CacheEvent.CacheUpdated, value, this._expiration);
       }),
       error => this.emit(
         'error',
@@ -156,9 +148,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async setExpiration(date: ReadonlyDate) {
-    if (date.valueOf() > this._utils.getMaxExpiration().valueOf()) {
-      throw new TypeError('Expiration cannot exceed 5 hours in the morning');
-    }
+    this._utils.assertValidExpiration(date);
     if (!this.canUseExpiration(date)) {
       throw new TypeError('Cannot set expiration longer than parent has');
     }
@@ -172,6 +162,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     const shouldInit = this.needsInit && !this.isInitialized;
     if (shouldInit) {
       await this.doInit();
+      this._expiration = this._utils.clampExpiration(
+        await this.loadExpirationFromCache()
+      );
       this._isInitialized = true;
     }
     if (loadFromCache) {
@@ -182,7 +175,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   async setSource(source: Nullable<CachedValue<T>> = null) {
     if (!this.needsSource) {
-      throw new TypeError('This CachedValue does not require source');
+      throw new TypeError(`This ${this.constructor.name} does not require source`);
     }
     const changed = source !== this._source;
     if (changed) {
@@ -200,21 +193,21 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       this._source.on(CacheEvent.CacheUpdated, this.updateListener);
       this._source.on(CacheEvent.CacheCleared, this.clearListener);
       this._source.on('error', this.errorListener);
+      const value = await this._source.loadValue();
       const shouldSetExpiration = (
         this._expiration.valueOf() < this._source.expiration.valueOf()
       );
-      if (this._source.value) {
-        await this.saveValue(
-          this._source.value,
-          shouldSetExpiration ? this._source.expiration : this._expiration
-        );
-        this._value = this._source.value;
-        this.emit(CacheEvent.CacheUpdated, this._value, this._expiration);
+      const newExpiration = shouldSetExpiration
+        ? this._source.expiration
+        : this._expiration;
+      if (value !== null) {
+        await this.saveValue(value, newExpiration);
+        this.emit(CacheEvent.CacheUpdated, value, newExpiration);
       }
       if (shouldSetExpiration) {
         await this.doSetExpiration(
           this._source.expiration,
-          this._source._value ?? this._value
+          value !== null
         );
       }
     }
@@ -223,11 +216,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async clearCache(): Promise<boolean> {
-    if (this._value === null) {
+    if (!await this.doClearCache()) {
       return false;
     }
-    await this.doClearCache();
-    this._value = null;
     this.emit(CacheEvent.CacheCleared);
     this._expiration = this._source?.expiration
       ?? this._utils.getMaxExpiration();
@@ -247,21 +238,20 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       this._source?.expiration ?? this._utils.getMaxExpiration()
     );
     const [newValue, expiration] = tuple;
-    this._value = newValue;
     if (expiration.valueOf() < this._expiration.valueOf()) {
-      await this.doSetExpiration(expiration);
+      await this.doSetExpiration(expiration, newValue !== null);
       if (this._expiration.valueOf() > Date.now()) {
-        this.emit(CacheEvent.CacheUpdated, this._value, this._expiration);
+        this.emit(CacheEvent.CacheUpdated, newValue, this._expiration);
       }
     } else {
-      this.emit(CacheEvent.CacheUpdated, this._value, this._expiration);
+      this.emit(CacheEvent.CacheUpdated, newValue, this._expiration);
     }
-    return this._value;
+    return newValue;
   }
 
   async loadFromCache(): Promise<Nullable<T>> {
     if (!this.needsSource) {
-      throw new TypeError('This CachedValue does not require source');
+      throw new TypeError(`This ${this.constructor.name} does not require source`);
     }
     const tuple = await this.doLoadFromCache();
     tuple[1] = this._utils.clampExpiration(
@@ -269,9 +259,8 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     this._source?.expiration ?? this._utils.getMaxExpiration()
     );
     const [value, expiration] = tuple;
-    this._value = value;
-    await this.doSetExpiration(expiration);
-    return this._value;
+    await this.doSetExpiration(expiration, value !== null);
+    return value;
   }
 
   async dispose() {
@@ -282,21 +271,28 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     this._isInitialized = false;
   }
 
+  // virtual
   protected doInit(): Promise<void> {
     return Promise.resolve();
   }
 
-  protected doLoadValue(): Promise<[Nullable<T>, ReadonlyDate]> {
+  // virtual - intercept entire load sequence
+  protected async doLoadValue(): Promise<[Nullable<T>, ReadonlyDate]> {
+    const cachedTuple = await this.doLoadFromCache();
+    if (cachedTuple[0] !== null) {
+      return cachedTuple;
+    }
     return this.loadValueFromSource();
   }
 
-  protected doLoadFromCache(): Promise<[Nullable<T>, ReadonlyDate]> {
-    return Promise.resolve([this._value, this._expiration]);
-  }
+  protected abstract doLoadFromCache(): Promise<[Nullable<T>, ReadonlyDate]>;
 
+  // virtual
   protected updateExpiration(date: ReadonlyDate): Promise<void> {
     return Promise.resolve();
   }
+
+  protected abstract loadExpirationFromCache(): Promise<ReadonlyDate>;
 
   protected loadValueFromSource(): Promise<[Nullable<T>, ReadonlyDate]> {
     const source = this._source;
@@ -310,20 +306,25 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     return Promise.resolve();
   }
 
+  // virtual
   protected saveValue(
     value: Nullable<T>, expiration: ReadonlyDate
   ): Promise<void> {
     return Promise.resolve();
   }
 
-  protected doClearCache(): Promise<void> {
-    return Promise.resolve();
-  }
+  protected abstract hasCachedValue(): Promise<boolean>;
+
+  protected abstract doClearCache(): Promise<boolean>;
 
   private async doSetExpiration(
     newDate: ReadonlyDate,
-    value: Nullable<T> = this._value
+    hasValue?: boolean
   ) {
+    if (hasValue !== undefined) {
+      // tslint:disable-next-line:no-parameter-reassignment
+      hasValue = await this.hasCachedValue();
+    }
     if (newDate.valueOf() === this._expiration.valueOf()) {
       return;
     }
@@ -333,7 +334,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     }
     const now = Date.now();
     if (newDate.valueOf() > now) {
-      if (value === null) {
+      if (!hasValue) {
         this._clearTimeout = setTimeout(() => throwAsyncIfAny(
           () => this.clearCache(),
           error => new CachedValueError(

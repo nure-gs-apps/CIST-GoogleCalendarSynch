@@ -10,6 +10,8 @@ const expirationSeparatorChar = '$';
 const separatorPosition = new Date().toISOString().length;
 const encoding = 'utf8';
 
+const valueOffset = separatorPosition + expirationSeparatorChar.length;
+
 export class FileCachedValue<T> extends CachedValue<T> {
   readonly needsSource = true;
   readonly needsInit = true;
@@ -67,10 +69,7 @@ export class FileCachedValue<T> extends CachedValue<T> {
       throw new TypeError('Invalid state, file is not loaded');
     }
     const fileContent = await this.file.readFile(encoding);
-    const expiration = new Date(fileContent.slice(0, separatorPosition));
-    if (Number.isNaN(expiration.valueOf())) {
-      throw new TypeError(`Invalid expiration: ${fileContent.slice(0, separatorPosition)}`);
-    }
+    const expiration = parseExpiration(fileContent);
     if (fileContent[separatorPosition] !== expirationSeparatorChar) {
       throw new TypeError(`Invalid expiration separator found. Expected ${expirationSeparatorChar}, found ${fileContent[separatorPosition]}`);
     }
@@ -97,11 +96,28 @@ export class FileCachedValue<T> extends CachedValue<T> {
     }
   }
 
-  protected async doClearCache(): Promise<void> {
+  protected hasCachedValue(): Promise<boolean> {
+    return Promise.resolve(false);
+  }
+
+  protected async loadExpirationFromCache(): Promise<ReadonlyDate> {
     if (!this.file) {
       throw new TypeError('Invalid state, file is not loaded');
     }
-    await this.file.truncate(separatorPosition + 1);
+    const buffer = new Buffer(valueOffset);
+    await this.file.read(buffer, 0, valueOffset, 0);
+    return Promise.resolve(parseExpiration(buffer.toString(encoding)));
+  }
+
+  protected async doClearCache(): Promise<boolean> {
+    if (!this.file) {
+      throw new TypeError('Invalid state, file is not loaded');
+    }
+    if (valueOffset <= (await this.file.stat()).size) {
+      return false;
+    }
+    await this.file.truncate(valueOffset);
+    return true;
   }
 
   private async writeExpiration(
@@ -113,4 +129,12 @@ export class FileCachedValue<T> extends CachedValue<T> {
     await this.file.write(expiration.toISOString(), 0, encoding);
     await this.file.write(expirationSeparatorChar, separatorPosition, encoding);
   }
+}
+
+function parseExpiration(fileContent: string) {
+  const expiration = new Date(fileContent.slice(0, separatorPosition));
+  if (Number.isNaN(expiration.valueOf())) {
+    throw new TypeError(`Invalid expiration: ${fileContent.slice(0, separatorPosition)}`);
+  }
+  return expiration;
 }
