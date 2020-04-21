@@ -9,7 +9,7 @@ import {
   ApiAuditory,
   ApiBuilding,
   ApiGroup,
-} from '../cist/cist-json-client.service';
+} from '../cist/types';
 import Schema$Building = admin_directory_v1.Schema$Building;
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import Schema$Group = admin_directory_v1.Schema$Group;

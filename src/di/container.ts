@@ -3,7 +3,7 @@ import { BindingScopeEnum, Container } from 'inversify';
 import { ICalendarConfig, IMaxCacheExpiration, Nullable } from '../@types';
 import { ConfigService } from '../config/config.service';
 import { CacheUtilsService } from '../services/cache-utils.service';
-import { CistJsonClient } from '../services/cist/cist-json-client.service';
+import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
 import {
@@ -75,7 +75,8 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       getConfig().google.calendar,
     );
 
-    container.bind<CistJsonClient>(TYPES.CistJsonHttpClient).to(CistJsonClient);
+    container.bind<CistJsonHttpClient>(TYPES.CistJsonHttpClient)
+      .to(CistJsonHttpClient);
 
     container.bind<IGoogleAuth>(TYPES.GoogleAuth)
       .to(GoogleAuth);
@@ -111,7 +112,8 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       getConfig().cist.apiKey,
     );
 
-    container.bind<CistJsonClient>(TYPES.CistJsonHttpClient).to(CistJsonClient);
+    container.bind<CistJsonHttpClient>(TYPES.CistJsonHttpClient)
+      .to(CistJsonHttpClient);
   }
   container.bind<UtilsService>(TYPES.GoogleUtils).to(UtilsService);
   container.bind<ConfigService>(TYPES.Config).to(ConfigService);

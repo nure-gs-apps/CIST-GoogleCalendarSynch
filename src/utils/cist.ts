@@ -1,5 +1,5 @@
 import { iterate } from 'iterare';
-import { ApiBuilding } from '../services/cist/cist-json-client.service';
+import { ApiBuilding } from '../services/cist/types';
 import { transformFloorname } from '../services/google/utils.service';
 
 export function getFloornamesFromBuilding(building: ApiBuilding) {

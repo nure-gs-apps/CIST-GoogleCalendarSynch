@@ -2,11 +2,9 @@
 import './polyfills';
 import { createContainer, getAsyncInitializers } from './di/container';
 import { TYPES } from './di/types';
-import {
-  CistJsonClient,
-} from './services/cist/cist-json-client.service';
 // initialize exit handlers
 import './services/exit-handler.service';
+import { CistJsonHttpClient } from './services/cist/cist-json-http-client.service';
 import { BuildingsService } from './services/google/buildings.service';
 import { CalendarService } from './services/google/calendar.service';
 import { GroupsService } from './services/google/groups.service';
@@ -18,7 +16,7 @@ getAsyncInitializers().then(main);
 
 async function main() {
   const cistClient = container
-    .get<CistJsonClient>(TYPES.CistJsonHttpClient);
+    .get<CistJsonHttpClient>(TYPES.CistJsonHttpClient);
 
   const roomsResponse = await cistClient.getRoomsResponse();
   // if (!assertRoomsResponse(roomsResponse)) {

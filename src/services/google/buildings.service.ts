@@ -8,7 +8,7 @@ import { arrayContentEqual } from '../../utils/common';
 import {
   ApiAuditoriesResponse,
   ApiBuilding,
-} from '../cist/cist-json-client.service';
+} from '../cist/types';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';

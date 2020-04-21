@@ -5,6 +5,11 @@ const yargs = require("yargs");
 const constants_1 = require("./constants");
 const change_case_1 = require("change-case");
 const index_1 = require("./index");
+var Cache;
+(function (Cache) {
+    Cache["File"] = "file";
+    Cache["Http"] = "http";
+})(Cache = exports.Cache || (exports.Cache = {}));
 function getBasicCliConfiguration() {
     // FIXME: add overrides for quotas object (seems too long options)
     return yargs

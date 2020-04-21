@@ -1,9 +1,10 @@
 import { AxiosResponse } from 'axios';
 import { injectable } from 'inversify';
 import {
-  ApiAuditoriesResponse, ApiEventsResponse,
+  ApiAuditoriesResponse,
+  ApiEventsResponse,
   ApiGroupsResponse,
-} from './cist-json-client.service';
+} from './types';
 
 @injectable()
 export class CistJsonHttpUtilsService {

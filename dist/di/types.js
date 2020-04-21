@@ -16,6 +16,8 @@ exports.TYPES = {
     // class tokens
     Config: Symbol.for('Config'),
     CistJsonHttpClient: Symbol.for('CistJsonHttpClient'),
+    CistJsonClient: Symbol.for('CistJsonClient'),
+    CistJsonHttpUtils: Symbol.for('CistJsonHttpUtils'),
     CacheUtils: Symbol.for('CacheUtils'),
     GoogleAuth: Symbol.for('GoogleAuth'),
     GoogleUtils: Symbol.for('GoogleUtils'),

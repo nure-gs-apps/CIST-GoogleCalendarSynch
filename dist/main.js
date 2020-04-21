@@ -11,7 +11,7 @@ const container = container_1.createContainer();
 container_1.getAsyncInitializers().then(main);
 async function main() {
     const cistClient = container
-        .get(types_1.TYPES.CistJsonClient);
+        .get(types_1.TYPES.CistJsonHttpClient);
     const roomsResponse = await cistClient.getRoomsResponse();
     // if (!assertRoomsResponse(roomsResponse)) {
     //   return;

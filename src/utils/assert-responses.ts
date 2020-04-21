@@ -1,7 +1,7 @@
 import {
   ApiAuditoriesResponse, ApiEventsResponse, ApiGroup,
   ApiGroupsResponse,
-} from '../services/cist/cist-json-client.service';
+} from '../services/cist/types';
 import { logger } from '../services/logger.service';
 
 export function assertRoomsResponse(body: any): body is ApiAuditoriesResponse {

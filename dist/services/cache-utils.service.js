@@ -31,6 +31,11 @@ let CacheUtilsService = class CacheUtilsService {
             .milliseconds(0);
         return expiration.toDate();
     }
+    assertValidExpiration(date) {
+        if (date.valueOf() > this.getMaxExpiration().valueOf()) {
+            throw new TypeError('Expiration cannot exceed 5 hours in the morning');
+        }
+    }
 };
 CacheUtilsService = tslib_1.__decorate([
     inversify_1.injectable(),

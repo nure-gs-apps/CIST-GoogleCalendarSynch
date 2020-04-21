@@ -7,6 +7,7 @@ const proper_lockfile_1 = require("proper-lockfile");
 const expirationSeparatorChar = '$';
 const separatorPosition = new Date().toISOString().length;
 const encoding = 'utf8';
+const valueOffset = separatorPosition + expirationSeparatorChar.length;
 class FileCachedValue extends cached_value_1.CachedValue {
     constructor(utils, fileName) {
         super(utils);
@@ -80,10 +81,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
             throw new TypeError('Invalid state, file is not loaded');
         }
         const fileContent = await this.file.readFile(encoding);
-        const expiration = new Date(fileContent.slice(0, separatorPosition));
-        if (Number.isNaN(expiration.valueOf())) {
-            throw new TypeError(`Invalid expiration: ${fileContent.slice(0, separatorPosition)}`);
-        }
+        const expiration = parseExpiration(fileContent);
         if (fileContent[separatorPosition] !== expirationSeparatorChar) {
             throw new TypeError(`Invalid expiration separator found. Expected ${expirationSeparatorChar}, found ${fileContent[separatorPosition]}`);
         }
@@ -103,11 +101,26 @@ class FileCachedValue extends cached_value_1.CachedValue {
             await this.file.write(JSON.stringify(value), separatorPosition + 1, encoding);
         }
     }
+    hasCachedValue() {
+        return Promise.resolve(false);
+    }
+    async loadExpirationFromCache() {
+        if (!this.file) {
+            throw new TypeError('Invalid state, file is not loaded');
+        }
+        const buffer = new Buffer(valueOffset);
+        await this.file.read(buffer, 0, valueOffset, 0);
+        return Promise.resolve(parseExpiration(buffer.toString(encoding)));
+    }
     async doClearCache() {
         if (!this.file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
-        await this.file.truncate(separatorPosition + 1);
+        if (valueOffset <= (await this.file.stat()).size) {
+            return false;
+        }
+        await this.file.truncate(valueOffset);
+        return true;
     }
     async writeExpiration(expiration = this._utils.getMaxExpiration()) {
         if (!this.file) {
@@ -118,4 +131,11 @@ class FileCachedValue extends cached_value_1.CachedValue {
     }
 }
 exports.FileCachedValue = FileCachedValue;
+function parseExpiration(fileContent) {
+    const expiration = new Date(fileContent.slice(0, separatorPosition));
+    if (Number.isNaN(expiration.valueOf())) {
+        throw new TypeError(`Invalid expiration: ${fileContent.slice(0, separatorPosition)}`);
+    }
+    return expiration;
+}
 //# sourceMappingURL=file-cached-value.js.map
