@@ -11,12 +11,12 @@ import { GoogleApiDirectory } from './google-api-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 import Resource$Groups = admin_directory_v1.Resource$Groups;
 import { GaxiosPromise } from 'gaxios';
-import { isSameGroupIdenity, UtilsService } from './utils.service';
+import { isSameGroupIdenity, GoogleUtilsService } from './google-utils.service';
 
 @injectable()
 export class GroupsService {
   static readonly ROOMS_PAGE_SIZE = 200; // max limit
-  private readonly _utils: UtilsService;
+  private readonly _utils: GoogleUtilsService;
   private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
@@ -32,7 +32,7 @@ export class GroupsService {
     @inject(
       TYPES.GoogleDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
-    @inject(TYPES.GoogleUtils) utils: UtilsService,
+    @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
   ) {
     this._utils = utils;
 

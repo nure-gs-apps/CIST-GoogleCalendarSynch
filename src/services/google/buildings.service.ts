@@ -13,14 +13,14 @@ import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
 import { GoogleApiDirectory } from './google-api-directory';
-import { UtilsService } from './utils.service';
+import { GoogleUtilsService } from './google-utils.service';
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
 import Schema$Building = admin_directory_v1.Schema$Building;
 
 @injectable()
 export class BuildingsService {
   static readonly BUILDING_PAGE_SIZE = 100;
-  private readonly _utils: UtilsService;
+  private readonly _utils: GoogleUtilsService;
   private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
@@ -36,7 +36,7 @@ export class BuildingsService {
     @inject(
       TYPES.GoogleDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
-    @inject(TYPES.GoogleUtils) utils: UtilsService,
+    @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
   ) {
     this._utils = utils;
 

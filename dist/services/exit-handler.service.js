@@ -38,8 +38,8 @@ class List {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _length
-        });
+            value: 0
+        }); // without initialization fails
         this.head = this.tail = head;
         this._length = head ? 1 : 0;
     }

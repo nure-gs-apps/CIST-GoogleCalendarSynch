@@ -9,7 +9,7 @@ const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
-const utils_service_1 = require("./utils.service");
+const google_utils_service_1 = require("./google-utils.service");
 let RoomsService = RoomsService_1 = class RoomsService {
     constructor(googleApiDirectory, quotaLimiter, utils) {
         Object.defineProperty(this, "_utils", {
@@ -194,7 +194,7 @@ RoomsService = RoomsService_1 = tslib_1.__decorate([
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
         quota_limiter_service_1.QuotaLimiterService,
-        utils_service_1.UtilsService])
+        google_utils_service_1.GoogleUtilsService])
 ], RoomsService);
 exports.RoomsService = RoomsService;
 function cistAuditoryToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
@@ -205,7 +205,7 @@ function cistAuditoryToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
         capacity: 999,
         resourceDescription: cistRoom.short_name,
         userVisibleDescription: cistRoom.short_name,
-        floorName: utils_service_1.transformFloorname(cistRoom.floor),
+        floorName: google_utils_service_1.transformFloorname(cistRoom.floor),
         resourceCategory: 'CONFERENCE_ROOM',
     };
     return room;
@@ -229,7 +229,7 @@ function cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
         roomPatch.userVisibleDescription = cistRoom.short_name;
         hasChanges = true;
     }
-    const floorName = utils_service_1.transformFloorname(cistRoom.floor);
+    const floorName = google_utils_service_1.transformFloorname(cistRoom.floor);
     if (floorName !== googleRoom.floorName) {
         roomPatch.floorName = floorName;
         hasChanges = true;

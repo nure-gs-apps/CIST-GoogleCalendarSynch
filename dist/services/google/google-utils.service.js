@@ -9,7 +9,7 @@ const translit_1 = require("../../utils/translit");
 exports.buildingIdPrefix = 'b';
 exports.roomIdPrefix = 'r';
 exports.groupEmailPrefix = 'g';
-let UtilsService = class UtilsService {
+let GoogleUtilsService = class GoogleUtilsService {
     constructor(config) {
         Object.defineProperty(this, "_idPrefix", {
             enumerable: true,
@@ -64,12 +64,12 @@ let UtilsService = class UtilsService {
         return `${localPartTemplate.join(groupName)}@${this.domainName}`;
     }
 };
-UtilsService = tslib_1.__decorate([
+GoogleUtilsService = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.Config)),
     tslib_1.__metadata("design:paramtypes", [config_service_1.ConfigService])
-], UtilsService);
-exports.UtilsService = UtilsService;
+], GoogleUtilsService);
+exports.GoogleUtilsService = GoogleUtilsService;
 const emptyFloorName = /^\s*$/;
 function transformFloorname(floorName) {
     return !emptyFloorName.test(floorName) ? floorName : '_';
@@ -82,4 +82,4 @@ function isSameGroupIdenity(cistGroup, googleGroup) {
     return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
 }
 exports.isSameGroupIdenity = isSameGroupIdenity;
-//# sourceMappingURL=utils.service.js.map
+//# sourceMappingURL=google-utils.service.js.map

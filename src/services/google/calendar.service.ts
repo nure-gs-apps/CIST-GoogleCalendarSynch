@@ -9,7 +9,7 @@ import {
 } from '../cist/types';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { GoogleApiCalendar } from './google-api-calendar';
-import { UtilsService } from './utils.service';
+import { GoogleUtilsService } from './google-utils.service';
 import Schema$Calendar = calendar_v3.Schema$Calendar;
 import Schema$CalendarListEntry = calendar_v3.Schema$CalendarListEntry;
 
@@ -21,7 +21,7 @@ export interface ICalendars {
 @injectable()
 export class CalendarService {
   static readonly CALENDAR_LIST_PAGE_SIZE = 250; // maximum
-  private readonly _utils: UtilsService;
+  private readonly _utils: GoogleUtilsService;
   private readonly _calendar: GoogleApiCalendar;
   private readonly _calendarConfig: ICalendarConfig;
 
@@ -35,7 +35,7 @@ export class CalendarService {
     @inject(TYPES.GoogleApiCalendar) googleApiCalendar: GoogleApiCalendar,
     @inject(TYPES.GoogleCalendarQuotaLimiter) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleCalendarConfig) calendarConfig: ICalendarConfig,
-    @inject(TYPES.GoogleUtils) utils: UtilsService,
+    @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
   ) {
     this._utils = utils;
 

@@ -19,7 +19,7 @@ export const roomIdPrefix = 'r';
 export const groupEmailPrefix = 'g';
 
 @injectable()
-export class UtilsService {
+export class GoogleUtilsService {
   private readonly _idPrefix: Optional<string>;
   public readonly domainName: string;
   public readonly prependIdPrefix: (id: string) => string;

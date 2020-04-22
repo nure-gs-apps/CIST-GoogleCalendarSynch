@@ -11,7 +11,7 @@ const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
-const utils_service_1 = require("./utils.service");
+const google_utils_service_1 = require("./google-utils.service");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
     constructor(googleApiDirectory, quotaLimiter, utils) {
         Object.defineProperty(this, "_utils", {
@@ -172,7 +172,7 @@ BuildingsService = BuildingsService_1 = tslib_1.__decorate([
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
         quota_limiter_service_1.QuotaLimiterService,
-        utils_service_1.UtilsService])
+        google_utils_service_1.GoogleUtilsService])
 ], BuildingsService);
 exports.BuildingsService = BuildingsService;
 function cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding) {

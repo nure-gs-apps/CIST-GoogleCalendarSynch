@@ -5,7 +5,7 @@ const inversify_1 = require("inversify");
 require("reflect-metadata");
 exports.TYPES = {
     // constants tokens
-    CistBaseApi: Symbol.for('CistBaseApi'),
+    CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
     CistApiKey: Symbol.for('CistApiKey'),
     GoogleAuthKeyFilepath: Symbol.for('GoogleAuthKeyFilepath'),
     GoogleAuthCalendarKeyFilepath: Symbol.for('GoogleAuthCalendarKeyFilepath'),

@@ -12,13 +12,13 @@ import { customer } from './constants';
 import { GoogleApiDirectory } from './google-api-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise } from 'gaxios';
-import { transformFloorname, UtilsService } from './utils.service';
+import { transformFloorname, GoogleUtilsService } from './google-utils.service';
 
 @injectable()
 export class RoomsService {
   static readonly ROOMS_PAGE_SIZE = 500; // maximum
   static readonly CONFERENCE_ROOM = 'CONFERENCE_ROOM';
-  private readonly _utils: UtilsService;
+  private readonly _utils: GoogleUtilsService;
   private readonly _directory: GoogleApiDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
@@ -34,7 +34,7 @@ export class RoomsService {
     @inject(
       TYPES.GoogleDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
-    @inject(TYPES.GoogleUtils) utils: UtilsService,
+    @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
   ) {
     this._utils = utils;
 

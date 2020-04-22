@@ -7,6 +7,7 @@ const os_1 = require("os");
 const config_1 = require("./config");
 const constants_1 = require("./config/constants");
 const types_1 = require("./config/types");
+const container_1 = require("./di/container");
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
 The script accepts command line options that override configuration of the script.
@@ -35,16 +36,43 @@ You can also use .env file configuration in this case.
 Lastly, command line arguments are used. They are described at the beginning of this message and override all previously set values.
 `;
 const yargs = types_1.getBasicCliConfiguration()
+    .middleware(initializeMiddleware)
+    .command({
+    command: 'check <types..>',
+    // aliases: ['gen', 'g'],
+    describe: 'Check responses.',
+    builder(yargs) {
+        return yargs.positional('types', {
+            type: 'string',
+            choices: ['groups', 'rooms']
+        });
+    },
+    handler(args) {
+        if (!mod || !container) {
+            throw new TypeError('No container or module');
+        }
+        mod.assertResponse(args, container).catch(failStart);
+    },
+})
     .usage(usage)
     .completion()
     .recommendCommands()
     .demandCommand(1, 'Specify a command.')
     .help('help').alias('h', 'help')
     .showHelpOnFail(true);
-config_1.initializeConfig(yargs).then(() => {
-    // import('./main').catch(failStart);
-    console.log(config_1.getConfig());
-}).catch(failStart);
+let mod = null;
+let container = null;
+function initializeMiddleware() {
+    return config_1.initializeConfig(yargs).then(() => {
+        const c = container_1.createContainer();
+        return container_1.getAsyncInitializer()
+            .then(() => {
+            container = c;
+        })
+            .then(() => Promise.resolve().then(() => require('./handlers')))
+            .then(m => mod = m);
+    });
+}
 function failStart(error) {
     console.error(error);
     process.exit(1);

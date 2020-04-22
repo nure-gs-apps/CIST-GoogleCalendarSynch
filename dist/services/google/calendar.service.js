@@ -7,7 +7,7 @@ const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const google_api_calendar_1 = require("./google-api-calendar");
-const utils_service_1 = require("./utils.service");
+const google_utils_service_1 = require("./google-utils.service");
 let CalendarService = CalendarService_1 = class CalendarService {
     constructor(googleApiCalendar, quotaLimiter, calendarConfig, utils) {
         Object.defineProperty(this, "_utils", {
@@ -246,7 +246,7 @@ CalendarService = CalendarService_1 = tslib_1.__decorate([
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleCalendarConfig)),
     tslib_1.__param(3, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_calendar_1.GoogleApiCalendar,
-        quota_limiter_service_1.QuotaLimiterService, Object, utils_service_1.UtilsService])
+        quota_limiter_service_1.QuotaLimiterService, Object, google_utils_service_1.GoogleUtilsService])
 ], CalendarService);
 exports.CalendarService = CalendarService;
 function isGroupCorrespondingCalendar(groupNameWithPrefix, calendar) {

@@ -5,7 +5,7 @@ import 'reflect-metadata';
 export const TYPES = {
   // constants tokens
 
-  CistBaseApi: Symbol.for('CistBaseApi'),
+  CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
   CistApiKey: Symbol.for('CistApiKey'),
   GoogleAuthKeyFilepath: Symbol.for('GoogleAuthKeyFilepath'),
   GoogleAuthCalendarKeyFilepath: Symbol.for('GoogleAuthCalendarKeyFilepath'),

@@ -42,9 +42,9 @@ export class CistJsonHttpClient implements ICistJsonClient {
   protected readonly _cistUtils: CistJsonHttpUtilsService;
 
   constructor(
-    @inject(TYPES.CistBaseApi) baseApiUrl: string,
+    @inject(TYPES.CistBaseApiUrl) baseApiUrl: string,
     @inject(TYPES.CistApiKey) apiKey: string,
-    cistUtils: CistJsonHttpUtilsService,
+    @inject(TYPES.CistJsonHttpUtils) cistUtils: CistJsonHttpUtilsService,
   ) {
     this._axios = axios.create({
       baseURL: baseApiUrl || CistJsonHttpClient.BASE_API_URL,

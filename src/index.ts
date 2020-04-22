@@ -1,14 +1,17 @@
 // IMPORTANT! INSTALLS MONKEY PATCHES
 import './polyfills';
+import { Container } from 'inversify';
 import iterate from 'iterare';
 import { EOL } from 'os';
+import { DeepPartial, Nullable } from './@types';
 import {
-  getConfig,
   getSupportedConfigExtensionsInPriorityOrder,
   initializeConfig,
 } from './config';
 import { getDefaultConfigDirectory } from './config/constants';
 import { getBasicCliConfiguration } from './config/types';
+import { createContainer, getAsyncInitializer } from './di/container';
+import { IAssertOptions } from './handlers';
 
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
@@ -39,6 +42,24 @@ Lastly, command line arguments are used. They are described at the beginning of 
 `;
 
 const yargs = getBasicCliConfiguration()
+  .middleware(initializeMiddleware)
+  .command({
+    command: 'check <types..>',
+    // aliases: ['gen', 'g'],
+    describe: 'Check responses.',
+    builder(yargs) {
+      return yargs.positional('types', {
+        type: 'string',
+        choices: ['groups', 'rooms']
+      });
+    },
+    handler(args: DeepPartial<IAssertOptions>) {
+      if (!mod || !container) {
+        throw new TypeError('No container or module');
+      }
+      mod.assertResponse(args, container).catch(failStart);
+    },
+  })
   .usage(usage)
   .completion()
   .recommendCommands()
@@ -46,10 +67,19 @@ const yargs = getBasicCliConfiguration()
   .help('help').alias('h', 'help')
   .showHelpOnFail(true);
 
-initializeConfig(yargs).then(() => {
-  // import('./main').catch(failStart);
-  console.log(getConfig());
-}).catch(failStart);
+let mod: Nullable<typeof import('./handlers')> = null;
+let container: Nullable<Container> = null;
+function initializeMiddleware() {
+  return initializeConfig(yargs).then(() => {
+    const c = createContainer();
+    return getAsyncInitializer()
+      .then(() => {
+        container = c;
+      })
+      .then(() => import('./handlers'))
+      .then(m => mod = m);
+  });
+}
 
 function failStart(error: any) {
   console.error(error);

@@ -8,7 +8,7 @@ const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_directory_1 = require("./google-api-directory");
-const utils_service_1 = require("./utils.service");
+const google_utils_service_1 = require("./google-utils.service");
 let GroupsService = class GroupsService {
     constructor(googleApiDirectory, quotaLimiter, utils) {
         Object.defineProperty(this, "_utils", {
@@ -115,13 +115,13 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => utils_service_1.isSameGroupIdenity(cistGroup, g));
+                        const isRelevant = direction.groups.some(cistGroup => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
                         if (isRelevant) {
                             return true;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => utils_service_1.isSameGroupIdenity(cistGroup, g));
+                        const isRelevant = speciality.groups.some(cistGroup => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
                         if (isRelevant) {
                             return true;
                         }
@@ -138,13 +138,13 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => utils_service_1.isSameGroupIdenity(cistGroup, g));
+                        const isRelevant = direction.groups.some(cistGroup => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
                         if (isRelevant) {
                             return false;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => utils_service_1.isSameGroupIdenity(cistGroup, g));
+                        const isRelevant = speciality.groups.some(cistGroup => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
                         if (isRelevant) {
                             return false;
                         }
@@ -172,7 +172,7 @@ let GroupsService = class GroupsService {
     }
     ensureGroup(groups, cistGroup, insertedGroups, newToOldNames) {
         const googleGroupEmail = this._utils.getGroupEmail(cistGroup);
-        const googleGroup = groups.find(g => utils_service_1.isSameGroupIdenity(cistGroup, g));
+        const googleGroup = groups.find(g => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
         if (googleGroup) {
             insertedGroups.add(googleGroupEmail);
             const groupPatch = this.cistGroupToGoogleGroupPatch(cistGroup, googleGroup);
@@ -251,7 +251,7 @@ GroupsService = tslib_1.__decorate([
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
         quota_limiter_service_1.QuotaLimiterService,
-        utils_service_1.UtilsService])
+        google_utils_service_1.GoogleUtilsService])
 ], GroupsService);
 exports.GroupsService = GroupsService;
 //# sourceMappingURL=groups.service.js.map

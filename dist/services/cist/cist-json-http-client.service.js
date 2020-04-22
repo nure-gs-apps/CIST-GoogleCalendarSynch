@@ -114,8 +114,9 @@ Object.defineProperty(CistJsonHttpClient, "EVENTS_PATH", {
 });
 CistJsonHttpClient = CistJsonHttpClient_1 = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.CistBaseApi)),
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.CistBaseApiUrl)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.CistApiKey)),
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.CistJsonHttpUtils)),
     tslib_1.__metadata("design:paramtypes", [String, String, cist_json_http_utils_service_1.CistJsonHttpUtilsService])
 ], CistJsonHttpClient);
 exports.CistJsonHttpClient = CistJsonHttpClient;
