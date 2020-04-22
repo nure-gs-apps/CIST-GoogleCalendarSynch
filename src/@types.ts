@@ -121,3 +121,9 @@ export function assertMaxCacheExpiration(
     throw new TypeError(`Invalid cache expiration period: ${config.hours}:${config.minutes}`);
   }
 }
+
+export const ASYNC_INIT: unique symbol = Symbol.for('@asyncInit');
+
+export interface IAsyncInitializable {
+  readonly [ASYNC_INIT]: Promise<any>;
+}

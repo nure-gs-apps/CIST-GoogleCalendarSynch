@@ -1,7 +1,14 @@
 import { getConfig } from '../config';
 import { BindingScopeEnum, Container } from 'inversify';
-import { ICalendarConfig, IMaxCacheExpiration, Nullable } from '../@types';
+import {
+  ASYNC_INIT,
+  DeepReadonly,
+  ICalendarConfig,
+  IMaxCacheExpiration,
+  Nullable,
+} from '../@types';
 import { ConfigService } from '../config/config.service';
+import { CistCacheConfig } from '../config/types';
 import { CacheUtilsService } from '../services/cache-utils.service';
 import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.service';
 import { BuildingsService } from '../services/google/buildings.service';
@@ -22,7 +29,7 @@ import {
   getQuotaLimiterFactory,
   QuotaLimiterService,
 } from '../services/quota-limiter.service';
-import { ASYNC_INIT, ContainerType, TYPES } from './types';
+import { ContainerType, TYPES } from './types';
 
 let container: Nullable<Container> = null;
 let containerType: Nullable<ContainerType> = null;
@@ -121,6 +128,8 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   container.bind<IMaxCacheExpiration>(TYPES.CacheMaxExpiration).toConstantValue(
     getConfig().caching.maxExpiration
   );
+  container.bind<DeepReadonly<CistCacheConfig>>(TYPES.CistCacheConfig)
+    .toConstantValue(getConfig().caching.cist);
   return container;
 }
 

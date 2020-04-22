@@ -3,24 +3,22 @@ ncgc:
     baseUrl: http://cist.nure.ua/ias/app/tt/
     apiKey: yourKey # Required if classes are loaded
 
-  google:
-    caching:
-      maxExpiration:
-        hours: 5
-        minutes: 30
+  caching:
+    maxExpiration:
+      hours: 5
+      minutes: 30
+    cist:
       priorities:
-        cist:
-          auditories: [file, http]
-          groups: [file, http]
-          events: [file, http]
-      configs:
-        file:
-          directories:
-            cist: cist
-            google: google
-          paths:
-            unix: /var/tmp/ncgc
-            win: %SystemRoot%\Temp\ncgc
+        auditories: [file, http]
+        groups: [file, http]
+        events: [file, http]
+    configs:
+      file:
+        subDirectory: cist
+        location:
+          unix: /var/tmp/ncgc
+          win: %SystemRoot%\Temp\ncgc
+  google:
     idPrefix: cist
     calendar:
       prefix: 'CIST ' # basically name for calendar. Can be used for searching if id is not overriden

@@ -5,10 +5,7 @@ import { DeepReadonly } from '../../@types';
 import { TYPES } from '../../di/types';
 import { dateToSeconds } from '../../utils/common';
 import { CistJsonHttpUtilsService } from './cist-json-http-utils.service';
-import {
-  IDateLimits,
-  TimetableType,
-} from './types';
+import { ICistJsonClient, IDateLimits, TimetableType } from './types';
 
 interface IQueryParams {
   api_key: string;
@@ -21,7 +18,8 @@ interface IQueryParams {
 // function cloneQueryParams(params: IQueryParams) {
 //   const newParams = {
 //     type_id: params.type_id,
-//     timetable_id: params.timetable_id
+//     timetable_id: params.timetable_id,
+//     api_key: params.api_key,
 //   } as IQueryParams;
 //   if (params.time_from) {
 //     newParams.time_from = params.time_from;
@@ -33,7 +31,7 @@ interface IQueryParams {
 // }
 
 @injectable()
-export class CistJsonHttpClient {
+export class CistJsonHttpClient implements ICistJsonClient {
   static readonly BASE_API_URL = 'http://cist.nure.ua/ias/app/tt/';
   static readonly ROOMS_PATH = 'P_API_AUDITORIES_JSON';
   static readonly GROUPS_PATH = 'P_API_GROUP_JSON';

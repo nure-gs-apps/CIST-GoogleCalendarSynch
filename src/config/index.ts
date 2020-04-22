@@ -5,7 +5,7 @@ import { Argv } from 'yargs';
 import { getDefaultConfigDirectory } from './constants';
 import { AppConfig, assertConfigPrefixId, IFullAppConfig } from './types';
 import { DeepPartial, DeepReadonly, Nullable, t } from '../@types';
-import { commonCamelCase } from '../utils/common';
+import { commonCamelCase, PathUtils } from '../utils/common';
 import * as YAML from 'yaml';
 import * as TOML from '@iarna/toml';
 
@@ -91,9 +91,9 @@ async function doInitializeConfig<T extends DeepPartial<IFullAppConfig>>(
       configDir: getDefaultConfigDirectory()
     }
   } as DeepPartial<IFullAppConfig>);
-  const configDir = normalizeConfigDirPath(
+  const configDir = PathUtils.expandVars(normalizeConfigDirPath(
     (nconf.get() as IFullAppConfig).ncgc.configDir
-  );
+  ));
 
   if (
     await fs.access(configDir, constants.R_OK | constants.F_OK)
@@ -129,9 +129,7 @@ async function doInitializeConfig<T extends DeepPartial<IFullAppConfig>>(
 
 function normalizeConfigDirPath(possiblePath: string) {
   const configDirectory = path.normalize(possiblePath.trim());
-  return path.isAbsolute(configDirectory)
-    ? configDirectory
-    : path.resolve(configDirectory);
+  return path.resolve(configDirectory);
 }
 
 function isAppEnvConfigKey(key: string) {

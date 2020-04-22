@@ -13,8 +13,7 @@ export enum CacheEvent {
 export interface IReadonlyCachedValue<T> extends ICacheEventEmitter<T>, IDisposable {
   readonly isInitialized: boolean;
   readonly expiration: ReadonlyDate;
-  init(loadFromCache?: true): Promise<boolean>;
-  init(loadFromCache: boolean): Promise<boolean>;
+  init(): Promise<boolean>;
   loadValue(): Promise<Nullable<T>>;
   loadFromCache(): Promise<Nullable<T>>;
 }
@@ -158,7 +157,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     await this.doSetExpiration(date);
   }
 
-  async init(loadFromCache = true): Promise<boolean> {
+  async init(): Promise<boolean> {
     const shouldInit = this.needsInit && !this.isInitialized;
     if (shouldInit) {
       await this.doInit();
@@ -166,9 +165,6 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
         await this.loadExpirationFromCache()
       );
       this._isInitialized = true;
-    }
-    if (loadFromCache) {
-      await this.loadFromCache();
     }
     return shouldInit;
   }

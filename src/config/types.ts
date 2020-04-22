@@ -11,7 +11,7 @@ import { getDefaultConfigDirectory } from './constants';
 import { paramCase } from 'change-case';
 import { getConfig } from './index';
 
-export enum Cache {
+export enum CacheType {
   File = 'file',
   Http = 'http'
 }
@@ -22,22 +22,19 @@ export interface IFullAppConfig {
     configDir: string;
     caching: {
       maxExpiration: IMaxCacheExpiration;
-      priorities: {
-        cist: {
-          auditories: Cache[];
-          groups: Cache[];
-          events: Cache[];
+      cist: {
+        priorities: {
+          auditories: CacheType[];
+          groups: CacheType[];
+          events: CacheType[];
         };
-      };
-      config: {
-        [Cache.File]: {
-          directories: {
-            cist: string;
-            google: string;
-          };
-          paths: {
-            unix: string;
-            win: string;
+        configs: {
+          [CacheType.File]: {
+            subDirectory: string;
+            location: {
+              unix: string;
+              win: string;
+            };
           };
         };
       };
@@ -62,6 +59,8 @@ export interface IFullAppConfig {
 }
 
 export type AppConfig = IFullAppConfig['ncgc'];
+
+export type CistCacheConfig = AppConfig['caching']['cist'];
 
 export function getBasicCliConfiguration(
 ): yargs.Argv<DeepPartial<IFullAppConfig>> {

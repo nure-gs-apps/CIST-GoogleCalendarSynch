@@ -1,6 +1,6 @@
 // VITALLY IMPORTANT FOR INVERSIFY AS PRECEDING IMPORT
-import 'reflect-metadata';
 import { decorate, injectable } from 'inversify';
+import 'reflect-metadata';
 
 export const TYPES = {
   // constants tokens
@@ -14,6 +14,8 @@ export const TYPES = {
   GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
 
   CacheMaxExpiration: Symbol.for('CacheMaxExpiration'),
+
+  CistCacheConfig: Symbol.for('CistCacheConfig'),
 
   // class tokens
   Config: Symbol.for('Config'),
@@ -41,8 +43,6 @@ export const TYPES = {
 export enum ContainerType {
   FULL, CIST_JSON_ONLY,
 }
-
-export const ASYNC_INIT = Symbol.for('@asyncInit');
 
 const injectables = new Set<any>();
 export function ensureInjectable(type: any) {

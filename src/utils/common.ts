@@ -95,3 +95,34 @@ export function isObjectLike<T extends object>(value: unknown): value is T {
 export function asyncNoop() {
   return Promise.resolve();
 }
+
+export function isWindows() {
+  return process.platform === 'win32';
+}
+
+export namespace PathUtils {
+  export const expandVars = isWindows()
+    ? function expandVars(path: string) {
+      return path.replace(/\^?%[\w\d]+\^?%/g, matched => {
+        const escapedFirst = matched[0] === '^';
+        const escapedLast = matched[matched.length - 2] === '^';
+        if (escapedFirst && escapedLast) {
+          return matched.slice(1, -2) + matched[matched.length - 1];
+        }
+        const variable = matched.slice(
+          escapedFirst ? 2 : 1,
+          escapedLast ? -2 : -1,
+        );
+        return process.env[variable] ?? '';
+      });
+    }
+    : function expandVars(path: string) {
+      return path.replace(/\\?\$[\w\d]+/g, matched => {
+        if (matched[0] === '\\') {
+          return matched.slice(1);
+        }
+        const variable = matched.slice(1);
+        return process.env[variable] ?? '';
+      });
+    };
+}

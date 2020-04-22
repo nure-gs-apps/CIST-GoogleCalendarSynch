@@ -1,4 +1,44 @@
-import { dateToSeconds } from '../../utils/common';
+import { DeepReadonly, Nullable } from '../../@types';
+
+export interface ICistJsonClient {
+  getRoomsResponse(): Promise<ApiAuditoriesResponse>;
+  getGroupsResponse(): Promise<ApiGroupsResponse>;
+  getEventsResponse(
+    type: TimetableType,
+    entityId: number | string,
+    dateLimits?: DeepReadonly<IDateLimits>,
+  ): Promise<ApiEventsResponse>;
+}
+
+export class ThrowCistJsonClient implements ICistJsonClient {
+  private static _getInstance: Nullable<ThrowCistJsonClient> = null;
+  public static getInstance() {
+    if (!this._getInstance) {
+      this._getInstance = new ThrowCistJsonClient();
+    }
+    return this._getInstance;
+  }
+
+  private constructor() {
+  }
+
+  getEventsResponse(
+    type: TimetableType,
+    entityId: number | string,
+    dateLimits?: DeepReadonly<IDateLimits>
+  ): Promise<ApiEventsResponse> {
+    throw new TypeError('Cist Json Client is not found');
+  }
+
+  getGroupsResponse(): Promise<ApiGroupsResponse> {
+    throw new TypeError('Cist Json Client is not found');
+  }
+
+  getRoomsResponse(): Promise<ApiAuditoriesResponse> {
+    throw new TypeError('Cist Json Client is not found');
+  }
+
+}
 
 export interface ApiAuditoriesResponse {
   university: {
@@ -114,21 +154,6 @@ export interface IEventsQueryParams {
   typeId: TimetableType;
   dateLimits?: IDateLimits;
   entityId: number | string;
-}
-
-const separator = ':';
-export function getEventsQueryParamsHash(params: IEventsQueryParams) {
-  let hash = params.typeId.toString() + separator + params.entityId;
-  if (params.dateLimits) {
-    hash += separator;
-    if (params.dateLimits.from) {
-      hash += dateToSeconds(params.dateLimits.from);
-    }
-    if (params.dateLimits.to) {
-      hash += separator + dateToSeconds(params.dateLimits.to);
-    }
-  }
-  return hash;
 }
 
 export enum TimetableType {
