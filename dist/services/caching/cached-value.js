@@ -148,7 +148,7 @@ class CachedValue extends events_1.EventEmitter {
         return this._expiration;
     }
     get isInitialized() {
-        return this.needsInit && this._isInitialized;
+        return !this.needsInit || this._isInitialized;
     }
     get isDisposed() {
         return !this.isInitialized;
@@ -166,15 +166,12 @@ class CachedValue extends events_1.EventEmitter {
         }
         await this.doSetExpiration(date);
     }
-    async init(loadFromCache = true) {
+    async init() {
         const shouldInit = this.needsInit && !this.isInitialized;
         if (shouldInit) {
             await this.doInit();
             this._expiration = this._utils.clampExpiration(await this.loadExpirationFromCache());
             this._isInitialized = true;
-        }
-        if (loadFromCache) {
-            await this.loadFromCache();
         }
         return shouldInit;
     }

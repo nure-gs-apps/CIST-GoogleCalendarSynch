@@ -1,21 +1,31 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const common_1 = require("../../utils/common");
-const separator = ':';
-function getEventsQueryParamsHash(params) {
-    let hash = params.typeId.toString() + separator + params.entityId;
-    if (params.dateLimits) {
-        hash += separator;
-        if (params.dateLimits.from) {
-            hash += common_1.dateToSeconds(params.dateLimits.from);
-        }
-        if (params.dateLimits.to) {
-            hash += separator + common_1.dateToSeconds(params.dateLimits.to);
-        }
+class ThrowCistJsonClient {
+    constructor() {
     }
-    return hash;
+    static getInstance() {
+        if (!this._getInstance) {
+            this._getInstance = new ThrowCistJsonClient();
+        }
+        return this._getInstance;
+    }
+    getEventsResponse(type, entityId, dateLimits) {
+        throw new TypeError('Cist Json Client is not found');
+    }
+    getGroupsResponse() {
+        throw new TypeError('Cist Json Client is not found');
+    }
+    getRoomsResponse() {
+        throw new TypeError('Cist Json Client is not found');
+    }
 }
-exports.getEventsQueryParamsHash = getEventsQueryParamsHash;
+exports.ThrowCistJsonClient = ThrowCistJsonClient;
+Object.defineProperty(ThrowCistJsonClient, "_getInstance", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: null
+});
 var TimetableType;
 (function (TimetableType) {
     TimetableType[TimetableType["GROUP"] = 1] = "GROUP";

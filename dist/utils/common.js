@@ -82,4 +82,44 @@ function asyncNoop() {
     return Promise.resolve();
 }
 exports.asyncNoop = asyncNoop;
+function isWindows() {
+    return process.platform === 'win32';
+}
+exports.isWindows = isWindows;
+var PathUtils;
+(function (PathUtils) {
+    PathUtils.expandVars = isWindows()
+        ? function expandVars(path) {
+            return path.replace(/\^?%[\w\d]+\^?%/g, matched => {
+                var _a;
+                const escapedFirst = matched[0] === '^';
+                const escapedLast = matched[matched.length - 2] === '^';
+                if (escapedFirst && escapedLast) {
+                    return matched.slice(1, -2) + matched[matched.length - 1];
+                }
+                const variable = matched.slice(escapedFirst ? 2 : 1, escapedLast ? -2 : -1);
+                return _a = process.env[variable], (_a !== null && _a !== void 0 ? _a : '');
+            });
+        }
+        : function expandVars(path) {
+            return path.replace(/\\?\$[\w\d]+/g, matched => {
+                var _a;
+                if (matched[0] === '\\') {
+                    return matched.slice(1);
+                }
+                const variable = matched.slice(1);
+                return _a = process.env[variable], (_a !== null && _a !== void 0 ? _a : '');
+            });
+        };
+})(PathUtils = exports.PathUtils || (exports.PathUtils = {}));
+async function disposeChain(cachedValue) {
+    const disposables = [cachedValue];
+    let currentValue = cachedValue;
+    while (currentValue.source) {
+        disposables.push(currentValue.source);
+        currentValue = currentValue.source;
+    }
+    return Promise.all(disposables);
+}
+exports.disposeChain = disposeChain;
 //# sourceMappingURL=common.js.map

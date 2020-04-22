@@ -26,4 +26,5 @@ function assertMaxCacheExpiration(config) {
     }
 }
 exports.assertMaxCacheExpiration = assertMaxCacheExpiration;
+exports.ASYNC_INIT = Symbol.for('@asyncInit');
 //# sourceMappingURL=@types.js.map

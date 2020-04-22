@@ -83,7 +83,7 @@ async function doInitializeConfig(argv) {
             configDir: constants_1.getDefaultConfigDirectory()
         }
     });
-    const configDir = normalizeConfigDirPath(nconf.get().ncgc.configDir);
+    const configDir = common_1.PathUtils.expandVars(normalizeConfigDirPath(nconf.get().ncgc.configDir));
     if (await graceful_fs_1.promises.access(configDir, graceful_fs_1.constants.R_OK | graceful_fs_1.constants.F_OK)
         .catch(() => true)
         || !(await graceful_fs_1.promises.stat(configDir)).isDirectory()) {
@@ -109,9 +109,7 @@ async function doInitializeConfig(argv) {
 }
 function normalizeConfigDirPath(possiblePath) {
     const configDirectory = path.normalize(possiblePath.trim());
-    return path.isAbsolute(configDirectory)
-        ? configDirectory
-        : path.resolve(configDirectory);
+    return path.resolve(configDirectory);
 }
 function isAppEnvConfigKey(key) {
     return key.slice(0, lowerCaseEnvVariableStart.length).toLowerCase() === lowerCaseEnvVariableStart;

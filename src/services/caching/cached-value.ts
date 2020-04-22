@@ -90,7 +90,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   get isInitialized() {
-    return this.needsInit && this._isInitialized;
+    return !this.needsInit || this._isInitialized;
   }
 
   get isDisposed() {

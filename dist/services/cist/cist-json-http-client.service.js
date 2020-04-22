@@ -11,7 +11,8 @@ const cist_json_http_utils_service_1 = require("./cist-json-http-utils.service")
 // function cloneQueryParams(params: IQueryParams) {
 //   const newParams = {
 //     type_id: params.type_id,
-//     timetable_id: params.timetable_id
+//     timetable_id: params.timetable_id,
+//     api_key: params.api_key,
 //   } as IQueryParams;
 //   if (params.time_from) {
 //     newParams.time_from = params.time_from;

@@ -14,10 +14,9 @@ ncgc:
         events: [file, http]
     configs:
       file:
-        subDirectory: cist
-        location:
-          unix: /var/tmp/ncgc
-          win: %SystemRoot%\Temp\ncgc
+        directory:
+          unix: /var/tmp/ncgc/cist
+          win: %SystemRoot%\Temp\ncgc\cist
   google:
     idPrefix: cist
     calendar:

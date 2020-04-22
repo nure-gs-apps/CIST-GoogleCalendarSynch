@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const config_1 = require("../config");
 const inversify_1 = require("inversify");
+const _types_1 = require("../@types");
 const config_service_1 = require("../config/config.service");
 const cache_utils_service_1 = require("../services/cache-utils.service");
 const cist_json_http_client_service_1 = require("../services/cist/cist-json-http-client.service");
@@ -77,6 +78,8 @@ function createContainer(options) {
     container.bind(types_1.TYPES.Config).to(config_service_1.ConfigService);
     container.bind(types_1.TYPES.CacheUtils).to(cache_utils_service_1.CacheUtilsService);
     container.bind(types_1.TYPES.CacheMaxExpiration).toConstantValue(config_1.getConfig().caching.maxExpiration);
+    container.bind(types_1.TYPES.CistCacheConfig)
+        .toConstantValue(config_1.getConfig().caching.cist);
     return container;
 }
 exports.createContainer = createContainer;
@@ -97,7 +100,7 @@ function getAsyncInitializers() {
     }
     const promises = [];
     if (containerType === types_1.ContainerType.FULL) {
-        promises.push(container.get(types_1.TYPES.GoogleAuth)[types_1.ASYNC_INIT]);
+        promises.push(container.get(types_1.TYPES.GoogleAuth)[_types_1.ASYNC_INIT]);
     }
     // tslint:disable-next-line:no-non-null-assertion
     initPromise = Promise.all(promises);

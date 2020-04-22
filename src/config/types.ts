@@ -30,8 +30,7 @@ export interface IFullAppConfig {
         };
         configs: {
           [CacheType.File]: {
-            subDirectory: string;
-            location: {
+            directory: {
               unix: string;
               win: string;
             };

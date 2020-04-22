@@ -1,6 +1,7 @@
 import { camelCase, camelCaseTransformMerge } from 'change-case';
 import { isObjectLike as _isObjectLike } from 'lodash';
 import { ReadonlyDate } from 'readonly-date';
+import { CachedValue } from '../services/caching/cached-value';
 
 export function arrayContentEqual<T>(
   first: ReadonlyArray<T>,
@@ -125,4 +126,14 @@ export namespace PathUtils {
         return process.env[variable] ?? '';
       });
     };
+}
+
+export async function disposeChain<T>(cachedValue: CachedValue<T>) {
+  const disposables = [cachedValue];
+  let currentValue = cachedValue;
+  while (currentValue.source) {
+    disposables.push(currentValue.source);
+    currentValue = currentValue.source;
+  }
+  return Promise.all(disposables);
 }

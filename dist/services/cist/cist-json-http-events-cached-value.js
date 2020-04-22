@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const cached_value_source_1 = require("../caching/cached-value-source");
-class CistJsonHttpGroupsCachedValue extends cached_value_source_1.CachedValueSource {
+class CistJsonHttpEventsCachedValue extends cached_value_source_1.CachedValueSource {
     constructor(cacheUtils, http, params) {
         super(cacheUtils);
         Object.defineProperty(this, "needsInit", {
@@ -36,5 +36,5 @@ class CistJsonHttpGroupsCachedValue extends cached_value_source_1.CachedValueSou
         return this._http.getEventsResponse(this.params.typeId, this.params.entityId, this.params.dateLimits).then(response => [response, this.expiration]);
     }
 }
-exports.CistJsonHttpGroupsCachedValue = CistJsonHttpGroupsCachedValue;
+exports.CistJsonHttpEventsCachedValue = CistJsonHttpEventsCachedValue;
 //# sourceMappingURL=cist-json-http-events-cached-value.js.map

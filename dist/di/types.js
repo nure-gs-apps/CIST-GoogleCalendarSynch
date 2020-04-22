@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 // VITALLY IMPORTANT FOR INVERSIFY AS PRECEDING IMPORT
-require("reflect-metadata");
 const inversify_1 = require("inversify");
+require("reflect-metadata");
 exports.TYPES = {
     // constants tokens
     CistBaseApi: Symbol.for('CistBaseApi'),
@@ -13,6 +13,7 @@ exports.TYPES = {
     GoogleAuthScopes: Symbol.for('GoogleAuthScopes'),
     GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
     CacheMaxExpiration: Symbol.for('CacheMaxExpiration'),
+    CistCacheConfig: Symbol.for('CistCacheConfig'),
     // class tokens
     Config: Symbol.for('Config'),
     CistJsonHttpClient: Symbol.for('CistJsonHttpClient'),
@@ -36,7 +37,6 @@ var ContainerType;
     ContainerType[ContainerType["FULL"] = 0] = "FULL";
     ContainerType[ContainerType["CIST_JSON_ONLY"] = 1] = "CIST_JSON_ONLY";
 })(ContainerType = exports.ContainerType || (exports.ContainerType = {}));
-exports.ASYNC_INIT = Symbol.for('@asyncInit');
 const injectables = new Set();
 function ensureInjectable(type) {
     if (injectables.has(type)) {

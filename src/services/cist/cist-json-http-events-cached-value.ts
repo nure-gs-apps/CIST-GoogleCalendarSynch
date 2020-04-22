@@ -8,7 +8,7 @@ import {
   IEventsQueryParams,
 } from './types';
 
-export class CistJsonHttpGroupsCachedValue extends CachedValueSource<ApiEventsResponse> {
+export class CistJsonHttpEventsCachedValue extends CachedValueSource<ApiEventsResponse> {
   protected readonly needsInit = false;
   readonly needsSource = false;
   readonly params: DeepReadonly<IEventsQueryParams>;
