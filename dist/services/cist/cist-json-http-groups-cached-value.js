@@ -20,7 +20,7 @@ class CistJsonHttpGroupsCachedValue extends cached_value_source_1.CachedValueSou
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _http
+            value: void 0
         });
         this._http = http;
     }

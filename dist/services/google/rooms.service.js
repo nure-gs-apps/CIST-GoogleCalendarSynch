@@ -16,49 +16,49 @@ let RoomsService = RoomsService_1 = class RoomsService {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _utils
+            value: void 0
         });
         Object.defineProperty(this, "_directory", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _directory
+            value: void 0
         });
         Object.defineProperty(this, "_quotaLimiter", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _quotaLimiter
+            value: void 0
         });
         Object.defineProperty(this, "_rooms", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _rooms
+            value: void 0
         });
         Object.defineProperty(this, "_insert", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _insert
+            value: void 0
         });
         Object.defineProperty(this, "_patch", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _patch
+            value: void 0
         });
         Object.defineProperty(this, "_delete", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _delete
+            value: void 0
         });
         Object.defineProperty(this, "_list", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _list
+            value: void 0
         });
         this._utils = utils;
         this._directory = googleApiDirectory;
@@ -113,7 +113,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
         for (const room of rooms) {
             promises.push(this._delete({
                 customer: constants_1.customer,
-                calendarResourceId: (_a = room.resourceId, (_a !== null && _a !== void 0 ? _a : undefined)),
+                calendarResourceId: (_a = room.resourceId) !== null && _a !== void 0 ? _a : undefined,
             }));
         }
         return Promise.all(promises);
@@ -168,7 +168,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
             if (ids.has(googleRoom.resourceId)) {
                 promises.push(this._delete({
                     customer: constants_1.customer,
-                    calendarResourceId: (_a = googleRoom.resourceId, (_a !== null && _a !== void 0 ? _a : undefined)),
+                    calendarResourceId: (_a = googleRoom.resourceId) !== null && _a !== void 0 ? _a : undefined,
                 }));
             }
         }

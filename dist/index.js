@@ -7,7 +7,8 @@ const os_1 = require("os");
 const config_1 = require("./config");
 const constants_1 = require("./config/constants");
 const types_1 = require("./config/types");
-const container_1 = require("./di/container");
+const main_1 = require("./main");
+const common_1 = require("./utils/common");
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
 The script accepts command line options that override configuration of the script.
@@ -36,42 +37,32 @@ You can also use .env file configuration in this case.
 Lastly, command line arguments are used. They are described at the beginning of this message and override all previously set values.
 `;
 const yargs = types_1.getBasicCliConfiguration()
+    .usage(usage)
     .middleware(initializeMiddleware)
     .command({
-    command: 'check <types..>',
-    // aliases: ['gen', 'g'],
+    command: `check <${main_1.AssertCommand.typesArgName}..>`,
     describe: 'Check responses.',
     builder(yargs) {
-        return yargs.positional('types', {
+        return yargs.positional(main_1.AssertCommand.typesArgName, {
             type: 'string',
-            choices: ['groups', 'rooms']
+            demandOption: true,
+            describe: `Types of requests to assert [choices: ${common_1.toPrintString(main_1.AssertCommand.getValidAssertTypes())}]`,
         });
     },
     handler(args) {
-        if (!mod || !container) {
-            throw new TypeError('No container or module');
-        }
-        mod.assertResponse(args, container).catch(failStart);
+        const fixArgs = args;
+        fixArgs.types = fixArgs.types.map(t => t[0]);
+        main_1.AssertCommand.handle(args, config_1.getFullConfig()).catch(failStart);
     },
 })
-    .usage(usage)
     .completion()
     .recommendCommands()
     .demandCommand(1, 'Specify a command.')
     .help('help').alias('h', 'help')
     .showHelpOnFail(true);
-let mod = null;
-let container = null;
+yargs.parse();
 function initializeMiddleware() {
-    return config_1.initializeConfig(yargs).then(() => {
-        const c = container_1.createContainer();
-        return container_1.getAsyncInitializer()
-            .then(() => {
-            container = c;
-        })
-            .then(() => Promise.resolve().then(() => require('./handlers')))
-            .then(m => mod = m);
-    });
+    return config_1.initializeConfig(yargs);
 }
 function failStart(error) {
     console.error(error);

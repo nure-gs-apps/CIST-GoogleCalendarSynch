@@ -12,7 +12,7 @@ let CacheUtilsService = class CacheUtilsService {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: maxCacheExpirationConfig
+            value: void 0
         });
         _types_1.assertMaxCacheExpiration(maxCacheExpirationConfig);
         this.maxCacheExpirationConfig = maxCacheExpirationConfig;

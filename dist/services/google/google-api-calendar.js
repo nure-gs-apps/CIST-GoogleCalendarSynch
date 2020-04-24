@@ -10,13 +10,13 @@ let GoogleApiCalendar = class GoogleApiCalendar {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _googleAuth
+            value: void 0
         });
         Object.defineProperty(this, "googleCalendar", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: googleCalendar
+            value: void 0
         });
         this._googleAuth = googleAuth;
         if (!this._googleAuth.authClient) {

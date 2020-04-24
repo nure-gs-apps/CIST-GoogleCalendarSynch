@@ -18,7 +18,7 @@ let GoogleAuth = class GoogleAuth {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _authClient
+            value: void 0
         });
         this[_types_1.ASYNC_INIT] = googleapis_1.google.auth.getClient({
             scopes: scopes.slice(),

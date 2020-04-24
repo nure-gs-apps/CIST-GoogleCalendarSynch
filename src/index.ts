@@ -1,17 +1,19 @@
 // IMPORTANT! INSTALLS MONKEY PATCHES
 import './polyfills';
-import { Container } from 'inversify';
 import iterate from 'iterare';
 import { EOL } from 'os';
-import { DeepPartial, Nullable } from './@types';
+import { Arguments } from 'yargs';
+import { DeepPartial } from './@types';
 import {
+  getFullConfig,
   getSupportedConfigExtensionsInPriorityOrder,
   initializeConfig,
 } from './config';
 import { getDefaultConfigDirectory } from './config/constants';
-import { getBasicCliConfiguration } from './config/types';
-import { createContainer, getAsyncInitializer } from './di/container';
-import { IAssertOptions } from './handlers';
+import { getBasicCliConfiguration, IFullAppConfig } from './config/types';
+import { AssertCommand } from './main';
+import { toPrintString } from './utils/common';
+import AssertType = AssertCommand.AssertType;
 
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
@@ -42,43 +44,42 @@ Lastly, command line arguments are used. They are described at the beginning of 
 `;
 
 const yargs = getBasicCliConfiguration()
+  .usage(usage)
   .middleware(initializeMiddleware)
   .command({
-    command: 'check <types..>',
-    // aliases: ['gen', 'g'],
+    command: `check <${AssertCommand.typesArgName}..>`,
     describe: 'Check responses.',
     builder(yargs) {
-      return yargs.positional('types', {
+      return yargs.positional(AssertCommand.typesArgName, {
         type: 'string',
-        choices: ['groups', 'rooms']
+        demandOption: true,
+        describe: `Types of requests to assert [choices: ${toPrintString(AssertCommand.getValidAssertTypes())}]`,
       });
     },
-    handler(args: DeepPartial<IAssertOptions>) {
-      if (!mod || !container) {
-        throw new TypeError('No container or module');
-      }
-      mod.assertResponse(args, container).catch(failStart);
+    handler(args: Arguments<DeepPartial<IFullAppConfig>>) {
+      // Workaround
+      type FixArgs =
+        AssertCommand.IOptions
+        & { types: [string][] | AssertType[] };
+      const fixArgs: FixArgs = args as FixArgs;
+      fixArgs.types = fixArgs.types.map(t => t[0] as AssertType);
+
+      AssertCommand.handle(
+        args as AssertCommand.IOptions,
+        getFullConfig()
+      ).catch(failStart);
     },
   })
-  .usage(usage)
   .completion()
   .recommendCommands()
   .demandCommand(1, 'Specify a command.')
   .help('help').alias('h', 'help')
   .showHelpOnFail(true);
 
-let mod: Nullable<typeof import('./handlers')> = null;
-let container: Nullable<Container> = null;
+yargs.parse();
+
 function initializeMiddleware() {
-  return initializeConfig(yargs).then(() => {
-    const c = createContainer();
-    return getAsyncInitializer()
-      .then(() => {
-        container = c;
-      })
-      .then(() => import('./handlers'))
-      .then(m => mod = m);
-  });
+  return initializeConfig(yargs);
 }
 
 function failStart(error: any) {

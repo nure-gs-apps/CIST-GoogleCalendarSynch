@@ -18,19 +18,19 @@ class QuotaLimiterService {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: dailyLimiter
+            value: void 0
         });
         Object.defineProperty(this, "limiter", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: limiter
+            value: void 0
         });
         Object.defineProperty(this, "_disposed", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _disposed
+            value: void 0
         });
         this.dailyLimiter = new bottleneck_1.default({
             reservoir: quota.daily,

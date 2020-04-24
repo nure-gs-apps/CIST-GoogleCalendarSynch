@@ -21,6 +21,7 @@ const rooms_service_1 = require("../services/google/rooms.service");
 const google_utils_service_1 = require("../services/google/google-utils.service");
 const quota_limiter_service_1 = require("../services/quota-limiter.service");
 let container = null;
+let boundTypes = null;
 function hasContainer() {
     return !!container;
 }
@@ -45,16 +46,22 @@ function createContainer(options) {
         types.add(types_1.TYPES.CistCacheConfig);
     }
     if (allRequired
+        || types.has(cist_json_http_client_service_1.CistJsonHttpClient)) {
+        types.add(types_1.TYPES.CistBaseApiUrl);
+        types.add(types_1.TYPES.CistApiKey);
+        types.add(types_1.TYPES.CistJsonHttpUtils);
+    }
+    if (allRequired
+        || (types.has(types_1.TYPES.CistJsonHttpClient)
+            || types.has(cist_json_http_client_service_1.CistJsonHttpClient)) && types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
+        container.bind(types_1.TYPES.CistJsonHttpClient)
+            .to(cist_json_http_client_service_1.CistJsonHttpClient);
+    }
+    if (allRequired
         || types.has(types_1.TYPES.CacheUtils)
         || types.has(cache_utils_service_1.CacheUtilsService)) {
         container.bind(types_1.TYPES.CacheUtils).to(cache_utils_service_1.CacheUtilsService);
         types.add(types_1.TYPES.CacheMaxExpiration);
-    }
-    if (allRequired
-        || types.has(types_1.TYPES.CistJsonHttpClient)
-        || types.has(cist_json_http_client_service_1.CistJsonHttpClient)) {
-        container.bind(types_1.TYPES.CistJsonHttpClient)
-            .to(cist_json_http_client_service_1.CistJsonHttpClient);
     }
     if (allRequired
         || types.has(types_1.TYPES.CistJsonHttpUtils)
@@ -106,24 +113,39 @@ function createContainer(options) {
     container.bind(types_1.TYPES.EventsService).to(events_service_1.EventsService);
     container.bind(types_1.TYPES.GoogleUtils).to(google_utils_service_1.GoogleUtilsService);
     container.bind(types_1.TYPES.Config).to(config_service_1.ConfigService);
-    setInitPromise(types);
+    boundTypes = types;
     return container;
 }
 exports.createContainer = createContainer;
-function setInitPromise(types) {
+let initPromise = null;
+function getContainerAsyncInitializer() {
     if (!container) {
+        throw new TypeError('Container is not initialized');
+    }
+    if (!initPromise) {
+        initPromise = getInitPromise();
+    }
+    return initPromise;
+}
+exports.getContainerAsyncInitializer = getContainerAsyncInitializer;
+function getInitPromise() {
+    if (!container || !boundTypes) {
         throw new TypeError('Container is not created');
     }
     const promises = [];
-    if (types.size === 0
-        || types.has(types_1.TYPES.GoogleAuth)
-        || types.has(google_auth_1.GoogleAuth)) {
+    if (boundTypes.size === 0) {
+        return Promise.resolve([]);
+    }
+    if (boundTypes.size === 0
+        || boundTypes.has(types_1.TYPES.GoogleAuth)
+        || boundTypes.has(google_auth_1.GoogleAuth)) {
         promises.push(container.get(types_1.TYPES.GoogleAuth)[_types_1.ASYNC_INIT]);
     }
-    if (types.size === 0 || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
+    if (boundTypes.size === 0
+        || boundTypes.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
         promises.push(container.get(types_1.TYPES.CistJsonClient)[_types_1.ASYNC_INIT]);
     }
-    initPromise = Promise.all(promises);
+    return Promise.all(promises);
 }
 function getContainer() {
     if (!container) {
@@ -132,12 +154,4 @@ function getContainer() {
     return container;
 }
 exports.getContainer = getContainer;
-let initPromise = null;
-function getAsyncInitializer() {
-    if (!container || !initPromise) {
-        throw new TypeError('Container is not initialized');
-    }
-    return initPromise;
-}
-exports.getAsyncInitializer = getAsyncInitializer;
 //# sourceMappingURL=container.js.map

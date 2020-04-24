@@ -27,19 +27,19 @@ class FileCachedValue extends cached_value_1.CachedValue {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _fileName
+            value: void 0
         });
         Object.defineProperty(this, "file", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: file
+            value: void 0
         });
         Object.defineProperty(this, "unlock", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: unlock
+            value: void 0
         });
         this._fileName = fileName;
         this.unlock = common_1.asyncNoop;

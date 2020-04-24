@@ -10,13 +10,13 @@ let GoogleApiDirectory = class GoogleApiDirectory {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _googleAuth
+            value: void 0
         });
         Object.defineProperty(this, "googleDirectory", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: googleDirectory
+            value: void 0
         });
         this._googleAuth = googleAuth;
         if (!this._googleAuth.authClient) {

@@ -12,11 +12,11 @@ ncgc:
         auditories: [file, http]
         groups: [file, http]
         events: [file, http]
-    configs:
-      file:
-        directory:
-          unix: /var/tmp/ncgc/cist
-          win: %SystemRoot%\Temp\ncgc\cist
+      configs:
+        file:
+          directory:
+            unix: /var/tmp/ncgc/cist
+            win: %SystemRoot%\Temp\ncgc\cist
   google:
     idPrefix: cist
     calendar:

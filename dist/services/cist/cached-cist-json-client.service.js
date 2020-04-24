@@ -8,6 +8,7 @@ const path = require("path");
 const _types_1 = require("../../@types");
 const types_1 = require("../../config/types");
 const types_2 = require("../../di/types");
+const cist_1 = require("../../utils/cist");
 const common_1 = require("../../utils/common");
 const cache_utils_service_1 = require("../cache-utils.service");
 const file_cached_value_1 = require("../caching/file-cached-value");
@@ -34,52 +35,52 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _isDisposed
+            value: void 0
         });
         Object.defineProperty(this, "_cacheConfig", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _cacheConfig
+            value: void 0
         });
         Object.defineProperty(this, "_cacheUtils", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _cacheUtils
+            value: void 0
         });
         Object.defineProperty(this, "_baseDirectory", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _baseDirectory
+            value: void 0
         });
         Object.defineProperty(this, "_http", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _http
+            value: void 0
         });
         // tslint:disable-next-line:max-line-length
         Object.defineProperty(this, "_eventsCachedValues", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _eventsCachedValues
+            value: void 0
         });
         // tslint:disable-next-line:max-line-length
         Object.defineProperty(this, "_groupsCachedValue", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _groupsCachedValue
+            value: void 0
         });
         // tslint:disable-next-line:max-line-length
         Object.defineProperty(this, "_roomsCachedValue", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _roomsCachedValue
+            value: void 0
         });
         this._cacheConfig = cacheConfig;
         this._cacheUtils = cacheUtils;
@@ -262,9 +263,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         return cachedValue;
     }
     includesCache(type) {
-        return this._cacheConfig.priorities.auditories.includes(type)
-            || this._cacheConfig.priorities.events.includes(type)
-            || this._cacheConfig.priorities.groups.includes(type);
+        return cist_1.includesCache(this._cacheConfig, type);
     }
 };
 _a = _types_1.ASYNC_INIT;

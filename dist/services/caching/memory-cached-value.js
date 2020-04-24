@@ -20,7 +20,7 @@ class MemoryCachedValue extends cached_value_1.CachedValue {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _value
+            value: void 0
         });
         this._value = null;
     }

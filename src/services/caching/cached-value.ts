@@ -290,12 +290,14 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   protected abstract loadExpirationFromCache(): Promise<ReadonlyDate>;
 
-  protected loadValueFromSource(): Promise<[Nullable<T>, ReadonlyDate]> {
+  protected async loadValueFromSource(): Promise<[Nullable<T>, ReadonlyDate]> {
     const source = this._source;
     if (!source) {
       throw new TypeError('source is not set');
     }
-    return source.loadValue().then(v => [v, source.expiration]);
+    const value = await source.loadValue();
+    await this.saveValue(value, source.expiration);
+    return [value, source.expiration];
   }
 
   protected doDispose() {

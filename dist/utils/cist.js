@@ -9,4 +9,10 @@ function getFloornamesFromBuilding(building) {
         .values());
 }
 exports.getFloornamesFromBuilding = getFloornamesFromBuilding;
+function includesCache(config, type) {
+    return config.priorities.auditories.includes(type)
+        || config.priorities.events.includes(type)
+        || config.priorities.groups.includes(type);
+}
+exports.includesCache = includesCache;
 //# sourceMappingURL=cist.js.map

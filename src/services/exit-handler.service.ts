@@ -15,7 +15,7 @@ class ListNode {
 class List {
   head: Nullable<ListNode>;
   tail: Nullable<ListNode>;
-  private _length = 0; // without initialization fails
+  private _length: number; // without initialization fails
 
   get length() {
     return this._length;

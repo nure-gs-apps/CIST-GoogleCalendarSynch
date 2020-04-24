@@ -20,7 +20,7 @@ class CistJsonHttpRoomsCachedValue extends cached_value_source_1.CachedValueSour
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _http
+            value: void 0
         });
         this._http = http;
     }

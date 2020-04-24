@@ -137,3 +137,7 @@ export async function disposeChain<T>(cachedValue: CachedValue<T>) {
   }
   return Promise.all(disposables);
 }
+
+export function toPrintString(strings: ReadonlyArray<unknown>) {
+  return `"${strings.join('", "')}"`;
+}

@@ -2,7 +2,6 @@
 var CalendarService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
-const config_1 = require("../../config");
 const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 const quota_limiter_service_1 = require("../quota-limiter.service");
@@ -14,49 +13,49 @@ let CalendarService = CalendarService_1 = class CalendarService {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _utils
+            value: void 0
         });
         Object.defineProperty(this, "_calendar", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _calendar
+            value: void 0
         });
         Object.defineProperty(this, "_calendarConfig", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _calendarConfig
+            value: void 0
         });
         Object.defineProperty(this, "_getCalendar", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _getCalendar
+            value: void 0
         });
         Object.defineProperty(this, "_listCalendarList", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _listCalendarList
+            value: void 0
         });
         Object.defineProperty(this, "_insertCalendar", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _insertCalendar
+            value: void 0
         });
         Object.defineProperty(this, "_patchCalendar", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _patchCalendar
+            value: void 0
         });
         Object.defineProperty(this, "_insertAcl", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _insertAcl
+            value: void 0
         });
         this._utils = utils;
         this._calendar = googleApiCalendar;
@@ -159,7 +158,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
         if (calendar) {
             if (changeName) {
                 const response = await this._patchCalendar({
-                    calendarId: (_a = calendar.id, (_a !== null && _a !== void 0 ? _a : undefined)),
+                    calendarId: (_a = calendar.id) !== null && _a !== void 0 ? _a : undefined,
                     requestBody: getGroupCalendarPatch(cistGroup.name),
                 });
                 calendar = response.data;
@@ -187,7 +186,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
         if (calendar) {
             if (changeName) {
                 const response = await this._patchCalendar({
-                    calendarId: (_a = calendar.id, (_a !== null && _a !== void 0 ? _a : undefined)),
+                    calendarId: (_a = calendar.id) !== null && _a !== void 0 ? _a : undefined,
                     requestBody: getRoomCalendarPatch(cistRoom.short_name),
                 });
                 calendar = response.data;
@@ -271,10 +270,11 @@ function getRoomCalendarPatch(roomName) {
     };
 }
 exports.getRoomCalendarPatch = getRoomCalendarPatch;
-const prependPrefix = (() => {
-    const calenarConfig = config_1.getConfig().google.calendar; // TODO: move to helper service or remove
-    return calenarConfig.prefix
-        ? (value) => calenarConfig.prefix + value
-        : (value) => value;
-})();
+const prependPrefix = (value) => value;
+// (() => {
+//   const calenarConfig = getConfig().google.calendar; // TODO: move to helper service or remove
+//   return calenarConfig.prefix
+//     ? (value: string) => calenarConfig.prefix + value
+//     : (value: string) => value;
+// })();
 //# sourceMappingURL=calendar.service.js.map

@@ -98,7 +98,7 @@ var PathUtils;
                     return matched.slice(1, -2) + matched[matched.length - 1];
                 }
                 const variable = matched.slice(escapedFirst ? 2 : 1, escapedLast ? -2 : -1);
-                return _a = process.env[variable], (_a !== null && _a !== void 0 ? _a : '');
+                return (_a = process.env[variable]) !== null && _a !== void 0 ? _a : '';
             });
         }
         : function expandVars(path) {
@@ -108,7 +108,7 @@ var PathUtils;
                     return matched.slice(1);
                 }
                 const variable = matched.slice(1);
-                return _a = process.env[variable], (_a !== null && _a !== void 0 ? _a : '');
+                return (_a = process.env[variable]) !== null && _a !== void 0 ? _a : '';
             });
         };
 })(PathUtils = exports.PathUtils || (exports.PathUtils = {}));
@@ -122,4 +122,8 @@ async function disposeChain(cachedValue) {
     return Promise.all(disposables);
 }
 exports.disposeChain = disposeChain;
+function toPrintString(strings) {
+    return `"${strings.join('", "')}"`;
+}
+exports.toPrintString = toPrintString;
 //# sourceMappingURL=common.js.map

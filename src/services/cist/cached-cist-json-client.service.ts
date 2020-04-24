@@ -9,6 +9,7 @@ import {
 } from '../../@types';
 import { CacheType, CistCacheConfig } from '../../config/types';
 import { TYPES } from '../../di/types';
+import { includesCache } from '../../utils/cist';
 import {
   dateToSeconds,
   disposeChain,
@@ -302,9 +303,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   }
 
   private includesCache(type: CacheType) {
-    return this._cacheConfig.priorities.auditories.includes(type)
-      || this._cacheConfig.priorities.events.includes(type)
-      || this._cacheConfig.priorities.groups.includes(type);
+    return includesCache(this._cacheConfig, type);
   }
 }
 

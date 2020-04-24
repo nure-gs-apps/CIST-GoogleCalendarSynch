@@ -1,5 +1,4 @@
 import { calendar_v3 } from 'googleapis';
-import { getConfig } from '../../config';
 import { inject, injectable } from 'inversify';
 import { ICalendarConfig, Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
@@ -311,9 +310,10 @@ export function getRoomCalendarPatch(roomName: string) {
   } as Schema$Calendar;
 }
 
-const prependPrefix = (() => {
-  const calenarConfig = getConfig().google.calendar; // TODO: move to helper service or remove
-  return calenarConfig.prefix
-    ? (value: string) => calenarConfig.prefix + value
-    : (value: string) => value;
-})();
+const prependPrefix = (value: string) => value;
+// (() => {
+//   const calenarConfig = getConfig().google.calendar; // TODO: move to helper service or remove
+//   return calenarConfig.prefix
+//     ? (value: string) => calenarConfig.prefix + value
+//     : (value: string) => value;
+// })();

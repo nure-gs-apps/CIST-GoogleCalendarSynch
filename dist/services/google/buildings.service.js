@@ -18,49 +18,49 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _utils
+            value: void 0
         });
         Object.defineProperty(this, "_directory", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _directory
+            value: void 0
         });
         Object.defineProperty(this, "_quotaLimiter", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _quotaLimiter
+            value: void 0
         });
         Object.defineProperty(this, "_buildings", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _buildings
+            value: void 0
         });
         Object.defineProperty(this, "_insert", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _insert
+            value: void 0
         });
         Object.defineProperty(this, "_patch", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _patch
+            value: void 0
         });
         Object.defineProperty(this, "_delete", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _delete
+            value: void 0
         });
         Object.defineProperty(this, "_list", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _list
+            value: void 0
         });
         this._utils = utils;
         this._directory = googleApiDirectory;
@@ -105,7 +105,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         for (const room of buildings) {
             promises.push(this._delete({
                 customer: constants_1.customer,
-                buildingId: (_a = room.buildingId, (_a !== null && _a !== void 0 ? _a : undefined)),
+                buildingId: (_a = room.buildingId) !== null && _a !== void 0 ? _a : undefined,
             }));
         }
         return Promise.all(promises);
@@ -144,7 +144,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
             if (ids.has(googleBuilding.buildingId)) {
                 promises.push(this._delete({
                     customer: constants_1.customer,
-                    buildingId: (_a = googleBuilding.buildingId, (_a !== null && _a !== void 0 ? _a : undefined)),
+                    buildingId: (_a = googleBuilding.buildingId) !== null && _a !== void 0 ? _a : undefined,
                 }));
             }
         }

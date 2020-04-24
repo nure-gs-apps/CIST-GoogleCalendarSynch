@@ -28,19 +28,19 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _axios
+            value: void 0
         });
         Object.defineProperty(this, "_apiKey", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _apiKey
+            value: void 0
         });
         Object.defineProperty(this, "_cistUtils", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _cistUtils
+            value: void 0
         });
         this._axios = axios_1.default.create({
             baseURL: baseApiUrl || CistJsonHttpClient_1.BASE_API_URL,
@@ -50,7 +50,7 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
         this._axios.interceptors.response.use(res => {
             var _a;
             const data = res.data;
-            res.data = (_a = res.headers['content-type'], (_a !== null && _a !== void 0 ? _a : '')).toString().toLowerCase().includes('charset=windows-1251')
+            res.data = ((_a = res.headers['content-type']) !== null && _a !== void 0 ? _a : '').toString().toLowerCase().includes('charset=windows-1251')
                 ? iconv.decode(res.data, 'win1251')
                 : data.toString('utf8');
             return res;

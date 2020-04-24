@@ -15,19 +15,19 @@ let GoogleUtilsService = class GoogleUtilsService {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: _idPrefix
+            value: void 0
         });
         Object.defineProperty(this, "domainName", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: domainName
+            value: void 0
         });
         Object.defineProperty(this, "prependIdPrefix", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: prependIdPrefix
+            value: void 0
         });
         this.domainName = config.config
             .google

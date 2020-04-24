@@ -35,6 +35,7 @@ import {
 import ServiceIdentifier = interfaces.ServiceIdentifier;
 
 let container: Nullable<Container> = null;
+let boundTypes: Nullable<ReadonlySet<ServiceIdentifier<any>>> = null;
 
 export interface ICreateContainerOptions {
   types: Iterable<interfaces.Newable<any>>;
@@ -70,20 +71,31 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
   if (
     allRequired
+    || types.has(CistJsonHttpClient)
+  ) {
+    types.add(TYPES.CistBaseApiUrl);
+    types.add(TYPES.CistApiKey);
+    types.add(TYPES.CistJsonHttpUtils);
+  }
+
+  if (
+    allRequired
+    || (
+      types.has(TYPES.CistJsonHttpClient)
+      || types.has(CistJsonHttpClient)
+    ) && types.has(CachedCistJsonClientService)
+  ) {
+    container.bind<CistJsonHttpClient>(TYPES.CistJsonHttpClient)
+      .to(CistJsonHttpClient);
+  }
+
+  if (
+    allRequired
     || types.has(TYPES.CacheUtils)
     || types.has(CacheUtilsService)
   ) {
     container.bind<CacheUtilsService>(TYPES.CacheUtils).to(CacheUtilsService);
     types.add(TYPES.CacheMaxExpiration);
-  }
-
-  if (
-    allRequired
-    || types.has(TYPES.CistJsonHttpClient)
-    || types.has(CistJsonHttpClient)
-  ) {
-    container.bind<CistJsonHttpClient>(TYPES.CistJsonHttpClient)
-      .to(CistJsonHttpClient);
   }
 
   if (
@@ -175,34 +187,52 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   container.bind<GoogleUtilsService>(TYPES.GoogleUtils).to(GoogleUtilsService);
   container.bind<ConfigService>(TYPES.Config).to(ConfigService);
 
-  setInitPromise(types);
+  boundTypes = types;
 
   return container;
 }
 
-function setInitPromise(types: ReadonlySet<ServiceIdentifier<any>>) {
+let initPromise: Nullable<Promise<any[]>> = null;
+export function getContainerAsyncInitializer() {
   if (!container) {
+    throw new TypeError('Container is not initialized');
+  }
+  if (!initPromise) {
+    initPromise = getInitPromise();
+  }
+  return initPromise;
+}
+
+function getInitPromise() {
+  if (!container || !boundTypes) {
     throw new TypeError('Container is not created');
   }
   const promises = [] as Promise<any>[];
 
+  if (boundTypes.size === 0) {
+    return Promise.resolve([]);
+  }
+
   if (
-    types.size === 0
-    || types.has(TYPES.GoogleAuth)
-    || types.has(GoogleAuth)
+    boundTypes.size === 0
+    || boundTypes.has(TYPES.GoogleAuth)
+    || boundTypes.has(GoogleAuth)
   ) {
     promises.push(
       container.get<GoogleAuth>(TYPES.GoogleAuth)[ASYNC_INIT],
     );
   }
 
-  if (types.size === 0 || types.has(CachedCistJsonClientService)) {
+  if (
+    boundTypes.size === 0
+    || boundTypes.has(CachedCistJsonClientService)
+  ) {
     promises.push(container.get<CachedCistJsonClientService>(
       TYPES.CistJsonClient
     )[ASYNC_INIT]);
   }
 
-  initPromise = Promise.all(promises);
+  return Promise.all(promises);
 }
 
 export function getContainer() {
@@ -210,12 +240,4 @@ export function getContainer() {
     throw new TypeError('Container is not created');
   }
   return container;
-}
-
-let initPromise: Nullable<Promise<any[]>> = null;
-export function getAsyncInitializer() {
-  if (!container || !initPromise) {
-    throw new TypeError('Container is not initialized');
-  }
-  return initPromise;
 }
