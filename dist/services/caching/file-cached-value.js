@@ -4,10 +4,8 @@ const common_1 = require("../../utils/common");
 const cached_value_1 = require("./cached-value");
 const graceful_fs_1 = require("graceful-fs");
 const proper_lockfile_1 = require("proper-lockfile");
-const expirationSeparatorChar = '$';
-const separatorPosition = new Date().toISOString().length;
+const valueOffset = new Date().toISOString().length;
 const encoding = 'utf8';
-const valueOffset = separatorPosition + expirationSeparatorChar.length;
 class FileCachedValue extends cached_value_1.CachedValue {
     constructor(utils, fileName) {
         super(utils);
@@ -46,15 +44,37 @@ class FileCachedValue extends cached_value_1.CachedValue {
         this.file = null;
     }
     async doInit() {
-        if (!await this.canAccessFile()) {
-            throw new Error(`Cache file ${this._fileName} is not accessible for read and write`);
+        let fileStats = null;
+        try {
+            fileStats = await graceful_fs_1.promises.stat(this._fileName);
         }
-        this.unlock = await proper_lockfile_1.lock(this._fileName, {
-            stale: 60000,
-            update: 5000,
-        });
-        this.file = await graceful_fs_1.promises.open(this._fileName, 'r+', 666);
-        if ((await this.file.stat()).size < separatorPosition) {
+        catch (error) {
+            if (error.code !== 'ENOENT') {
+                throw error;
+            }
+        }
+        if (fileStats) {
+            if (!fileStats.isFile()) {
+                throw new TypeError(`${this._fileName} is expected to be a file`);
+            }
+            if (!graceful_fs_1.promises.access(this._fileName, graceful_fs_1.constants.F_OK | graceful_fs_1.constants.R_OK | graceful_fs_1.constants.W_OK).then(() => true).catch(() => false)) {
+                throw new Error(`Cache file ${this._fileName} is not accessible for read and write`);
+            }
+        }
+        this.file = await graceful_fs_1.promises.open(this._fileName, fileStats ? 'r+' : 'w+', 0o666);
+        try {
+            this.unlock = await proper_lockfile_1.lock(this._fileName, {
+                stale: 60000,
+                update: 5000,
+            });
+        }
+        catch (error) {
+            await this.file.close();
+            this.file = null;
+            throw error;
+        }
+        fileStats = fileStats !== null && fileStats !== void 0 ? fileStats : await this.file.stat();
+        if (fileStats.size < valueOffset) {
             await this.writeExpiration();
         }
     }
@@ -64,16 +84,13 @@ class FileCachedValue extends cached_value_1.CachedValue {
         this.file = null;
         await this.unlock();
     }
-    async canAccessFile() {
-        return graceful_fs_1.promises.access(this._fileName, graceful_fs_1.constants.F_OK | graceful_fs_1.constants.R_OK | graceful_fs_1.constants.W_OK).catch(() => true);
-    }
     async updateExpiration(date) {
         if (!this.file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
         const { bytesWritten } = await this.file.write(date.toISOString(), 0);
-        if (separatorPosition !== bytesWritten) {
-            throw new TypeError(`Bad write to file, expected ${separatorPosition} bytes to be written, got ${bytesWritten}`);
+        if (valueOffset !== bytesWritten) {
+            throw new TypeError(`Bad write to file, expected ${valueOffset} bytes to be written, got ${bytesWritten}`);
         }
     }
     async doLoadFromCache() {
@@ -82,10 +99,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
         }
         const fileContent = await this.file.readFile(encoding);
         const expiration = parseExpiration(fileContent);
-        if (fileContent[separatorPosition] !== expirationSeparatorChar) {
-            throw new TypeError(`Invalid expiration separator found. Expected ${expirationSeparatorChar}, found ${fileContent[separatorPosition]}`);
-        }
-        const stringValue = fileContent.slice(separatorPosition + 1);
+        const stringValue = fileContent.slice(valueOffset);
         if (stringValue.length === 0) {
             return [null, expiration];
         }
@@ -96,9 +110,11 @@ class FileCachedValue extends cached_value_1.CachedValue {
             throw new TypeError('Invalid state, file is not loaded');
         }
         await this.writeExpiration(expiration);
-        await this.file.write(expirationSeparatorChar, separatorPosition, encoding);
         if (value !== null) {
-            await this.file.write(JSON.stringify(value), separatorPosition + 1, encoding);
+            await this.file.write(JSON.stringify(value), valueOffset, encoding);
+        }
+        else {
+            await this.file.truncate(valueOffset);
         }
     }
     hasCachedValue() {
@@ -108,7 +124,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
         if (!this.file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
-        const buffer = new Buffer(valueOffset);
+        const buffer = Buffer.alloc(valueOffset);
         await this.file.read(buffer, 0, valueOffset, 0);
         return Promise.resolve(parseExpiration(buffer.toString(encoding)));
     }
@@ -127,14 +143,13 @@ class FileCachedValue extends cached_value_1.CachedValue {
             throw new TypeError('Invalid state, file is not loaded');
         }
         await this.file.write(expiration.toISOString(), 0, encoding);
-        await this.file.write(expirationSeparatorChar, separatorPosition, encoding);
     }
 }
 exports.FileCachedValue = FileCachedValue;
 function parseExpiration(fileContent) {
-    const expiration = new Date(fileContent.slice(0, separatorPosition));
+    const expiration = new Date(fileContent.slice(0, valueOffset));
     if (Number.isNaN(expiration.valueOf())) {
-        throw new TypeError(`Invalid expiration: ${fileContent.slice(0, separatorPosition)}`);
+        throw new TypeError(`Invalid expiration: ${fileContent.slice(0, valueOffset)}`);
     }
     return expiration;
 }

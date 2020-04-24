@@ -92,10 +92,10 @@ async function doInitializeConfig(argv) {
     configDirectory = configDir;
     nconf.set("ncgc.configDir".replace(/\./g, ':'), configDirectory);
     const files = [
-        `local-${exports.environment}`,
-        'local',
-        exports.environment,
         'default',
+        exports.environment,
+        'local',
+        `local-${exports.environment}`,
     ].flatMap(b => fileExtensionsAndFormats.map(([ext, format]) => _types_1.t(`${b}${ext}`, format)));
     for (const [fileName, format] of files) {
         // NOTE: `dir: string` and `search: boolean` may be added to sniff child directories for configs

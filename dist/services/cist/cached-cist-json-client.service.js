@@ -281,7 +281,7 @@ function getCacheFileName(type, options) {
     if (options) {
         hash += getEventsCacheFileNamePart(options);
     }
-    return hash;
+    return `${hash}.tmp`;
 }
 function getEventsCacheFileNamePart(options) {
     let hash = options.typeId.toString() + separator + options.entityId;
@@ -294,7 +294,7 @@ function getEventsCacheFileNamePart(options) {
             hash += separator + common_1.dateToSeconds(options.dateLimits.to);
         }
     }
-    return `${hash}.tmp`;
+    return hash;
 }
 function r(text) {
     return `CIST Auditories: ${text}`;

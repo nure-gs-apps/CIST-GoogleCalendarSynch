@@ -180,7 +180,7 @@ class CachedValue extends events_1.EventEmitter {
             throw new TypeError(`This ${this.constructor.name} does not require source`);
         }
         const changed = source !== this._source;
-        if (changed) {
+        if (!changed) {
             return false;
         }
         if (this._source) {

@@ -15,8 +15,8 @@ ncgc:
       configs:
         file:
           directory:
-            unix: /var/tmp/ncgc/cist
-            win: %SystemRoot%\Temp\ncgc\cist
+            unix: /var/tmp/ncgc/cache/cist
+            win: %SystemRoot%\Temp\ncgc\cache\cist
   google:
     idPrefix: cist
     calendar:

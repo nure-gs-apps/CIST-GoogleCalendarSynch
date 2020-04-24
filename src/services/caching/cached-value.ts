@@ -174,7 +174,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       throw new TypeError(`This ${this.constructor.name} does not require source`);
     }
     const changed = source !== this._source;
-    if (changed) {
+    if (!changed) {
       return false;
     }
     if (this._source) {

@@ -50,7 +50,7 @@ var AssertCommand;
             .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
         await container_1.getContainerAsyncInitializer();
         const cistClient = container
-            .get(types_2.TYPES.CistJsonHttpClient);
+            .get(types_2.TYPES.CistJsonClient);
         let failure = false;
         if (checkRooms) {
             failure = failure

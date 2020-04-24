@@ -321,7 +321,7 @@ function getCacheFileName(
   if (options) {
     hash += getEventsCacheFileNamePart(options);
   }
-  return hash;
+  return `${hash}.tmp`;
 }
 
 function getEventsCacheFileNamePart(options: DeepReadonly<IEventsQueryParams>) {
@@ -335,7 +335,7 @@ function getEventsCacheFileNamePart(options: DeepReadonly<IEventsQueryParams>) {
       hash += separator + dateToSeconds(options.dateLimits.to);
     }
   }
-  return `${hash}.tmp`;
+  return hash;
 }
 
 function r(text: string) {

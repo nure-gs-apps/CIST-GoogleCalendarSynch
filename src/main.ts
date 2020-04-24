@@ -70,7 +70,7 @@ export namespace AssertCommand {
     await getContainerAsyncInitializer();
 
     const cistClient = container
-      .get<CistJsonHttpClient>(TYPES.CistJsonHttpClient);
+      .get<CachedCistJsonClientService>(TYPES.CistJsonClient);
     let failure = false;
     if (checkRooms) {
       failure = failure
