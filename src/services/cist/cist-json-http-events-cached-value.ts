@@ -9,8 +9,6 @@ import {
 } from './types';
 
 export class CistJsonHttpEventsCachedValue extends CachedValueSource<ApiEventsResponse> {
-  protected readonly needsInit = false;
-  readonly needsSource = false;
   readonly params: DeepReadonly<IEventsQueryParams>;
   protected readonly _http: CistJsonHttpClient;
 
@@ -30,6 +28,6 @@ export class CistJsonHttpEventsCachedValue extends CachedValueSource<ApiEventsRe
       this.params.typeId,
       this.params.entityId,
       this.params.dateLimits
-    ).then(response => [response, this.expiration]);
+    ).then(response => [response, this._utils.getMaxExpiration()]);
   }
 }

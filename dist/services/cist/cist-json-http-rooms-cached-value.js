@@ -27,7 +27,7 @@ class CistJsonHttpRoomsCachedValue extends cached_value_source_1.CachedValueSour
     // tslint:disable-next-line:max-line-length
     doLoadFromCache() {
         return this._http.getRoomsResponse()
-            .then(response => [response, this.expiration]);
+            .then(response => [response, this._utils.getMaxExpiration()]);
     }
 }
 exports.CistJsonHttpRoomsCachedValue = CistJsonHttpRoomsCachedValue;

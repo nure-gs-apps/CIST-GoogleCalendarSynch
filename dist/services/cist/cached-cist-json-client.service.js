@@ -170,7 +170,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             switch (type) {
                 case types_1.CacheType.Http:
                     if (oldCachedValue) {
-                        throw new TypeError(g('CIST Groups: HTTP requests must be last in the cache chain'));
+                        throw new TypeError(g('HTTP requests must be last in the cache chain'));
                     }
                     if (!this._http) {
                         throw new TypeError(g('An initialized CIST HTTP client is required'));
@@ -221,11 +221,11 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                     await cachedValue.setSource(oldCachedValue);
                     break;
                 default:
-                    throw new TypeError(r(`CIST Rooms: Unknown type of cache: ${type}`));
+                    throw new TypeError(r(`Unknown type of cache: ${type}`));
             }
         }
         if (!cachedValue) {
-            throw new TypeError(r('CIST Rooms: No cache sources found'));
+            throw new TypeError(r('No cache sources found'));
         }
         return cachedValue;
     }
@@ -236,7 +236,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             switch (type) {
                 case types_1.CacheType.Http:
                     if (oldCachedValue) {
-                        throw new TypeError(e('CIST Auditories: HTTP requests must be last in the cache chain'));
+                        throw new TypeError(e('HTTP requests must be last in the cache chain'));
                     }
                     if (!this._http) {
                         throw new TypeError(e('An initialized CIST HTTP client is required'));

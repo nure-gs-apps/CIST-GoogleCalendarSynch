@@ -33,7 +33,7 @@ class CistJsonHttpEventsCachedValue extends cached_value_source_1.CachedValueSou
     }
     // tslint:disable-next-line:max-line-length
     doLoadFromCache() {
-        return this._http.getEventsResponse(this.params.typeId, this.params.entityId, this.params.dateLimits).then(response => [response, this.expiration]);
+        return this._http.getEventsResponse(this.params.typeId, this.params.entityId, this.params.dateLimits).then(response => [response, this._utils.getMaxExpiration()]);
     }
 }
 exports.CistJsonHttpEventsCachedValue = CistJsonHttpEventsCachedValue;

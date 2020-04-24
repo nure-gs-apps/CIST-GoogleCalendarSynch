@@ -27,7 +27,7 @@ class CistJsonHttpGroupsCachedValue extends cached_value_source_1.CachedValueSou
     // tslint:disable-next-line:max-line-length
     doLoadFromCache() {
         return this._http.getGroupsResponse()
-            .then(response => [response, this.expiration]);
+            .then(response => [response, this._utils.getMaxExpiration()]);
     }
 }
 exports.CistJsonHttpGroupsCachedValue = CistJsonHttpGroupsCachedValue;

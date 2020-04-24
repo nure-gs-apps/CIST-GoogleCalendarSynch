@@ -57,12 +57,33 @@ function initializeConfig(argv) {
     return initializeConfigPromise;
 }
 exports.initializeConfig = initializeConfig;
-const fileExtensionsAndFormats = [
-    _types_1.t('.toml', TOML),
-    _types_1.t('.yml', YAML),
-    _types_1.t('.yaml', YAML),
-    _types_1.t('.json', JSON),
-];
+class Format {
+    constructor(format) {
+        Object.defineProperty(this, "_format", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this._format = format;
+    }
+    parse(str) {
+        var _a;
+        return (_a = this._format.parse(str)) !== null && _a !== void 0 ? _a : {};
+    }
+    stringify(obj, replacer, spacing) {
+        return this._format.stringify(obj, replacer, spacing);
+    }
+}
+const fileExtensionsAndFormats = (() => {
+    const yaml = new Format(YAML);
+    return [
+        _types_1.t('.toml', new Format(TOML)),
+        _types_1.t('.yml', yaml),
+        _types_1.t('.yaml', yaml),
+        _types_1.t('.json', new Format(JSON)),
+    ];
+})();
 function getSupportedConfigExtensionsInPriorityOrder() {
     return fileExtensionsAndFormats.map(([ext]) => ext);
 }
@@ -92,10 +113,10 @@ async function doInitializeConfig(argv) {
     configDirectory = configDir;
     nconf.set("ncgc.configDir".replace(/\./g, ':'), configDirectory);
     const files = [
-        'default',
-        exports.environment,
-        'local',
         `local-${exports.environment}`,
+        'local',
+        exports.environment,
+        'default',
     ].flatMap(b => fileExtensionsAndFormats.map(([ext, format]) => _types_1.t(`${b}${ext}`, format)));
     for (const [fileName, format] of files) {
         // NOTE: `dir: string` and `search: boolean` may be added to sniff child directories for configs

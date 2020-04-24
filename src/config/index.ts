@@ -1,3 +1,4 @@
+import { IFormat } from 'nconf';
 import * as nconf from 'nconf';
 import * as path from 'path';
 import { promises as fs, constants } from 'graceful-fs';
@@ -62,12 +63,32 @@ export function initializeConfig<T extends DeepPartial<IFullAppConfig>>(argv: Ar
   return initializeConfigPromise;
 }
 
-const fileExtensionsAndFormats = [
-  t('.toml', TOML),
-  t('.yml', YAML),
-  t('.yaml', YAML),
-  t('.json', JSON),
-] as ReadonlyArray<[string, Readonly<nconf.IFormat>]>;
+class Format implements IFormat {
+  private readonly _format: IFormat;
+
+  constructor(format: IFormat) {
+    this._format = format;
+  }
+
+  parse(str: string): any {
+    return this._format.parse(str) ?? {};
+  }
+
+  stringify(obj: any, replacer: any, spacing: any): string {
+    return this._format.stringify(obj, replacer, spacing);
+  }
+}
+
+
+const fileExtensionsAndFormats = (() => {
+  const yaml = new Format(YAML);
+  return [
+    t('.toml', new Format(TOML)),
+    t('.yml', yaml),
+    t('.yaml', yaml),
+    t('.json', new Format(JSON)),
+  ] as ReadonlyArray<[string, Readonly<nconf.IFormat>]>;
+})();
 
 export function getSupportedConfigExtensionsInPriorityOrder() {
   return fileExtensionsAndFormats.map(([ext]) => ext) as ReadonlyArray<string>;
