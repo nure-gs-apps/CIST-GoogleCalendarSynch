@@ -4,18 +4,6 @@ const cached_value_source_1 = require("../caching/cached-value-source");
 class CistJsonHttpGroupsCachedValue extends cached_value_source_1.CachedValueSource {
     constructor(cacheUtils, http) {
         super(cacheUtils);
-        Object.defineProperty(this, "needsInit", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "needsSource", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
         Object.defineProperty(this, "_http", {
             enumerable: true,
             configurable: true,

@@ -131,7 +131,7 @@ export namespace PathUtils {
 export async function disposeChain<T>(cachedValue: CachedValue<T>) {
   const disposables = [cachedValue];
   let currentValue = cachedValue;
-  while (currentValue.source) {
+  while (currentValue.needsSource && currentValue.source) {
     disposables.push(currentValue.source);
     currentValue = currentValue.source;
   }

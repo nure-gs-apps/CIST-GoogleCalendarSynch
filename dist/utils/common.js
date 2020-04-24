@@ -115,7 +115,7 @@ var PathUtils;
 async function disposeChain(cachedValue) {
     const disposables = [cachedValue];
     let currentValue = cachedValue;
-    while (currentValue.source) {
+    while (currentValue.needsSource && currentValue.source) {
         disposables.push(currentValue.source);
         currentValue = currentValue.source;
     }

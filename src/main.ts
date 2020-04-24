@@ -80,6 +80,7 @@ export namespace AssertCommand {
       failure = failure
         || !assertGroupsResponse(await cistClient.getGroupsResponse());
     }
+    await cistClient.dispose();
     process.exit(failure ? 1 : 0);
   }
 }

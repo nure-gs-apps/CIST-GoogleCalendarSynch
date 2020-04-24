@@ -69,7 +69,7 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
     }
     getEventsResponse(type, entityId, dateLimits) {
         const queryParams = {
-            api_key: this._apiKey,
+            idClient: this._apiKey,
             type_id: type,
             timetable_id: entityId,
         };

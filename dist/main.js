@@ -60,6 +60,7 @@ var AssertCommand;
             failure = failure
                 || !assert_responses_1.assertGroupsResponse(await cistClient.getGroupsResponse());
         }
+        await cistClient.dispose();
         process.exit(failure ? 1 : 0);
     }
     AssertCommand.handle = handle;
