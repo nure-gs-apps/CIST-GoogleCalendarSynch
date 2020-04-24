@@ -8,7 +8,7 @@ import { CistJsonHttpUtilsService } from './cist-json-http-utils.service';
 import { ICistJsonClient, IDateLimits, TimetableType } from './types';
 
 interface IQueryParams {
-  api_key: string;
+  idClient: string;
   type_id: TimetableType;
   timetable_id: string | number;
   time_from?: number;
@@ -79,7 +79,7 @@ export class CistJsonHttpClient implements ICistJsonClient {
     dateLimits?: DeepReadonly<IDateLimits>,
   ) {
     const queryParams: IQueryParams = {
-      api_key: this._apiKey,
+      idClient: this._apiKey,
       type_id: type,
       timetable_id: entityId,
     };
