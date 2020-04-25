@@ -84,7 +84,7 @@ async function fCutOut(file, start, length, chunkBufferSize = 256) {
 exports.fCutOut = fCutOut;
 async function fShiftForward(file, start, offset, chunkBufferSize = 256) {
     if (offset < 0) {
-        throw new TypeError('Offset must be positive');
+        throw new TypeError('fs: Offset must be positive');
     }
     if (offset === 0) {
         return;

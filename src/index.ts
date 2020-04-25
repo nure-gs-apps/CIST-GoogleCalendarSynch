@@ -11,9 +11,8 @@ import {
 } from './config';
 import { getDefaultConfigDirectory } from './config/constants';
 import { getBasicCliConfiguration, IFullAppConfig } from './config/types';
-import { AssertCommand } from './main';
+import { AssertCommand, EntityType } from './main';
 import { toPrintString } from './utils/common';
-import AssertType = AssertCommand.AssertType;
 
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
@@ -47,10 +46,10 @@ const yargs = getBasicCliConfiguration()
   .usage(usage)
   .middleware(initializeMiddleware)
   .command({
-    command: `check <${AssertCommand.typesArgName}..>`,
+    command: `check <${AssertCommand.entitiesArgName}..>`,
     describe: 'Check responses.',
     builder(yargs) {
-      return yargs.positional(AssertCommand.typesArgName, {
+      return yargs.positional(AssertCommand.entitiesArgName, {
         type: 'string',
         demandOption: true,
         describe: `Types of requests to assert [choices: ${toPrintString(AssertCommand.getValidAssertTypes())}]`,
@@ -60,10 +59,10 @@ const yargs = getBasicCliConfiguration()
       // Workaround
       type FixArgs =
         AssertCommand.IOptions
-        & { types: [string][] | AssertType[] };
+        & { entities: [string][] | EntityType[] };
       const fixArgs: FixArgs = args as FixArgs;
-      fixArgs.types = fixArgs.types.map(t => Array.isArray(t)
-        ? t[0] as AssertType
+      fixArgs.entities = fixArgs.entities.map(t => Array.isArray(t)
+        ? t[0] as EntityType
         : t);
 
       AssertCommand.handle(

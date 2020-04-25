@@ -11,16 +11,16 @@ const cached_cist_json_client_service_1 = require("./services/cist/cached-cist-j
 const cist_json_http_client_service_1 = require("./services/cist/cist-json-http-client.service");
 const assert_responses_1 = require("./utils/assert-responses");
 const common_1 = require("./utils/common");
+var EntityType;
+(function (EntityType) {
+    EntityType["Groups"] = "groups";
+    EntityType["Rooms"] = "auditories";
+})(EntityType = exports.EntityType || (exports.EntityType = {}));
 var AssertCommand;
 (function (AssertCommand) {
-    AssertCommand.typesArgName = "types";
-    let AssertType;
-    (function (AssertType) {
-        AssertType["Groups"] = "groups";
-        AssertType["Rooms"] = "auditories";
-    })(AssertType = AssertCommand.AssertType || (AssertCommand.AssertType = {}));
+    AssertCommand.entitiesArgName = "entities";
     function getValidAssertTypes() {
-        return Object.values(AssertType);
+        return Object.values(EntityType);
     }
     AssertCommand.getValidAssertTypes = getValidAssertTypes;
     function assertAssertTypes(types) {
@@ -30,12 +30,12 @@ var AssertCommand;
         }
     }
     async function handle(args, config) {
-        assertAssertTypes(args.types);
-        const assertTypes = args.types;
+        assertAssertTypes(args.entities);
+        const assertTypes = args.entities;
         const cacheConfig = config.ncgc.caching.cist;
         const types = [cached_cist_json_client_service_1.CachedCistJsonClientService];
-        const checkRooms = assertTypes.includes(AssertType.Rooms);
-        const checkGroups = assertTypes.includes(AssertType.Groups);
+        const checkRooms = assertTypes.includes(EntityType.Rooms);
+        const checkGroups = assertTypes.includes(EntityType.Groups);
         if ((checkGroups
             && cacheConfig.priorities.groups.includes(types_1.CacheType.Http))
             || (checkRooms

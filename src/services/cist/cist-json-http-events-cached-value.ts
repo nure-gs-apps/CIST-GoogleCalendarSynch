@@ -9,6 +9,7 @@ import {
 } from './types';
 
 export class CistJsonHttpEventsCachedValue extends CachedValueSource<ApiEventsResponse> {
+  readonly isDestroyable = false;
   readonly params: DeepReadonly<IEventsQueryParams>;
   protected readonly _http: CistJsonHttpClient;
 

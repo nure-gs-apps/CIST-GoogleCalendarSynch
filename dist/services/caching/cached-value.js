@@ -61,6 +61,12 @@ class CachedValue extends events_1.EventEmitter {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "isDestroyable", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "needsInit", {
             enumerable: true,
             configurable: true,
@@ -140,7 +146,7 @@ class CachedValue extends events_1.EventEmitter {
     }
     get source() {
         if (!this.needsSource) {
-            throw new TypeError(`${this.constructor.name} doesn\'t support sources!`);
+            throw new TypeError(this.t('doesn\'t support sources!'));
         }
         return this._source;
     }
@@ -153,13 +159,17 @@ class CachedValue extends events_1.EventEmitter {
     get isDisposed() {
         return !this.isInitialized;
     }
+    get [(_a = _types_1.asReadonly, Symbol.toStringTag)]() {
+        return CachedValue.name;
+    }
     canUseExpiration(possibleExpiration) {
         return !this.needsSource || !this._source || (this._source.expiration.valueOf() >= possibleExpiration.valueOf());
     }
     async setExpiration(date) {
+        var _b;
         this._utils.assertValidExpiration(date);
         if (!this.canUseExpiration(date)) {
-            throw new TypeError('Cannot set expiration longer than parent has');
+            throw new TypeError(this.t(`Cannot set expiration longer than parent ${(_b = this._source) === null || _b === void 0 ? void 0 : _b[Symbol.toStringTag]} has`));
         }
         if (this._expiration.valueOf() < Date.now()) {
             await this.clearCache();
@@ -177,7 +187,7 @@ class CachedValue extends events_1.EventEmitter {
     }
     async setSource(source = null, clearCache = false, loadValue = false) {
         if (!this.needsSource) {
-            throw new TypeError(`This ${this.constructor.name} does not require source`);
+            throw new TypeError(this.t('does not require source'));
         }
         const changed = source !== this._source;
         if (!changed) {
@@ -229,9 +239,7 @@ class CachedValue extends events_1.EventEmitter {
     }
     async loadValue() {
         var _b, _c;
-        if (!this.isInitialized) {
-            throw new TypeError('CachedValue is not initialized');
-        }
+        this.assertInitialized();
         const tuple = await this.doLoadValue();
         tuple[1] = this._utils.clampExpiration(tuple[1], (_c = (_b = this._source) === null || _b === void 0 ? void 0 : _b.expiration) !== null && _c !== void 0 ? _c : this._utils.getMaxExpiration());
         const [newValue, expiration] = tuple;
@@ -248,9 +256,7 @@ class CachedValue extends events_1.EventEmitter {
     }
     async loadFromCache() {
         var _b, _c;
-        if (!this.needsSource) {
-            throw new TypeError(`This ${this.constructor.name} does not require source`);
-        }
+        this.assertInitialized();
         const tuple = await this.doLoadFromCache();
         tuple[1] = this._utils.clampExpiration(tuple[1], (_c = (_b = this._source) === null || _b === void 0 ? void 0 : _b.expiration) !== null && _c !== void 0 ? _c : this._utils.getMaxExpiration());
         const [value, expiration] = tuple;
@@ -263,6 +269,15 @@ class CachedValue extends events_1.EventEmitter {
         }
         await this.doDispose();
         this._isInitialized = false;
+    }
+    async destroy() {
+        if (!this.isDestroyable) {
+            return false;
+        }
+        this.assertInitialized();
+        await this.dispose();
+        await this.doDestroy();
+        return true;
     }
     // virtual
     doInit() {
@@ -283,13 +298,16 @@ class CachedValue extends events_1.EventEmitter {
     async loadValueFromSource() {
         const source = this._source;
         if (!source) {
-            throw new TypeError('source is not set');
+            throw new TypeError(this.t('source is not set'));
         }
         const value = await source.loadValue();
         await this.saveValue(value, source.expiration);
         return [value, source.expiration];
     }
     doDispose() {
+        return Promise.resolve();
+    }
+    doDestroy() {
         return Promise.resolve();
     }
     // virtual
@@ -316,7 +334,14 @@ class CachedValue extends events_1.EventEmitter {
         }
         await this.updateExpiration(this._expiration);
     }
+    assertInitialized() {
+        if (!this.isInitialized) {
+            throw new TypeError(this.t('is not initialized'));
+        }
+    }
+    t(message) {
+        return `${this[Symbol.toStringTag]}: ${message}`;
+    }
 }
 exports.CachedValue = CachedValue;
-_a = _types_1.asReadonly;
 //# sourceMappingURL=cached-value.js.map

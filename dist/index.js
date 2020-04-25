@@ -40,10 +40,10 @@ const yargs = types_1.getBasicCliConfiguration()
     .usage(usage)
     .middleware(initializeMiddleware)
     .command({
-    command: `check <${main_1.AssertCommand.typesArgName}..>`,
+    command: `check <${main_1.AssertCommand.entitiesArgName}..>`,
     describe: 'Check responses.',
     builder(yargs) {
-        return yargs.positional(main_1.AssertCommand.typesArgName, {
+        return yargs.positional(main_1.AssertCommand.entitiesArgName, {
             type: 'string',
             demandOption: true,
             describe: `Types of requests to assert [choices: ${common_1.toPrintString(main_1.AssertCommand.getValidAssertTypes())}]`,
@@ -51,7 +51,7 @@ const yargs = types_1.getBasicCliConfiguration()
     },
     handler(args) {
         const fixArgs = args;
-        fixArgs.types = fixArgs.types.map(t => Array.isArray(t)
+        fixArgs.entities = fixArgs.entities.map(t => Array.isArray(t)
             ? t[0]
             : t);
         main_1.AssertCommand.handle(args, config_1.getFullConfig()).catch(failStart);

@@ -129,10 +129,25 @@ export namespace PathUtils {
 }
 
 export async function disposeChain<T>(cachedValue: CachedValue<T>) {
-  const disposables = [cachedValue];
+  const disposables = [cachedValue.dispose()];
   let currentValue = cachedValue;
   while (currentValue.needsSource && currentValue.source) {
-    disposables.push(currentValue.source);
+    disposables.push(currentValue.source.dispose());
+    currentValue = currentValue.source;
+  }
+  return Promise.all(disposables);
+}
+
+export async function destroyChain<T>(cachedValue: CachedValue<T>) {
+  const disposables = [];
+  if (cachedValue.isDestroyable) {
+    disposables.push(cachedValue.destroy());
+  }
+  let currentValue = cachedValue;
+  while (currentValue.needsSource && currentValue.source) {
+    if (currentValue.isDestroyable) {
+      disposables.push(currentValue.source.destroy());
+    }
     currentValue = currentValue.source;
   }
   return Promise.all(disposables);

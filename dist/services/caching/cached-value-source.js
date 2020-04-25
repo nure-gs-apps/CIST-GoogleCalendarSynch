@@ -4,6 +4,12 @@ const cached_value_1 = require("./cached-value");
 class CachedValueSource extends cached_value_1.CachedValue {
     constructor() {
         super(...arguments);
+        Object.defineProperty(this, "isDestroyable", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
         Object.defineProperty(this, "needsInit", {
             enumerable: true,
             configurable: true,

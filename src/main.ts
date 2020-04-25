@@ -16,19 +16,19 @@ import {
 } from './utils/assert-responses';
 import { toPrintString } from './utils/common';
 
+export enum EntityType {
+  Groups = 'groups', Rooms = 'auditories'
+}
+
 export namespace AssertCommand {
   export interface IOptions extends Arguments<DeepPartial<IFullAppConfig>> {
-    types: AssertType[];
+    entities: EntityType[];
   }
 
-  export const typesArgName = nameof<IOptions>(o => o.types);
-
-  export enum AssertType {
-    Groups = 'groups', Rooms = 'auditories'
-  }
+  export const entitiesArgName = nameof<IOptions>(o => o.entities);
 
   export function getValidAssertTypes() {
-    return Object.values(AssertType) as AssertType[];
+    return Object.values(EntityType) as EntityType[];
   }
 
   function assertAssertTypes<T extends ReadonlyArray<unknown>>(
@@ -44,13 +44,13 @@ export namespace AssertCommand {
     args: IOptions,
     config: DeepReadonly<IFullAppConfig>
   ) {
-    assertAssertTypes(args.types);
-    const assertTypes = args.types;
+    assertAssertTypes(args.entities);
+    const assertTypes = args.entities;
     const cacheConfig = config.ncgc.caching.cist;
 
     const types: interfaces.Newable<any>[] = [CachedCistJsonClientService];
-    const checkRooms = assertTypes.includes(AssertType.Rooms);
-    const checkGroups = assertTypes.includes(AssertType.Groups);
+    const checkRooms = assertTypes.includes(EntityType.Rooms);
+    const checkGroups = assertTypes.includes(EntityType.Groups);
     if ((
         checkGroups
         && cacheConfig.priorities.groups.includes(CacheType.Http)

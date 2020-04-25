@@ -8,7 +8,7 @@ const config_service_1 = require("../config/config.service");
 const cache_utils_service_1 = require("../services/cache-utils.service");
 const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-json-client.service");
 const cist_json_http_client_service_1 = require("../services/cist/cist-json-http-client.service");
-const cist_json_http_utils_service_1 = require("../services/cist/cist-json-http-utils.service");
+const cist_json_http_parser_service_1 = require("../services/cist/cist-json-http-parser.service");
 const buildings_service_1 = require("../services/google/buildings.service");
 const calendar_service_1 = require("../services/google/calendar.service");
 const constants_1 = require("../services/google/constants");
@@ -49,7 +49,7 @@ function createContainer(options) {
         || types.has(cist_json_http_client_service_1.CistJsonHttpClient)) {
         types.add(types_1.TYPES.CistBaseApiUrl);
         types.add(types_1.TYPES.CistApiKey);
-        types.add(types_1.TYPES.CistJsonHttpUtils);
+        types.add(types_1.TYPES.CistJsonHttpParser);
     }
     if (allRequired
         || (types.has(types_1.TYPES.CistJsonHttpClient)
@@ -64,10 +64,10 @@ function createContainer(options) {
         types.add(types_1.TYPES.CacheMaxExpiration);
     }
     if (allRequired
-        || types.has(types_1.TYPES.CistJsonHttpUtils)
-        || types.has(cist_json_http_utils_service_1.CistJsonHttpUtilsService)) {
-        container.bind(types_1.TYPES.CistJsonHttpUtils)
-            .to(cist_json_http_utils_service_1.CistJsonHttpUtilsService);
+        || types.has(types_1.TYPES.CistJsonHttpParser)
+        || types.has(cist_json_http_parser_service_1.CistJsonHttpParserService)) {
+        container.bind(types_1.TYPES.CistJsonHttpParser)
+            .to(cist_json_http_parser_service_1.CistJsonHttpParserService);
     }
     if (allRequired
         || types.has(types_1.TYPES.CistCacheConfig)) {

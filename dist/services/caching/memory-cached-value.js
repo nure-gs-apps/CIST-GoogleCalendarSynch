@@ -4,6 +4,12 @@ const cached_value_1 = require("./cached-value");
 class MemoryCachedValue extends cached_value_1.CachedValue {
     constructor(utils) {
         super(utils);
+        Object.defineProperty(this, "isDestroyable", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
         Object.defineProperty(this, "needsInit", {
             enumerable: true,
             configurable: true,
@@ -23,6 +29,9 @@ class MemoryCachedValue extends cached_value_1.CachedValue {
             value: void 0
         });
         this._value = null;
+    }
+    get [Symbol.toStringTag]() {
+        return MemoryCachedValue.name;
     }
     get value() {
         return this._value;

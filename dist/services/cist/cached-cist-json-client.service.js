@@ -8,6 +8,7 @@ const path = require("path");
 const _types_1 = require("../../@types");
 const types_1 = require("../../config/types");
 const types_2 = require("../../di/types");
+const errors_1 = require("../../errors");
 const cist_1 = require("../../utils/cist");
 const common_1 = require("../../utils/common");
 const cache_utils_service_1 = require("../cache-utils.service");
@@ -139,7 +140,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         }
         const response = await cachedValue.loadValue();
         if (!response) {
-            throw new TypeError(`${this.getEventsResponse.name} failed to find value in cache chain!`);
+            throw new TypeError(e('failed to find value in cache chain!'));
         }
         return response;
     }
@@ -149,7 +150,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         }
         const response = await this._groupsCachedValue.loadValue();
         if (!response) {
-            throw new TypeError(`${this.getGroupsResponse.name} failed to find value in cache chain!`);
+            throw new TypeError(g('failed to find value in cache chain!'));
         }
         return response;
     }
@@ -159,9 +160,56 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         }
         const response = await this._roomsCachedValue.loadValue();
         if (!response) {
-            throw new TypeError(`${this.getRoomsResponse.name} failed to find value in cache chain!`);
+            throw new TypeError(r('failed to find value in cache chain!'));
         }
         return response;
+    }
+    async clearEventsCache() {
+        for (const cachedValue of this._eventsCachedValues.values()) {
+            await cachedValue.dispose();
+        }
+        this._eventsCachedValues.clear();
+        const errors = [];
+        if (this._cacheConfig.priorities.events.includes(types_1.CacheType.Http)) {
+            const fileNames = await fs_1.promises.readdir(this._baseDirectory);
+            for (const fileName of fileNames) {
+                if (!isEventsCacheFile(fileName)) {
+                    continue;
+                }
+                try {
+                    const cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, fileName));
+                    if (cachedValue.isDestroyable) {
+                        if (!cachedValue.isInitialized) {
+                            await cachedValue.init();
+                        }
+                        await cachedValue.destroy();
+                    }
+                    else {
+                        await cachedValue.dispose();
+                    }
+                }
+                catch (error) {
+                    errors.push(new errors_1.NestedError(`Failed to destroy cache at ${fileName}`, error));
+                }
+            }
+        }
+        if (errors.length > 0) {
+            throw new errors_1.MultiError('Multiple exceptions happened', errors);
+        }
+    }
+    async clearGroupsCache() {
+        if (!this._groupsCachedValue) {
+            this._groupsCachedValue = await this.createGroupsCachedValue();
+        }
+        await common_1.destroyChain(this._groupsCachedValue);
+        this._groupsCachedValue = null;
+    }
+    async clearRoomsCache() {
+        if (!this._roomsCachedValue) {
+            this._roomsCachedValue = await this.createRoomsCachedValue();
+        }
+        await common_1.destroyChain(this._roomsCachedValue);
+        this._roomsCachedValue = null;
     }
     async createGroupsCachedValue() {
         let cachedValue = null;
@@ -169,13 +217,13 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             const oldCachedValue = cachedValue;
             switch (type) {
                 case types_1.CacheType.Http:
-                    if (oldCachedValue) {
-                        throw new TypeError(g('HTTP requests must be last in the cache chain'));
-                    }
                     if (!this._http) {
                         throw new TypeError(g('An initialized CIST HTTP client is required'));
                     }
                     cachedValue = new cist_json_http_groups_cached_value_1.CistJsonHttpGroupsCachedValue(this._cacheUtils, this._http);
+                    if (!cachedValue.needsSource) {
+                        throw new TypeError(g('HTTP requests must be last in the cache chain'));
+                    }
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -202,13 +250,13 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             const oldCachedValue = cachedValue;
             switch (type) {
                 case types_1.CacheType.Http:
-                    if (oldCachedValue) {
-                        throw new TypeError(r('HTTP requests must be last in the cache chain'));
-                    }
                     if (!this._http) {
                         throw new TypeError(r('An initialized CIST HTTP client is required'));
                     }
                     cachedValue = new cist_json_http_rooms_cached_value_1.CistJsonHttpRoomsCachedValue(this._cacheUtils, this._http);
+                    if (!cachedValue.needsSource) {
+                        throw new TypeError(r('HTTP requests must be last in the cache chain'));
+                    }
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -235,13 +283,13 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             const oldCachedValue = cachedValue;
             switch (type) {
                 case types_1.CacheType.Http:
-                    if (oldCachedValue) {
-                        throw new TypeError(e('HTTP requests must be last in the cache chain'));
-                    }
                     if (!this._http) {
                         throw new TypeError(e('An initialized CIST HTTP client is required'));
                     }
                     cachedValue = new cist_json_http_events_cached_value_1.CistJsonHttpEventsCachedValue(this._cacheUtils, this._http, params);
+                    if (!cachedValue.needsSource) {
+                        throw new TypeError(e('HTTP requests must be last in the cache chain'));
+                    }
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -295,6 +343,10 @@ function getEventsCacheFileNamePart(options) {
         }
     }
     return hash;
+}
+const fileNameRegex = new RegExp(`^${RequestType.Events}\.[1-3]\.\\d+(\.\\d*\.\\d*)?\.tmp`);
+function isEventsCacheFile(fileName) {
+    return fileNameRegex.test(fileName);
 }
 function r(text) {
     return `CIST Auditories: ${text}`;

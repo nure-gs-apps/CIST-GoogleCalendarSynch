@@ -1,3 +1,4 @@
+import { AxiosResponse } from 'axios';
 import { DeepReadonly, Nullable } from '../../@types';
 
 export interface ICistJsonClient {
@@ -8,6 +9,12 @@ export interface ICistJsonClient {
     entityId: number | string,
     dateLimits?: DeepReadonly<IDateLimits>,
   ): Promise<ApiEventsResponse>;
+}
+
+export interface ICistJsonHttpParserService {
+  parseAuditoriesResponse(response: AxiosResponse): ApiAuditoriesResponse;
+  parseGroupsResponse(response: AxiosResponse): ApiGroupsResponse;
+  parseEventsResponse(response: AxiosResponse): ApiEventsResponse;
 }
 
 export class ThrowCistJsonClient implements ICistJsonClient {

@@ -22,8 +22,13 @@ const expirationBufferSize = Buffer.from(
 ).length + expirationSeparatorBuffer.length;
 
 export class FileCachedValue<T> extends CachedValue<T> {
+  readonly isDestroyable = true;
   readonly needsSource = true;
   readonly needsInit = true;
+
+  get [Symbol.toStringTag]() {
+    return `${FileCachedValue.name}[${this._fileName}]`;
+  }
 
   private readonly _fileName: string;
   private _file: Nullable<fs.FileHandle>;
@@ -47,13 +52,13 @@ export class FileCachedValue<T> extends CachedValue<T> {
     }
     if (fileStats) {
       if (!fileStats.isFile()) {
-        throw new TypeError(this.l('is expected to be a file'));
+        throw new TypeError(this.t('is expected to be a file'));
       }
       if (!fs.access(
         this._fileName,
         fsConstants.F_OK | fsConstants.R_OK | fsConstants.W_OK,
       ).then(() => true).catch(() => false)) {
-        throw new Error(this.l(`Cache file ${this._fileName} is not accessible for read and write`));
+        throw new Error(this.t(`Cache file ${this._fileName} is not accessible for read and write`));
       }
     }
     this._file = await fs.open(this._fileName, fileStats ? 'r+' : 'w+', 0o666);
@@ -78,16 +83,20 @@ export class FileCachedValue<T> extends CachedValue<T> {
     await this.unlock();
   }
 
+  protected async doDestroy() {
+    await fs.unlink(this._fileName);
+  }
+
   protected async updateExpiration(date: ReadonlyDate): Promise<void> {
     if (!this._file) {
-      throw new TypeError(this.l('Invalid state, file is not loaded'));
+      throw new TypeError(this.t('Invalid state, file is not loaded'));
     }
     await this.writeExpiration(date);
   }
 
   protected async doLoadFromCache(): Promise<[Nullable<T>, ReadonlyDate]> {
     if (!this._file) {
-      throw new TypeError(this.l('Invalid state, file is not loaded'));
+      throw new TypeError(this.t('Invalid state, file is not loaded'));
     }
     // const { contents, found } = await fReadUntil(this._file, expirationSeparatorBuffer, 0);
     // const b = contents.toString(encoding);
@@ -95,7 +104,7 @@ export class FileCachedValue<T> extends CachedValue<T> {
     const fileContents = await fReadFile(this._file, encoding);
     const separatorIndex = fileContents.indexOf(expirationSeparator);
     if (separatorIndex < 0) {
-      throw new TypeError(this.l('Invalid format, no expiration separator'));
+      throw new TypeError(this.t('Invalid format, no expiration separator'));
     }
     const expiration = this.parseExpiration(fileContents.slice(
       0,
@@ -115,7 +124,7 @@ export class FileCachedValue<T> extends CachedValue<T> {
     expiration: ReadonlyDate,
   ): Promise<void> {
     if (!this._file) {
-      throw new TypeError(this.l('Invalid state, file is not loaded'));
+      throw new TypeError(this.t('Invalid state, file is not loaded'));
     }
     const bytesWritten = await this.writeExpiration(expiration, false);
     if (value !== null) {
@@ -133,7 +142,7 @@ export class FileCachedValue<T> extends CachedValue<T> {
 
   protected async loadExpirationFromCache(): Promise<ReadonlyDate> {
     if (!this._file) {
-      throw new TypeError(this.l('Invalid state, file is not loaded'));
+      throw new TypeError(this.t('Invalid state, file is not loaded'));
     }
     const { contents } = await fReadUntil(
       this._file,
@@ -146,7 +155,7 @@ export class FileCachedValue<T> extends CachedValue<T> {
 
   protected async doClearCache(): Promise<boolean> {
     if (!this._file) {
-      throw new TypeError(this.l('Invalid state, file is not loaded'));
+      throw new TypeError(this.t('Invalid state, file is not loaded'));
     }
     if (expirationBufferSize <= await fSize(this._file)) {
       return false;
@@ -162,7 +171,7 @@ export class FileCachedValue<T> extends CachedValue<T> {
     preserveContents = true
   ) {
     if (!this._file) {
-      throw new TypeError(this.l('Invalid state, file is not loaded'));
+      throw new TypeError(this.t('Invalid state, file is not loaded'));
     }
     const expirationBuffer = Buffer.from(expiration.toISOString(), encoding);
     if (preserveContents) {
@@ -203,12 +212,8 @@ export class FileCachedValue<T> extends CachedValue<T> {
   parseExpiration(fileContent: string) {
     const expiration = new Date(fileContent);
     if (Number.isNaN(expiration.valueOf())) {
-      throw new TypeError(this.l(`Invalid expiration: ${fileContent}`));
+      throw new TypeError(this.t(`Invalid expiration: ${fileContent}`));
     }
     return expiration;
-  }
-
-  private l(message: string) {
-    return `${this._fileName}: ${message}`;
   }
 }

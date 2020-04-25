@@ -7,7 +7,6 @@ const iconv = require("iconv-lite");
 const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 const common_1 = require("../../utils/common");
-const cist_json_http_utils_service_1 = require("./cist-json-http-utils.service");
 // function cloneQueryParams(params: IQueryParams) {
 //   const newParams = {
 //     type_id: params.type_id,
@@ -23,7 +22,7 @@ const cist_json_http_utils_service_1 = require("./cist-json-http-utils.service")
 //   return newParams;
 // }
 let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
-    constructor(baseApiUrl, apiKey, cistUtils) {
+    constructor(baseApiUrl, apiKey, cistParser) {
         Object.defineProperty(this, "_axios", {
             enumerable: true,
             configurable: true,
@@ -36,7 +35,7 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
             writable: true,
             value: void 0
         });
-        Object.defineProperty(this, "_cistUtils", {
+        Object.defineProperty(this, "_cistParser", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -55,17 +54,17 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
                 : data.toString('utf8');
             return res;
         });
-        this._cistUtils = cistUtils;
+        this._cistParser = cistParser;
     }
     getRoomsResponse() {
         return this._axios
             .get(CistJsonHttpClient_1.ROOMS_PATH)
-            .then(response => this._cistUtils.parseAuditoriesResponse(response));
+            .then(response => this._cistParser.parseAuditoriesResponse(response));
     }
     getGroupsResponse() {
         return this._axios
             .get(CistJsonHttpClient_1.GROUPS_PATH)
-            .then(response => this._cistUtils.parseGroupsResponse(response));
+            .then(response => this._cistParser.parseGroupsResponse(response));
     }
     getEventsResponse(type, entityId, dateLimits) {
         const queryParams = {
@@ -85,7 +84,7 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
             .get(CistJsonHttpClient_1.EVENTS_PATH, {
             params: queryParams,
         })
-            .then(response => this._cistUtils.parseEventsResponse(response));
+            .then(response => this._cistParser.parseEventsResponse(response));
     }
 };
 Object.defineProperty(CistJsonHttpClient, "BASE_API_URL", {
@@ -116,8 +115,8 @@ CistJsonHttpClient = CistJsonHttpClient_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.CistBaseApiUrl)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.CistApiKey)),
-    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.CistJsonHttpUtils)),
-    tslib_1.__metadata("design:paramtypes", [String, String, cist_json_http_utils_service_1.CistJsonHttpUtilsService])
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.CistJsonHttpParser)),
+    tslib_1.__metadata("design:paramtypes", [String, String, Object])
 ], CistJsonHttpClient);
 exports.CistJsonHttpClient = CistJsonHttpClient;
 //# sourceMappingURL=cist-json-http-client.service.js.map

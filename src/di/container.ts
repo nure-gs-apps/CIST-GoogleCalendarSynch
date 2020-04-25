@@ -13,7 +13,7 @@ import { CistCacheConfig } from '../config/types';
 import { CacheUtilsService } from '../services/cache-utils.service';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.service';
-import { CistJsonHttpUtilsService } from '../services/cist/cist-json-http-utils.service';
+import { CistJsonHttpParserService } from '../services/cist/cist-json-http-parser.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
 import {
@@ -75,7 +75,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   ) {
     types.add(TYPES.CistBaseApiUrl);
     types.add(TYPES.CistApiKey);
-    types.add(TYPES.CistJsonHttpUtils);
+    types.add(TYPES.CistJsonHttpParser);
   }
 
   if (
@@ -100,11 +100,11 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
   if (
     allRequired
-    || types.has(TYPES.CistJsonHttpUtils)
-    || types.has(CistJsonHttpUtilsService)
+    || types.has(TYPES.CistJsonHttpParser)
+    || types.has(CistJsonHttpParserService)
   ) {
-    container.bind<CistJsonHttpUtilsService>(TYPES.CistJsonHttpUtils)
-      .to(CistJsonHttpUtilsService);
+    container.bind<CistJsonHttpParserService>(TYPES.CistJsonHttpParser)
+      .to(CistJsonHttpParserService);
   }
 
   if (

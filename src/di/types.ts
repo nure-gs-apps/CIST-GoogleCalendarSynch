@@ -21,7 +21,7 @@ export const TYPES = {
   Config: Symbol.for('Config'),
   CistJsonHttpClient: Symbol.for('CistJsonHttpClient'),
   CistJsonClient: Symbol.for('CistJsonClient'),
-  CistJsonHttpUtils: Symbol.for('CistJsonHttpUtils'),
+  CistJsonHttpParser: Symbol.for('CistJsonHttpParser'),
 
   CacheUtils: Symbol.for('CacheUtils'),
 

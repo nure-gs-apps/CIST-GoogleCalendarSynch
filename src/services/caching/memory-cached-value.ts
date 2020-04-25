@@ -11,9 +11,14 @@ export interface IReadonlyMemoryCachedValue<T> extends IReadonlyCachedValue<T> {
 }
 
 export class MemoryCachedValue<T> extends CachedValue<T> {
+  readonly isDestroyable = false;
   readonly needsInit = true;
   readonly needsSource = true;
   private _value: Nullable<T>;
+
+  get [Symbol.toStringTag]() {
+    return MemoryCachedValue.name;
+  }
 
   get value(): Nullable<T> {
     return this._value;

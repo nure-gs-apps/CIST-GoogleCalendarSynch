@@ -3,7 +3,8 @@ import { Nullable } from '../../@types';
 import { CachedValue } from './cached-value';
 
 export abstract class CachedValueSource<T> extends CachedValue<T> {
-  protected readonly needsInit = false;
+  readonly isDestroyable = false;
+  readonly needsInit = false;
   readonly needsSource = false;
 
   // tslint:disable-next-line:max-line-length

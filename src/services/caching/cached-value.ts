@@ -12,6 +12,8 @@ export enum CacheEvent {
 
 export interface IReadonlyCachedValue<T> extends ICacheEventEmitter<T>, IDisposable {
   readonly isInitialized: boolean;
+  readonly isDestroyable: boolean;
+  readonly needsInit: boolean;
   readonly expiration: ReadonlyDate;
   init(): Promise<boolean>;
   loadValue(): Promise<Nullable<T>>;
@@ -66,7 +68,8 @@ export class CachedValueError<T> extends Error {
 export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCachedValue<T>, ICacheEventEmitter<T>, IDisposable {
   readonly [asReadonly]: IReadonlyCachedValue<T>;
   abstract readonly needsSource: boolean;
-  protected abstract readonly needsInit: boolean;
+  abstract readonly isDestroyable: boolean;
+  abstract readonly needsInit: boolean;
   protected readonly _utils: CacheUtilsService;
 
   private _source: Nullable<CachedValue<T>>;
@@ -80,7 +83,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   get source(): Nullable<CachedValue<T>> {
     if (!this.needsSource) {
-      throw new TypeError(`${this.constructor.name} doesn\'t support sources!`);
+      throw new TypeError(this.t('doesn\'t support sources!'));
     }
     return this._source;
   }
@@ -95,6 +98,10 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   get isDisposed() {
     return !this.isInitialized;
+  }
+
+  get [Symbol.toStringTag]() {
+    return CachedValue.name;
   }
 
   protected constructor(utils: CacheUtilsService) {
@@ -149,7 +156,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   async setExpiration(date: ReadonlyDate) {
     this._utils.assertValidExpiration(date);
     if (!this.canUseExpiration(date)) {
-      throw new TypeError('Cannot set expiration longer than parent has');
+      throw new TypeError(this.t(`Cannot set expiration longer than parent ${this._source?.[Symbol.toStringTag]} has`));
     }
     if (this._expiration.valueOf() < Date.now()) {
       await this.clearCache();
@@ -175,7 +182,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     loadValue = false,
   ) {
     if (!this.needsSource) {
-      throw new TypeError(`This ${this.constructor.name} does not require source`);
+      throw new TypeError(this.t('does not require source'));
     }
     const changed = source !== this._source;
     if (!changed) {
@@ -233,9 +240,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async loadValue() {
-    if (!this.isInitialized) {
-      throw new TypeError('CachedValue is not initialized');
-    }
+    this.assertInitialized();
     const tuple = await this.doLoadValue();
     tuple[1] = this._utils.clampExpiration(
       tuple[1],
@@ -254,9 +259,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async loadFromCache(): Promise<Nullable<T>> {
-    if (!this.needsSource) {
-      throw new TypeError(`This ${this.constructor.name} does not require source`);
-    }
+    this.assertInitialized();
     const tuple = await this.doLoadFromCache();
     tuple[1] = this._utils.clampExpiration(
       tuple[1],
@@ -273,6 +276,16 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     }
     await this.doDispose();
     this._isInitialized = false;
+  }
+
+  async destroy() {
+    if (!this.isDestroyable) {
+      return false;
+    }
+    this.assertInitialized();
+    await this.dispose();
+    await this.doDestroy();
+    return true;
   }
 
   // virtual
@@ -301,7 +314,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   protected async loadValueFromSource(): Promise<[Nullable<T>, ReadonlyDate]> {
     const source = this._source;
     if (!source) {
-      throw new TypeError('source is not set');
+      throw new TypeError(this.t('source is not set'));
     }
     const value = await source.loadValue();
     await this.saveValue(value, source.expiration);
@@ -309,6 +322,10 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   protected doDispose() {
+    return Promise.resolve();
+  }
+
+  protected doDestroy() {
     return Promise.resolve();
   }
 
@@ -350,5 +367,15 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       }
     }
     await this.updateExpiration(this._expiration);
+  }
+
+  private assertInitialized() {
+    if (!this.isInitialized) {
+      throw new TypeError(this.t('is not initialized'));
+    }
+  }
+
+  protected t(message: string) {
+    return `${this[Symbol.toStringTag]}: ${message}`;
   }
 }

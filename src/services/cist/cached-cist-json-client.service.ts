@@ -4,14 +4,17 @@ import * as path from 'path';
 import {
   ASYNC_INIT,
   DeepReadonly,
-  IAsyncInitializable, IDisposable, Nullable,
+  IAsyncInitializable,
+  IDisposable,
+  Nullable,
   Optional,
 } from '../../@types';
 import { CacheType, CistCacheConfig } from '../../config/types';
 import { TYPES } from '../../di/types';
+import { MultiError, NestedError } from '../../errors';
 import { includesCache } from '../../utils/cist';
 import {
-  dateToSeconds,
+  dateToSeconds, destroyChain,
   disposeChain,
   isWindows,
   PathUtils,
@@ -125,7 +128,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     }
     const response = await cachedValue.loadValue();
     if (!response) {
-      throw new TypeError(`${this.getEventsResponse.name} failed to find value in cache chain!`);
+      throw new TypeError(e('failed to find value in cache chain!'));
     }
     return response;
   }
@@ -136,7 +139,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     }
     const response = await this._groupsCachedValue.loadValue();
     if (!response) {
-      throw new TypeError(`${this.getGroupsResponse.name} failed to find value in cache chain!`);
+      throw new TypeError(g('failed to find value in cache chain!'));
     }
     return response;
   }
@@ -147,9 +150,60 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     }
     const response = await this._roomsCachedValue.loadValue();
     if (!response) {
-      throw new TypeError(`${this.getRoomsResponse.name} failed to find value in cache chain!`);
+      throw new TypeError(r('failed to find value in cache chain!'));
     }
     return response;
+  }
+
+  async clearEventsCache(): Promise<void> {
+    for (const cachedValue of this._eventsCachedValues.values()) {
+      await cachedValue.dispose();
+    }
+    this._eventsCachedValues.clear();
+    const errors = [];
+    if (this._cacheConfig.priorities.events.includes(CacheType.Http)) {
+      const fileNames = await fs.readdir(this._baseDirectory);
+      for (const fileName of fileNames) {
+        if (!isEventsCacheFile(fileName)) {
+          continue;
+        }
+        try {
+          const cachedValue = new FileCachedValue(
+            this._cacheUtils,
+            path.join(this._baseDirectory, fileName),
+          );
+          if (cachedValue.isDestroyable) {
+            if (!cachedValue.isInitialized) {
+              await cachedValue.init();
+            }
+            await cachedValue.destroy();
+          } else {
+            await cachedValue.dispose();
+          }
+        } catch (error) {
+          errors.push(new NestedError(`Failed to destroy cache at ${fileName}`, error));
+        }
+      }
+    }
+    if (errors.length > 0) {
+      throw new MultiError('Multiple exceptions happened', errors);
+    }
+  }
+
+  async clearGroupsCache(): Promise<void> {
+    if (!this._groupsCachedValue) {
+      this._groupsCachedValue = await this.createGroupsCachedValue();
+    }
+    await destroyChain(this._groupsCachedValue);
+    this._groupsCachedValue = null;
+  }
+
+  async clearRoomsCache(): Promise<void> {
+    if (!this._roomsCachedValue) {
+      this._roomsCachedValue = await this.createRoomsCachedValue();
+    }
+    await destroyChain(this._roomsCachedValue);
+    this._roomsCachedValue = null;
   }
 
   private async createGroupsCachedValue() {
@@ -163,9 +217,6 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
       const oldCachedValue = cachedValue;
       switch (type) {
         case CacheType.Http:
-          if (oldCachedValue) {
-            throw new TypeError(g('HTTP requests must be last in the cache chain'));
-          }
           if (!this._http) {
             throw new TypeError(g('An initialized CIST HTTP client is required'));
           }
@@ -173,6 +224,9 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
             this._cacheUtils,
             this._http
           );
+          if (!cachedValue.needsSource) {
+            throw new TypeError(g('HTTP requests must be last in the cache chain'));
+          }
           if (!cachedValue.isInitialized) {
             await cachedValue.init();
           }
@@ -213,9 +267,6 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
       const oldCachedValue = cachedValue;
       switch (type) {
         case CacheType.Http:
-          if (oldCachedValue) {
-            throw new TypeError(r('HTTP requests must be last in the cache chain'));
-          }
           if (!this._http) {
             throw new TypeError(r('An initialized CIST HTTP client is required'));
           }
@@ -223,6 +274,9 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
             this._cacheUtils,
             this._http
           );
+          if (!cachedValue.needsSource) {
+            throw new TypeError(r('HTTP requests must be last in the cache chain'));
+          }
           if (!cachedValue.isInitialized) {
             await cachedValue.init();
           }
@@ -262,9 +316,6 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
       const oldCachedValue = cachedValue;
       switch (type) {
         case CacheType.Http:
-          if (oldCachedValue) {
-            throw new TypeError(e('HTTP requests must be last in the cache chain'));
-          }
           if (!this._http) {
             throw new TypeError(e('An initialized CIST HTTP client is required'));
           }
@@ -273,6 +324,9 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
             this._http,
             params,
           );
+          if (!cachedValue.needsSource) {
+            throw new TypeError(e('HTTP requests must be last in the cache chain'));
+          }
           if (!cachedValue.isInitialized) {
             await cachedValue.init();
           }
@@ -336,6 +390,11 @@ function getEventsCacheFileNamePart(options: DeepReadonly<IEventsQueryParams>) {
     }
   }
   return hash;
+}
+
+const fileNameRegex = new RegExp(`^${RequestType.Events}\.[1-3]\.\\d+(\.\\d*\.\\d*)?\.tmp`);
+function isEventsCacheFile(fileName: string) {
+  return fileNameRegex.test(fileName);
 }
 
 function r(text: string) {

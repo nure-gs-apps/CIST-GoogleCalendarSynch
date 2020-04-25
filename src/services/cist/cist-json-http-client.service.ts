@@ -4,8 +4,12 @@ import { inject, injectable } from 'inversify';
 import { DeepReadonly } from '../../@types';
 import { TYPES } from '../../di/types';
 import { dateToSeconds } from '../../utils/common';
-import { CistJsonHttpUtilsService } from './cist-json-http-utils.service';
-import { ICistJsonClient, IDateLimits, TimetableType } from './types';
+import {
+  ICistJsonClient,
+  ICistJsonHttpParserService,
+  IDateLimits,
+  TimetableType,
+} from './types';
 
 interface IQueryParams {
   api_key: string;
@@ -39,12 +43,12 @@ export class CistJsonHttpClient implements ICistJsonClient {
 
   protected readonly _axios: AxiosInstance;
   protected readonly _apiKey: string;
-  protected readonly _cistUtils: CistJsonHttpUtilsService;
+  protected readonly _cistParser: ICistJsonHttpParserService;
 
   constructor(
     @inject(TYPES.CistBaseApiUrl) baseApiUrl: string,
     @inject(TYPES.CistApiKey) apiKey: string,
-    @inject(TYPES.CistJsonHttpUtils) cistUtils: CistJsonHttpUtilsService,
+    @inject(TYPES.CistJsonHttpParser) cistParser: ICistJsonHttpParserService,
   ) {
     this._axios = axios.create({
       baseURL: baseApiUrl || CistJsonHttpClient.BASE_API_URL,
@@ -58,19 +62,19 @@ export class CistJsonHttpClient implements ICistJsonClient {
         : data.toString('utf8');
       return res;
     });
-    this._cistUtils = cistUtils;
+    this._cistParser = cistParser;
   }
 
   getRoomsResponse() {
     return this._axios
       .get(CistJsonHttpClient.ROOMS_PATH)
-      .then(response => this._cistUtils.parseAuditoriesResponse(response));
+      .then(response => this._cistParser.parseAuditoriesResponse(response));
   }
 
   getGroupsResponse() {
     return this._axios
       .get(CistJsonHttpClient.GROUPS_PATH)
-      .then(response => this._cistUtils.parseGroupsResponse(response));
+      .then(response => this._cistParser.parseGroupsResponse(response));
   }
 
   getEventsResponse(
@@ -95,6 +99,6 @@ export class CistJsonHttpClient implements ICistJsonClient {
       .get(CistJsonHttpClient.EVENTS_PATH, {
         params: queryParams,
       })
-      .then(response => this._cistUtils.parseEventsResponse(response));
+      .then(response => this._cistParser.parseEventsResponse(response));
   }
 }

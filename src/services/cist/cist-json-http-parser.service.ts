@@ -4,10 +4,11 @@ import {
   ApiAuditoriesResponse,
   ApiEventsResponse,
   ApiGroupsResponse,
+  ICistJsonHttpParserService,
 } from './types';
 
 @injectable()
-export class CistJsonHttpUtilsService {
+export class CistJsonHttpParserService implements ICistJsonHttpParserService {
   parseAuditoriesResponse(
     response: AxiosResponse,
   ): ApiAuditoriesResponse {
