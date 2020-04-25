@@ -10,6 +10,16 @@ export interface IFileReadUntilResult {
   contents: Buffer;
 }
 
+export async function fSize(file: fs.FileHandle) {
+  return (await file.stat()).size;
+}
+
+export async function fReadFile(file: fs.FileHandle, encoding: BufferEncoding) {
+  const buffer = Buffer.alloc(await fSize(file));
+  await file.read(buffer, 0, buffer.length, 0);
+  return buffer.toString(encoding);
+}
+
 export async function fReadUntil(
   file: fs.FileHandle,
   stopWord: Buffer,
@@ -21,7 +31,7 @@ export async function fReadUntil(
   let i = offset;
   let readResult: IFileReadResult;
   do {
-    readResult = await file.read(readBuffer, i, readChunkSize);
+    readResult = await file.read(readBuffer, i, readChunkSize, 0);
     let found = false;
     if (stopWord.length < readChunkSize) {
       const j = readBuffer.indexOf(stopWord);
@@ -63,7 +73,7 @@ export async function fReadUntil(
   return { contents, found: false };
 }
 
-export async function fCutInside(
+export async function fCutOut(
   file: fs.FileHandle,
   start: number,
   length: number,
@@ -82,7 +92,7 @@ export async function fCutInside(
   const readBuffer = Buffer.alloc(chunkBufferSize);
   let readResult: IFileReadResult;
   do {
-    readResult = await file.read(readBuffer, readOffset, length);
+    readResult = await file.read(readBuffer, readOffset, length, 0);
     if (readResult.bytesRead === chunkBufferSize) {
       await file.write(readBuffer, writeOffset);
     } else {
@@ -93,4 +103,35 @@ export async function fCutInside(
     readOffset += chunkBufferSize;
     writeOffset += chunkBufferSize;
   } while (true);
+}
+
+export async function fShiftForward(
+  file: fs.FileHandle,
+  start: number,
+  offset: number,
+  chunkBufferSize = 256
+) {
+  if (offset < 0) {
+    throw new TypeError('Offset must be positive');
+  }
+  if (offset === 0) {
+    return;
+  }
+  const size = (await file.stat()).size;
+  if (start >= size) {
+    return;
+  }
+  let readOffset = Math.round((
+    size - start
+  ) / chunkBufferSize) * chunkBufferSize + start;
+  let writeOffset = readOffset + offset;
+
+  const readBuffer = Buffer.alloc(chunkBufferSize);
+  let readResult: IFileReadResult;
+  do {
+    readResult = await file.read(readBuffer, readOffset, chunkBufferSize, 0);
+    await file.write(readBuffer, writeOffset, readResult.bytesRead);
+    readOffset -= chunkBufferSize;
+    writeOffset -= chunkBufferSize;
+  } while (readOffset >= start);
 }

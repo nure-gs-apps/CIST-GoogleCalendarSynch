@@ -2,13 +2,24 @@ import { Stats } from 'fs';
 import { ReadonlyDate } from 'readonly-date';
 import { Nullable } from '../../@types';
 import { asyncNoop } from '../../utils/common';
+import {
+  fCutOut,
+  fReadFile,
+  fReadUntil,
+  fShiftForward,
+  fSize,
+} from '../../utils/fs';
 import { CacheUtilsService } from '../cache-utils.service';
 import { CachedValue } from './cached-value';
 import { promises as fs, constants as fsConstants } from 'graceful-fs';
 import { lock } from 'proper-lockfile';
 
-const valueOffset = new Date().toISOString().length;
 const encoding = 'utf8';
+const expirationSeparator = '\n';
+const expirationSeparatorBuffer = Buffer.from(expirationSeparator, encoding);
+const expirationBufferSize = Buffer.from(
+  new Date().toISOString(), encoding
+).length + expirationSeparatorBuffer.length;
 
 export class FileCachedValue<T> extends CachedValue<T> {
   readonly needsSource = true;
@@ -36,13 +47,13 @@ export class FileCachedValue<T> extends CachedValue<T> {
     }
     if (fileStats) {
       if (!fileStats.isFile()) {
-        throw new TypeError(`${this._fileName} is expected to be a file`);
+        throw new TypeError(this.l('is expected to be a file'));
       }
       if (!fs.access(
         this._fileName,
         fsConstants.F_OK | fsConstants.R_OK | fsConstants.W_OK,
       ).then(() => true).catch(() => false)) {
-        throw new Error(`Cache file ${this._fileName} is not accessible for read and write`);
+        throw new Error(this.l(`Cache file ${this._fileName} is not accessible for read and write`));
       }
     }
     this._file = await fs.open(this._fileName, fileStats ? 'r+' : 'w+', 0o666);
@@ -52,12 +63,11 @@ export class FileCachedValue<T> extends CachedValue<T> {
         update: 5000,
       });
     } catch (error) {
-      await this._file.close();
-      this._file = null;
+      await this.doDispose();
       throw error;
     }
     fileStats = fileStats ?? await this._file.stat();
-    if (fileStats.size < valueOffset) {
+    if (fileStats.size < expirationBufferSize) {
       await this.writeExpiration();
     }
   }
@@ -70,21 +80,30 @@ export class FileCachedValue<T> extends CachedValue<T> {
 
   protected async updateExpiration(date: ReadonlyDate): Promise<void> {
     if (!this._file) {
-      throw new TypeError('Invalid state, file is not loaded');
+      throw new TypeError(this.l('Invalid state, file is not loaded'));
     }
-    const { bytesWritten } = await this._file.write(date.toISOString(), 0);
-    if (valueOffset !== bytesWritten) {
-      throw new TypeError(`Bad write to file, expected ${valueOffset} bytes to be written, got ${bytesWritten}`);
-    }
+    await this.writeExpiration(date);
   }
 
   protected async doLoadFromCache(): Promise<[Nullable<T>, ReadonlyDate]> {
     if (!this._file) {
-      throw new TypeError('Invalid state, file is not loaded');
+      throw new TypeError(this.l('Invalid state, file is not loaded'));
     }
-    const fileContent = await this._file.readFile(encoding);
-    const expiration = parseExpiration(fileContent);
-    const stringValue = fileContent.slice(valueOffset);
+    // const { contents, found } = await fReadUntil(this._file, expirationSeparatorBuffer, 0);
+    // const b = contents.toString(encoding);
+    // console.log(b, found);
+    const fileContents = await fReadFile(this._file, encoding);
+    const separatorIndex = fileContents.indexOf(expirationSeparator);
+    if (separatorIndex < 0) {
+      throw new TypeError(this.l('Invalid format, no expiration separator'));
+    }
+    const expiration = this.parseExpiration(fileContents.slice(
+      0,
+      separatorIndex,
+    ));
+    const stringValue = fileContents.slice(
+      separatorIndex + expirationSeparatorBuffer.length
+    );
     if (stringValue.length === 0) {
       return [null, expiration];
     }
@@ -96,15 +115,15 @@ export class FileCachedValue<T> extends CachedValue<T> {
     expiration: ReadonlyDate,
   ): Promise<void> {
     if (!this._file) {
-      throw new TypeError('Invalid state, file is not loaded');
+      throw new TypeError(this.l('Invalid state, file is not loaded'));
     }
-    await this.writeExpiration(expiration);
+    const bytesWritten = await this.writeExpiration(expiration, false);
     if (value !== null) {
       await this._file.write(
-        JSON.stringify(value), valueOffset, encoding
+        JSON.stringify(value), bytesWritten, encoding
       );
     } else {
-      await this._file.truncate(valueOffset);
+      await this._file.truncate(bytesWritten);
     }
   }
 
@@ -114,38 +133,82 @@ export class FileCachedValue<T> extends CachedValue<T> {
 
   protected async loadExpirationFromCache(): Promise<ReadonlyDate> {
     if (!this._file) {
-      throw new TypeError('Invalid state, file is not loaded');
+      throw new TypeError(this.l('Invalid state, file is not loaded'));
     }
-    const buffer = Buffer.alloc(valueOffset);
-    await this._file.read(buffer, 0, valueOffset, 0);
-    return Promise.resolve(parseExpiration(buffer.toString(encoding)));
+    const { contents } = await fReadUntil(
+      this._file,
+      expirationSeparatorBuffer,
+      0,
+      expirationBufferSize,
+    );
+    return Promise.resolve(this.parseExpiration(contents.toString(encoding)));
   }
 
   protected async doClearCache(): Promise<boolean> {
     if (!this._file) {
-      throw new TypeError('Invalid state, file is not loaded');
+      throw new TypeError(this.l('Invalid state, file is not loaded'));
     }
-    if (valueOffset <= (await this._file.stat()).size) {
+    if (expirationBufferSize <= await fSize(this._file)) {
       return false;
     }
-    await this._file.truncate(valueOffset);
+    await this._file.truncate((
+      await fReadUntil(this._file, expirationSeparatorBuffer)
+    ).contents.length + expirationSeparatorBuffer.length);
     return true;
   }
 
   private async writeExpiration(
-    expiration = this._utils.getMaxExpiration()
+    expiration = this._utils.getMaxExpiration(),
+    preserveContents = true
   ) {
     if (!this._file) {
-      throw new TypeError('Invalid state, file is not loaded');
+      throw new TypeError(this.l('Invalid state, file is not loaded'));
     }
-    await this._file.write(expiration.toISOString(), 0, encoding);
+    const expirationBuffer = Buffer.from(expiration.toISOString(), encoding);
+    if (preserveContents) {
+      const { contents, found } = await fReadUntil(
+        this._file,
+        expirationSeparatorBuffer,
+        0,
+        expirationBufferSize,
+      );
+      if (found) {
+        if (contents.length > expirationBuffer.length) {
+          const cutOutLength = expirationBuffer.length - contents.length;
+          await fCutOut(
+            this._file,
+            contents.length + expirationSeparatorBuffer.length - cutOutLength,
+            cutOutLength,
+            await fSize(this._file),
+          );
+        } else if (contents.length < expirationBuffer.length) {
+          const offset = expirationBuffer.length - contents.length;
+          await fShiftForward(
+            this._file,
+            contents.length + expirationSeparatorBuffer.length,
+            offset,
+            await fSize(this._file),
+          );
+        }
+      }
+    }
+    const bufferToWrite = Buffer.concat([
+      expirationBuffer,
+      expirationSeparatorBuffer,
+    ]);
+    await this._file.write(bufferToWrite, 0, encoding);
+    return bufferToWrite.length;
   }
-}
 
-function parseExpiration(fileContent: string) {
-  const expiration = new Date(fileContent.slice(0, valueOffset));
-  if (Number.isNaN(expiration.valueOf())) {
-    throw new TypeError(`Invalid expiration: ${fileContent.slice(0, valueOffset)}`);
+  parseExpiration(fileContent: string) {
+    const expiration = new Date(fileContent);
+    if (Number.isNaN(expiration.valueOf())) {
+      throw new TypeError(this.l(`Invalid expiration: ${fileContent}`));
+    }
+    return expiration;
   }
-  return expiration;
+
+  private l(message: string) {
+    return `${this._fileName}: ${message}`;
+  }
 }
