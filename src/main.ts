@@ -76,7 +76,7 @@ export namespace AssertCommand {
       failure = failure
         || !assertRoomsResponse(await cistClient.getRoomsResponse());
     }
-    if (checkRooms) {
+    if (checkGroups) {
       failure = failure
         || !assertGroupsResponse(await cistClient.getGroupsResponse());
     }

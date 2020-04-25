@@ -51,7 +51,9 @@ const yargs = types_1.getBasicCliConfiguration()
     },
     handler(args) {
         const fixArgs = args;
-        fixArgs.types = fixArgs.types.map(t => t[0]);
+        fixArgs.types = fixArgs.types.map(t => Array.isArray(t)
+            ? t[0]
+            : t);
         main_1.AssertCommand.handle(args, config_1.getFullConfig()).catch(failStart);
     },
 })

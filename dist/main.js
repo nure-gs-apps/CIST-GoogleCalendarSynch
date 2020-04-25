@@ -56,7 +56,7 @@ var AssertCommand;
             failure = failure
                 || !assert_responses_1.assertRoomsResponse(await cistClient.getRoomsResponse());
         }
-        if (checkRooms) {
+        if (checkGroups) {
             failure = failure
                 || !assert_responses_1.assertGroupsResponse(await cistClient.getGroupsResponse());
         }

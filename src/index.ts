@@ -62,7 +62,9 @@ const yargs = getBasicCliConfiguration()
         AssertCommand.IOptions
         & { types: [string][] | AssertType[] };
       const fixArgs: FixArgs = args as FixArgs;
-      fixArgs.types = fixArgs.types.map(t => t[0] as AssertType);
+      fixArgs.types = fixArgs.types.map(t => Array.isArray(t)
+        ? t[0] as AssertType
+        : t);
 
       AssertCommand.handle(
         args as AssertCommand.IOptions,
