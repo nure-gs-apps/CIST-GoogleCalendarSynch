@@ -15,14 +15,14 @@ export class FileCachedValue<T> extends CachedValue<T> {
   readonly needsInit = true;
 
   private readonly _fileName: string;
-  private file: Nullable<fs.FileHandle>;
+  private _file: Nullable<fs.FileHandle>;
   private unlock: () => Promise<void>;
 
   constructor(utils: CacheUtilsService, fileName: string) {
     super(utils);
     this._fileName = fileName;
     this.unlock = asyncNoop;
-    this.file = null;
+    this._file = null;
   }
 
   protected async doInit(): Promise<void> {
@@ -45,44 +45,44 @@ export class FileCachedValue<T> extends CachedValue<T> {
         throw new Error(`Cache file ${this._fileName} is not accessible for read and write`);
       }
     }
-    this.file = await fs.open(this._fileName, fileStats ? 'r+' : 'w+', 0o666);
+    this._file = await fs.open(this._fileName, fileStats ? 'r+' : 'w+', 0o666);
     try {
       this.unlock = await lock(this._fileName, {
         stale: 60000,
         update: 5000,
       });
     } catch (error) {
-      await this.file.close();
-      this.file = null;
+      await this._file.close();
+      this._file = null;
       throw error;
     }
-    fileStats = fileStats ?? await this.file.stat();
+    fileStats = fileStats ?? await this._file.stat();
     if (fileStats.size < valueOffset) {
       await this.writeExpiration();
     }
   }
 
   protected async doDispose(): Promise<void> {
-    await this.file?.close();
-    this.file = null;
+    await this._file?.close();
+    this._file = null;
     await this.unlock();
   }
 
   protected async updateExpiration(date: ReadonlyDate): Promise<void> {
-    if (!this.file) {
+    if (!this._file) {
       throw new TypeError('Invalid state, file is not loaded');
     }
-    const { bytesWritten } = await this.file.write(date.toISOString(), 0);
+    const { bytesWritten } = await this._file.write(date.toISOString(), 0);
     if (valueOffset !== bytesWritten) {
       throw new TypeError(`Bad write to file, expected ${valueOffset} bytes to be written, got ${bytesWritten}`);
     }
   }
 
   protected async doLoadFromCache(): Promise<[Nullable<T>, ReadonlyDate]> {
-    if (!this.file) {
+    if (!this._file) {
       throw new TypeError('Invalid state, file is not loaded');
     }
-    const fileContent = await this.file.readFile(encoding);
+    const fileContent = await this._file.readFile(encoding);
     const expiration = parseExpiration(fileContent);
     const stringValue = fileContent.slice(valueOffset);
     if (stringValue.length === 0) {
@@ -95,16 +95,16 @@ export class FileCachedValue<T> extends CachedValue<T> {
     value: T | null,
     expiration: ReadonlyDate,
   ): Promise<void> {
-    if (!this.file) {
+    if (!this._file) {
       throw new TypeError('Invalid state, file is not loaded');
     }
     await this.writeExpiration(expiration);
     if (value !== null) {
-      await this.file.write(
+      await this._file.write(
         JSON.stringify(value), valueOffset, encoding
       );
     } else {
-      await this.file.truncate(valueOffset);
+      await this._file.truncate(valueOffset);
     }
   }
 
@@ -113,32 +113,32 @@ export class FileCachedValue<T> extends CachedValue<T> {
   }
 
   protected async loadExpirationFromCache(): Promise<ReadonlyDate> {
-    if (!this.file) {
+    if (!this._file) {
       throw new TypeError('Invalid state, file is not loaded');
     }
     const buffer = Buffer.alloc(valueOffset);
-    await this.file.read(buffer, 0, valueOffset, 0);
+    await this._file.read(buffer, 0, valueOffset, 0);
     return Promise.resolve(parseExpiration(buffer.toString(encoding)));
   }
 
   protected async doClearCache(): Promise<boolean> {
-    if (!this.file) {
+    if (!this._file) {
       throw new TypeError('Invalid state, file is not loaded');
     }
-    if (valueOffset <= (await this.file.stat()).size) {
+    if (valueOffset <= (await this._file.stat()).size) {
       return false;
     }
-    await this.file.truncate(valueOffset);
+    await this._file.truncate(valueOffset);
     return true;
   }
 
   private async writeExpiration(
     expiration = this._utils.getMaxExpiration()
   ) {
-    if (!this.file) {
+    if (!this._file) {
       throw new TypeError('Invalid state, file is not loaded');
     }
-    await this.file.write(expiration.toISOString(), 0, encoding);
+    await this._file.write(expiration.toISOString(), 0, encoding);
   }
 }
 

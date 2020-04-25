@@ -27,7 +27,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
             writable: true,
             value: void 0
         });
-        Object.defineProperty(this, "file", {
+        Object.defineProperty(this, "_file", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -41,7 +41,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
         });
         this._fileName = fileName;
         this.unlock = common_1.asyncNoop;
-        this.file = null;
+        this._file = null;
     }
     async doInit() {
         let fileStats = null;
@@ -61,7 +61,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
                 throw new Error(`Cache file ${this._fileName} is not accessible for read and write`);
             }
         }
-        this.file = await graceful_fs_1.promises.open(this._fileName, fileStats ? 'r+' : 'w+', 0o666);
+        this._file = await graceful_fs_1.promises.open(this._fileName, fileStats ? 'r+' : 'w+', 0o666);
         try {
             this.unlock = await proper_lockfile_1.lock(this._fileName, {
                 stale: 60000,
@@ -69,35 +69,35 @@ class FileCachedValue extends cached_value_1.CachedValue {
             });
         }
         catch (error) {
-            await this.file.close();
-            this.file = null;
+            await this._file.close();
+            this._file = null;
             throw error;
         }
-        fileStats = fileStats !== null && fileStats !== void 0 ? fileStats : await this.file.stat();
+        fileStats = fileStats !== null && fileStats !== void 0 ? fileStats : await this._file.stat();
         if (fileStats.size < valueOffset) {
             await this.writeExpiration();
         }
     }
     async doDispose() {
         var _a;
-        await ((_a = this.file) === null || _a === void 0 ? void 0 : _a.close());
-        this.file = null;
+        await ((_a = this._file) === null || _a === void 0 ? void 0 : _a.close());
+        this._file = null;
         await this.unlock();
     }
     async updateExpiration(date) {
-        if (!this.file) {
+        if (!this._file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
-        const { bytesWritten } = await this.file.write(date.toISOString(), 0);
+        const { bytesWritten } = await this._file.write(date.toISOString(), 0);
         if (valueOffset !== bytesWritten) {
             throw new TypeError(`Bad write to file, expected ${valueOffset} bytes to be written, got ${bytesWritten}`);
         }
     }
     async doLoadFromCache() {
-        if (!this.file) {
+        if (!this._file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
-        const fileContent = await this.file.readFile(encoding);
+        const fileContent = await this._file.readFile(encoding);
         const expiration = parseExpiration(fileContent);
         const stringValue = fileContent.slice(valueOffset);
         if (stringValue.length === 0) {
@@ -106,43 +106,43 @@ class FileCachedValue extends cached_value_1.CachedValue {
         return [JSON.parse(stringValue), expiration];
     }
     async saveValue(value, expiration) {
-        if (!this.file) {
+        if (!this._file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
         await this.writeExpiration(expiration);
         if (value !== null) {
-            await this.file.write(JSON.stringify(value), valueOffset, encoding);
+            await this._file.write(JSON.stringify(value), valueOffset, encoding);
         }
         else {
-            await this.file.truncate(valueOffset);
+            await this._file.truncate(valueOffset);
         }
     }
     hasCachedValue() {
         return Promise.resolve(false);
     }
     async loadExpirationFromCache() {
-        if (!this.file) {
+        if (!this._file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
         const buffer = Buffer.alloc(valueOffset);
-        await this.file.read(buffer, 0, valueOffset, 0);
+        await this._file.read(buffer, 0, valueOffset, 0);
         return Promise.resolve(parseExpiration(buffer.toString(encoding)));
     }
     async doClearCache() {
-        if (!this.file) {
+        if (!this._file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
-        if (valueOffset <= (await this.file.stat()).size) {
+        if (valueOffset <= (await this._file.stat()).size) {
             return false;
         }
-        await this.file.truncate(valueOffset);
+        await this._file.truncate(valueOffset);
         return true;
     }
     async writeExpiration(expiration = this._utils.getMaxExpiration()) {
-        if (!this.file) {
+        if (!this._file) {
             throw new TypeError('Invalid state, file is not loaded');
         }
-        await this.file.write(expiration.toISOString(), 0, encoding);
+        await this._file.write(expiration.toISOString(), 0, encoding);
     }
 }
 exports.FileCachedValue = FileCachedValue;
