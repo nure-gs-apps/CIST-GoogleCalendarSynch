@@ -104,7 +104,7 @@ export namespace AssertCommand {
       const eventFailures = [];
       for (const groupId of groupIds) {
         const events = await cistClient.getEventsResponse(
-          TimetableType.GROUP,
+          TimetableType.Group,
           groupId,
         );
         if (!assertEventsResponse(events)) {
@@ -149,7 +149,7 @@ export namespace AssertCommand {
 // // }
 //
 // // const eventsResponse = await cistClient.getEventsResponse(
-// //   TimetableType.GROUP,
+// //   TimetableType.Group,
 // //   4901435,
 // // );
 // // if (!assertEventsResponse(eventsResponse)) {

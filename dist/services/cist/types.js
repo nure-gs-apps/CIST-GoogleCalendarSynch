@@ -34,8 +34,8 @@ Object.defineProperty(ThrowCistJsonClient, "_getInstance", {
 });
 var TimetableType;
 (function (TimetableType) {
-    TimetableType[TimetableType["GROUP"] = 1] = "GROUP";
-    TimetableType[TimetableType["TEACHER"] = 2] = "TEACHER";
-    TimetableType[TimetableType["ROOM"] = 3] = "ROOM";
+    TimetableType[TimetableType["Group"] = 1] = "Group";
+    TimetableType[TimetableType["Teacher"] = 2] = "Teacher";
+    TimetableType[TimetableType["Room"] = 3] = "Room";
 })(TimetableType = exports.TimetableType || (exports.TimetableType = {}));
 //# sourceMappingURL=types.js.map

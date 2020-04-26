@@ -69,7 +69,7 @@ var AssertCommand;
             }
             const eventFailures = [];
             for (const groupId of groupIds) {
-                const events = await cistClient.getEventsResponse(types_3.TimetableType.GROUP, groupId);
+                const events = await cistClient.getEventsResponse(types_3.TimetableType.Group, groupId);
                 if (!assert_responses_1.assertEventsResponse(events)) {
                     eventFailures.push(groupId);
                 }
@@ -111,7 +111,7 @@ var AssertCommand;
 // // }
 //
 // // const eventsResponse = await cistClient.getEventsResponse(
-// //   TimetableType.GROUP,
+// //   TimetableType.Group,
 // //   4901435,
 // // );
 // // if (!assertEventsResponse(eventsResponse)) {

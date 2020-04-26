@@ -36,6 +36,8 @@ export class CistJsonHttpParserService implements ICistJsonHttpParserService {
     if (typeof response.data !== 'string') {
       throw new TypeError('Unexpected non-string response');
     }
-    return JSON.parse(response.data);
+    // Fixing body deficiencies
+    const fixedBody = response.data.replace(/"events"\s*:\s*\[\s*]\s*}\s*]/g, '"events":[]');
+    return JSON.parse(fixedBody);
   }
 }

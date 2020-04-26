@@ -3,6 +3,7 @@ import * as iconv from 'iconv-lite';
 import { inject, injectable } from 'inversify';
 import { DeepReadonly } from '../../@types';
 import { TYPES } from '../../di/types';
+import { NestedError } from '../../errors';
 import { dateToSeconds } from '../../utils/common';
 import {
   ICistJsonClient,
@@ -74,7 +75,8 @@ export class CistJsonHttpClient implements ICistJsonClient {
   getGroupsResponse() {
     return this._axios
       .get(CistJsonHttpClient.GROUPS_PATH)
-      .then(response => this._cistParser.parseGroupsResponse(response));
+      .then(response => this._cistParser.parseGroupsResponse(response))
+      .catch(error => { throw new NestedError('CIST Groups request error', error); });
   }
 
   getEventsResponse(
@@ -99,6 +101,18 @@ export class CistJsonHttpClient implements ICistJsonClient {
       .get(CistJsonHttpClient.EVENTS_PATH, {
         params: queryParams,
       })
-      .then(response => this._cistParser.parseEventsResponse(response));
+      .then(response => this._cistParser.parseEventsResponse(response))
+      .catch(error => {
+        let message = `CIST Events request error. type: ${TimetableType[type]}, id: ${entityId}`;
+        if (dateLimits) {
+          if (dateLimits.from) {
+            message += `, timeFrom: ${dateLimits.from.toISOString()}`;
+          }
+          if (dateLimits.to) {
+            message += `, timeTo: ${dateLimits.to.toISOString()}`;
+          }
+        }
+        throw new NestedError(message, error);
+      });
   }
 }

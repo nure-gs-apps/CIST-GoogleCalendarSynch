@@ -6,7 +6,9 @@ const axios_1 = require("axios");
 const iconv = require("iconv-lite");
 const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
+const errors_1 = require("../../errors");
 const common_1 = require("../../utils/common");
+const types_2 = require("./types");
 // function cloneQueryParams(params: IQueryParams) {
 //   const newParams = {
 //     type_id: params.type_id,
@@ -64,7 +66,8 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
     getGroupsResponse() {
         return this._axios
             .get(CistJsonHttpClient_1.GROUPS_PATH)
-            .then(response => this._cistParser.parseGroupsResponse(response));
+            .then(response => this._cistParser.parseGroupsResponse(response))
+            .catch(error => { throw new errors_1.NestedError('CIST Groups request error', error); });
     }
     getEventsResponse(type, entityId, dateLimits) {
         const queryParams = {
@@ -84,7 +87,19 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
             .get(CistJsonHttpClient_1.EVENTS_PATH, {
             params: queryParams,
         })
-            .then(response => this._cistParser.parseEventsResponse(response));
+            .then(response => this._cistParser.parseEventsResponse(response))
+            .catch(error => {
+            let message = `CIST Events request error. type: ${types_2.TimetableType[type]}, id: ${entityId}`;
+            if (dateLimits) {
+                if (dateLimits.from) {
+                    message += `, timeFrom: ${dateLimits.from.toISOString()}`;
+                }
+                if (dateLimits.to) {
+                    message += `, timeTo: ${dateLimits.to.toISOString()}`;
+                }
+            }
+            throw new errors_1.NestedError(message, error);
+        });
     }
 };
 Object.defineProperty(CistJsonHttpClient, "BASE_API_URL", {

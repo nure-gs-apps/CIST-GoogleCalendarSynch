@@ -170,9 +170,9 @@ export interface IEventsQueryParams {
 }
 
 export enum TimetableType {
-  GROUP = 1,
-  TEACHER = 2,
-  ROOM = 3,
+  Group = 1,
+  Teacher = 2,
+  Room = 3,
 }
 
 export interface IDateLimits {
