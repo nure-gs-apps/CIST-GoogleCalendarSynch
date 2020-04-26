@@ -17,6 +17,7 @@ import {
 } from './services/cist/types';
 // initialize exit handlers
 import './services/exit-handler.service';
+import { bindOnExitHandler } from './services/exit-handler.service';
 import {
   assertEventsResponse,
   assertGroupsResponse,
@@ -70,6 +71,10 @@ export namespace AssertCommand {
 
     const cistClient = container
       .get<CachedCistJsonClientService>(TYPES.CistJsonClient);
+    const dispose = async () => {
+      await cistClient.dispose();
+    };
+    bindOnExitHandler(dispose);
     const failures = new Map<EntityType, number[]>();
     if (args.auditories) {
       failures.set(

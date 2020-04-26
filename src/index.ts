@@ -20,6 +20,7 @@ import {
   // EntityType,
   IArgsWithEntities,
 } from './main';
+import { exitGracefully } from './services/exit-handler.service';
 import { toPrintString } from './utils/common';
 // import { toPrintString } from './utils/common';
 
@@ -121,5 +122,5 @@ function initializeMiddleware() {
 
 function failStart(error: any) {
   console.error(error);
-  process.exit(1);
+  exitGracefully(1);
 }

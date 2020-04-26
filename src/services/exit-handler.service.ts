@@ -71,7 +71,11 @@ class List {
 }
 
 const list = new List();
-let onSignalHandler: Nullable<NodeJS.SignalsListener> = null;
+type SignalListenerWithCode = (
+  signal: NodeJS.Signals,
+  exitCode?: number,
+) => void;
+let onSignalHandler: Nullable<SignalListenerWithCode> = null;
 const errorHandler: (err: any, p?: Promise<any>) => void = (err, p) => {
   if (p) {
     logger.error('Unhandled promise rejection for ');
@@ -108,19 +112,21 @@ export function unbindOnExitHandler(handler: Function) {
   }
 }
 
-export function exitGracefully() {
+export function exitGracefully(exitCode: number) {
   if (onSignalHandler) {
-    onSignalHandler('SIGQUIT');
+    onSignalHandler('SIGQUIT', exitCode);
+  } else {
+    process.exit(exitCode);
   }
 }
 
 function initListeners() {
-  onSignalHandler = signal => {
+  onSignalHandler = (signal, exitCode= 0) => {
     execHandlers().catch((err) => {
       logger.error(err);
       process.exit(1);
     }).then(() => {
-      process.exit(0);
+      process.exit(exitCode);
     });
   };
   process.once('SIGINT', onSignalHandler);

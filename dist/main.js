@@ -10,6 +10,7 @@ const cist_json_http_client_service_1 = require("./services/cist/cist-json-http-
 const types_3 = require("./services/cist/types");
 // initialize exit handlers
 require("./services/exit-handler.service");
+const exit_handler_service_1 = require("./services/exit-handler.service");
 const assert_responses_1 = require("./utils/assert-responses");
 const common_1 = require("./utils/common");
 function assertHasEntities(args) {
@@ -41,6 +42,10 @@ var AssertCommand;
         await container_1.getContainerAsyncInitializer();
         const cistClient = container
             .get(types_2.TYPES.CistJsonClient);
+        const dispose = async () => {
+            await cistClient.dispose();
+        };
+        exit_handler_service_1.bindOnExitHandler(dispose);
         const failures = new Map();
         if (args.auditories) {
             failures.set(types_3.EntityType.Rooms, assert_responses_1.assertRoomsResponse(await cistClient.getRoomsResponse()) ? [] : [0]);

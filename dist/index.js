@@ -10,6 +10,7 @@ const config_1 = require("./config");
 const constants_1 = require("./config/constants");
 const types_1 = require("./config/types");
 const main_1 = require("./main");
+const exit_handler_service_1 = require("./services/exit-handler.service");
 const common_1 = require("./utils/common");
 // import { toPrintString } from './utils/common';
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
@@ -106,6 +107,6 @@ function initializeMiddleware() {
 }
 function failStart(error) {
     console.error(error);
-    process.exit(1);
+    exit_handler_service_1.exitGracefully(1);
 }
 //# sourceMappingURL=index.js.map

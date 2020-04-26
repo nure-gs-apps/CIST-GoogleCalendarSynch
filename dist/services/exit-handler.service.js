@@ -127,19 +127,22 @@ function unbindOnExitHandler(handler) {
     }
 }
 exports.unbindOnExitHandler = unbindOnExitHandler;
-function exitGracefully() {
+function exitGracefully(exitCode) {
     if (onSignalHandler) {
-        onSignalHandler('SIGQUIT');
+        onSignalHandler('SIGQUIT', exitCode);
+    }
+    else {
+        process.exit(exitCode);
     }
 }
 exports.exitGracefully = exitGracefully;
 function initListeners() {
-    onSignalHandler = signal => {
+    onSignalHandler = (signal, exitCode = 0) => {
         execHandlers().catch((err) => {
             logger_service_1.logger.error(err);
             process.exit(1);
         }).then(() => {
-            process.exit(0);
+            process.exit(exitCode);
         });
     };
     process.once('SIGINT', onSignalHandler);
