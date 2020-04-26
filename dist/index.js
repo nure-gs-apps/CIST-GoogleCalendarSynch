@@ -4,11 +4,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("./polyfills");
 const iterare_1 = require("iterare");
 const os_1 = require("os");
+// import { Arguments } from 'yargs';
+// import { DeepPartial } from './@types';
 const config_1 = require("./config");
 const constants_1 = require("./config/constants");
 const types_1 = require("./config/types");
 const main_1 = require("./main");
 const common_1 = require("./utils/common");
+// import { toPrintString } from './utils/common';
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
 The script accepts command line options that override configuration of the script.
@@ -39,27 +42,62 @@ Lastly, command line arguments are used. They are described at the beginning of 
 const yargs = types_1.getBasicCliConfiguration()
     .usage(usage)
     .middleware(initializeMiddleware)
-    .command({
-    command: `check <${main_1.AssertCommand.entitiesArgName}..>`,
-    describe: 'Check responses.',
-    builder(yargs) {
-        return yargs.positional(main_1.AssertCommand.entitiesArgName, {
-            type: 'string',
-            demandOption: true,
-            describe: `Types of requests to assert [choices: ${common_1.toPrintString(main_1.AssertCommand.getValidAssertTypes())}]`,
-        });
-    },
-    handler(args) {
-        const fixArgs = args;
-        fixArgs.entities = fixArgs.entities.map(t => Array.isArray(t)
-            ? t[0]
-            : t);
-        main_1.AssertCommand.handle(args, config_1.getFullConfig()).catch(failStart);
-    },
+    .command('cache', 'CIST Cache utilities', (yargs) => {
+    const groupsName = "groups";
+    const auditoriesName = "auditories";
+    const eventsName = "events";
+    return yargs
+        .option(groupsName, {
+        alias: groupsName[0],
+        description: 'Operate on groups',
+        type: 'boolean'
+    })
+        .option(auditoriesName, {
+        alias: auditoriesName[0],
+        description: 'Operate on auditories',
+        type: 'boolean'
+    })
+        .option(eventsName, {
+        alias: eventsName[0],
+        description: 'Operate on events. Supply "all", "" or nothing for all events. Supply list of coma-separated (no spaces) Group IDs to fetch events for',
+        type: 'string',
+        coerce(value) {
+            const str = value;
+            if (str === '' || str === 'all') {
+                return [];
+            }
+            if (!value) {
+                return null;
+            }
+            const initialArgs = str.split(/\s*,\s*/);
+            const ids = iterare_1.default(initialArgs)
+                .map(v => Number.parseInt(v, 10))
+                .filter(v => !Number.isNaN(v))
+                .toArray();
+            if (ids.length === 0) {
+                throw new TypeError('No Group IDs parsed');
+            }
+            if (initialArgs.length !== ids.length) {
+                console.warn(`Only such IDs found: ${common_1.toPrintString(ids)}`);
+            }
+            return ids;
+        },
+        requiresArg: false,
+    })
+        .check(args => main_1.assertHasEntities(args))
+        .command({
+        command: 'assert',
+        describe: 'Check responses for validity',
+        handler(argv) {
+            main_1.AssertCommand.handle(argv, config_1.getFullConfig())
+                .catch(failStart);
+        }
+    })
+        .demandCommand(1);
 })
     .completion()
     .recommendCommands()
-    .demandCommand(1, 'Specify a command.')
+    .demandCommand(1)
     .help('help').alias('h', 'help')
     .showHelpOnFail(true);
 yargs.parse();

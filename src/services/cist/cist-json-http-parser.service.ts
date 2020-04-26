@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios';
 import { injectable } from 'inversify';
 import {
-  ApiAuditoriesResponse,
+  ApiRoomsResponse,
   ApiEventsResponse,
   ApiGroupsResponse,
   ICistJsonHttpParserService,
@@ -9,9 +9,9 @@ import {
 
 @injectable()
 export class CistJsonHttpParserService implements ICistJsonHttpParserService {
-  parseAuditoriesResponse(
+  parseRoomsResponse(
     response: AxiosResponse,
-  ): ApiAuditoriesResponse {
+  ): ApiRoomsResponse {
     const body = response.data;
     if (typeof body !== 'string') {
       throw new TypeError('Unexpected non-string response');

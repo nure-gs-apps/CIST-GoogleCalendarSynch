@@ -6,7 +6,7 @@ import { TYPES } from '../../di/types';
 import { toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
 import {
-  ApiAuditory,
+  ApiRoom,
   ApiBuilding,
   ApiGroup,
 } from '../cist/types';
@@ -46,7 +46,7 @@ export class GoogleUtilsService {
   }
 
   isSameIdentity(
-    cistRoom: ApiAuditory,
+    cistRoom: ApiRoom,
     building: ApiBuilding,
     googleRoom: Schema$CalendarResource,
   ) {
@@ -57,7 +57,7 @@ export class GoogleUtilsService {
     return this.prependIdPrefix(`${buildingIdPrefix}.${toBase64(cistBuilding.id)}`);
   }
 
-  getRoomId(room: ApiAuditory, building: ApiBuilding) {
+  getRoomId(room: ApiRoom, building: ApiBuilding) {
     return this.prependIdPrefix(`${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`); // using composite id to ensure uniqueness
   }
 

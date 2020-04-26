@@ -6,7 +6,7 @@ import { TYPES } from '../../di/types';
 import { getFloornamesFromBuilding } from '../../utils/cist';
 import { arrayContentEqual } from '../../utils/common';
 import {
-  ApiAuditoriesResponse,
+  ApiRoomsResponse,
   ApiBuilding,
 } from '../cist/types';
 import { logger } from '../logger.service';
@@ -59,7 +59,7 @@ export class BuildingsService {
   }
 
   async ensureBuildings(
-    cistResponse: ApiAuditoriesResponse,
+    cistResponse: ApiRoomsResponse,
   ) {
     const buildings = await this.getAllBuildings();
 
@@ -112,7 +112,7 @@ export class BuildingsService {
     return Promise.all(promises);
   }
 
-  async deleteIrrelevant(cistResponse: ApiAuditoriesResponse) {
+  async deleteIrrelevant(cistResponse: ApiRoomsResponse) {
     const buildings = await this.getAllBuildings();
     return Promise.all(this.doDeleteByIds(
       buildings,
@@ -125,7 +125,7 @@ export class BuildingsService {
     ));
   }
 
-  async deleteRelevant(cistResponse: ApiAuditoriesResponse) {
+  async deleteRelevant(cistResponse: ApiRoomsResponse) {
     const buildings = await this.getAllBuildings();
     return Promise.all(this.doDeleteByIds(
       buildings,

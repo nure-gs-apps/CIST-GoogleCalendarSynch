@@ -59,7 +59,7 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
     getRoomsResponse() {
         return this._axios
             .get(CistJsonHttpClient_1.ROOMS_PATH)
-            .then(response => this._cistParser.parseAuditoriesResponse(response));
+            .then(response => this._cistParser.parseRoomsResponse(response));
     }
     getGroupsResponse() {
         return this._axios

@@ -68,7 +68,7 @@ export class CistJsonHttpClient implements ICistJsonClient {
   getRoomsResponse() {
     return this._axios
       .get(CistJsonHttpClient.ROOMS_PATH)
-      .then(response => this._cistParser.parseAuditoriesResponse(response));
+      .then(response => this._cistParser.parseRoomsResponse(response));
   }
 
   getGroupsResponse() {

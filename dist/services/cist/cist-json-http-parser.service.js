@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 let CistJsonHttpParserService = class CistJsonHttpParserService {
-    parseAuditoriesResponse(response) {
+    parseRoomsResponse(response) {
         const body = response.data;
         if (typeof body !== 'string') {
             throw new TypeError('Unexpected non-string response');

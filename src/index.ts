@@ -2,17 +2,26 @@
 import './polyfills';
 import iterate from 'iterare';
 import { EOL } from 'os';
-import { Arguments } from 'yargs';
-import { DeepPartial } from './@types';
+// import { Arguments } from 'yargs';
+// import { DeepPartial } from './@types';
 import {
   getFullConfig,
   getSupportedConfigExtensionsInPriorityOrder,
   initializeConfig,
 } from './config';
 import { getDefaultConfigDirectory } from './config/constants';
-import { getBasicCliConfiguration, IFullAppConfig } from './config/types';
-import { AssertCommand, EntityType } from './main';
+import {
+  getBasicCliConfiguration,
+  // IFullAppConfig
+} from './config/types';
+import {
+  AssertCommand,
+  assertHasEntities,
+  // EntityType,
+  IArgsWithEntities,
+} from './main';
 import { toPrintString } from './utils/common';
+// import { toPrintString } from './utils/common';
 
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
@@ -45,35 +54,62 @@ Lastly, command line arguments are used. They are described at the beginning of 
 const yargs = getBasicCliConfiguration()
   .usage(usage)
   .middleware(initializeMiddleware)
-  .command({
-    command: `check <${AssertCommand.entitiesArgName}..>`,
-    describe: 'Check responses.',
-    builder(yargs) {
-      return yargs.positional(AssertCommand.entitiesArgName, {
+  .command('cache', 'CIST Cache utilities', (yargs) => {
+    const groupsName = nameof<IArgsWithEntities>(a => a.groups);
+    const auditoriesName = nameof<IArgsWithEntities>(a => a.auditories);
+    const eventsName = nameof<IArgsWithEntities>(a => a.events);
+    return yargs
+      .option(groupsName, {
+        alias: groupsName[0],
+        description: 'Operate on groups',
+        type: 'boolean'
+      })
+      .option(auditoriesName, {
+        alias: auditoriesName[0],
+        description: 'Operate on auditories',
+        type: 'boolean'
+      })
+      .option(eventsName, {
+        alias: eventsName[0],
+        description: 'Operate on events. Supply "all", "" or nothing for all events. Supply list of coma-separated (no spaces) Group IDs to fetch events for',
         type: 'string',
-        demandOption: true,
-        describe: `Types of requests to assert [choices: ${toPrintString(AssertCommand.getValidAssertTypes())}]`,
-      });
-    },
-    handler(args: Arguments<DeepPartial<IFullAppConfig>>) {
-      // Workaround
-      type FixArgs =
-        AssertCommand.IOptions
-        & { entities: [string][] | EntityType[] };
-      const fixArgs: FixArgs = args as FixArgs;
-      fixArgs.entities = fixArgs.entities.map(t => Array.isArray(t)
-        ? t[0] as EntityType
-        : t);
-
-      AssertCommand.handle(
-        args as AssertCommand.IOptions,
-        getFullConfig()
-      ).catch(failStart);
-    },
+        coerce(value: any) {
+          const str = value as string;
+          if (str === '' || str === 'all') {
+            return [];
+          }
+          if (!value) {
+            return null;
+          }
+          const initialArgs = str.split(/\s*,\s*/);
+          const ids = iterate(initialArgs)
+            .map(v => Number.parseInt(v, 10))
+            .filter(v => !Number.isNaN(v))
+            .toArray();
+          if (ids.length === 0) {
+            throw new TypeError('No Group IDs parsed');
+          }
+          if (initialArgs.length !== ids.length) {
+            console.warn(`Only such IDs found: ${toPrintString(ids)}`);
+          }
+          return ids;
+        },
+        requiresArg: false,
+      })
+      .check(args => assertHasEntities(args as any))
+      .command({
+        command: 'assert',
+        describe: 'Check responses for validity',
+        handler(argv) {
+          AssertCommand.handle(argv as IArgsWithEntities, getFullConfig())
+            .catch(failStart);
+        }
+      })
+      .demandCommand(1);
   })
   .completion()
   .recommendCommands()
-  .demandCommand(1, 'Specify a command.')
+  .demandCommand(1)
   .help('help').alias('h', 'help')
   .showHelpOnFail(true);
 

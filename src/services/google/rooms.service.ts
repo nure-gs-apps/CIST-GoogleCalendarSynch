@@ -3,8 +3,8 @@ import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
 import { TYPES } from '../../di/types';
 import {
-  ApiAuditoriesResponse,
-  ApiAuditory,
+  ApiRoomsResponse,
+  ApiRoom,
 } from '../cist/types';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
@@ -57,7 +57,7 @@ export class RoomsService {
   }
 
   async ensureRooms(
-    cistResponse: ApiAuditoriesResponse,
+    cistResponse: ApiRoomsResponse,
     preserveNameChanges = false,
   ) {
     const rooms = await this.getAllRooms();
@@ -72,7 +72,7 @@ export class RoomsService {
           r => r.resourceId === cistRoomId,
         );
         if (googleRoom) {
-          const roomPatch = cistAuditoryToGoogleRoomPatch(
+          const roomPatch = cistRoomToGoogleRoomPatch(
             cistRoom,
             googleRoom,
             buildingId,
@@ -99,7 +99,7 @@ export class RoomsService {
           promises.push(
             this._insert({
               customer,
-              requestBody: cistAuditoryToInsertGoogleRoom(
+              requestBody: cistRoomToInsertGoogleRoom(
                 cistRoom,
                 buildingId,
                 cistRoomId,
@@ -125,7 +125,7 @@ export class RoomsService {
     return Promise.all(promises);
   }
 
-  async deleteIrrelevant(cistResponse: ApiAuditoriesResponse) {
+  async deleteIrrelevant(cistResponse: ApiRoomsResponse) {
     const rooms = await this.getAllRooms();
     return Promise.all(this.doDeleteByIds(
       rooms,
@@ -144,7 +144,7 @@ export class RoomsService {
     ));
   }
 
-  async deleteRelevant(cistResponse: ApiAuditoriesResponse) {
+  async deleteRelevant(cistResponse: ApiRoomsResponse) {
     const rooms = await this.getAllRooms();
     return Promise.all(this.doDeleteByIds(
       rooms,
@@ -202,8 +202,8 @@ export class RoomsService {
   }
 }
 
-function cistAuditoryToInsertGoogleRoom(
-  cistRoom: ApiAuditory,
+function cistRoomToInsertGoogleRoom(
+  cistRoom: ApiRoom,
   googleBuildingId: string,
   roomId: string,
 ) {
@@ -220,8 +220,8 @@ function cistAuditoryToInsertGoogleRoom(
   return room;
 }
 
-function cistAuditoryToGoogleRoomPatch(
-  cistRoom: ApiAuditory,
+function cistRoomToGoogleRoomPatch(
+  cistRoom: ApiRoom,
   googleRoom: Schema$CalendarResource,
   googleBuildingId: string,
 ) {

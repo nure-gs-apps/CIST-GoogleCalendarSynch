@@ -1,5 +1,5 @@
 import {
-  ApiAuditoriesResponse, ApiEventsResponse, ApiGroup,
+  ApiRoomsResponse, ApiEventsResponse, ApiGroup,
   ApiGroupsResponse,
 } from '../services/cist/types';
 
@@ -8,8 +8,8 @@ export type LogFunction = (message: string, ...args: any[]) => void;
 export function assertRoomsResponse(
   body: any,
   log: LogFunction = console.log,
-): body is ApiAuditoriesResponse {
-  const response = body as ApiAuditoriesResponse;
+): body is ApiRoomsResponse {
+  const response = body as ApiRoomsResponse;
   const responseOk = typeof response === 'object'
     && Object.keys(response).length === 1
     && typeof response.university === 'object';

@@ -3,9 +3,9 @@ import { Nullable } from '../../@types';
 import { CacheUtilsService } from '../cache-utils.service';
 import { CachedValueSource } from '../caching/cached-value-source';
 import { CistJsonHttpClient } from './cist-json-http-client.service';
-import { ApiAuditoriesResponse } from './types';
+import { ApiRoomsResponse } from './types';
 
-export class CistJsonHttpRoomsCachedValue extends CachedValueSource<ApiAuditoriesResponse> {
+export class CistJsonHttpRoomsCachedValue extends CachedValueSource<ApiRoomsResponse> {
   protected readonly _http: CistJsonHttpClient;
 
   constructor(
@@ -17,7 +17,7 @@ export class CistJsonHttpRoomsCachedValue extends CachedValueSource<ApiAuditorie
   }
 
   // tslint:disable-next-line:max-line-length
-  protected doLoadFromCache(): Promise<[Nullable<ApiAuditoriesResponse>, ReadonlyDate]> {
+  protected doLoadFromCache(): Promise<[Nullable<ApiRoomsResponse>, ReadonlyDate]> {
     return this._http.getRoomsResponse()
       .then(response => [response, this._utils.getMaxExpiration()]);
   }

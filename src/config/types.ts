@@ -133,7 +133,7 @@ export function assertConfigPrefixId() {
     && /^\w+$/.test(idPrefix)
   );
   if (!prefixIsValid) {
-    throw new TypeError('idPrefix must be a alphanumeral string or null to omit');
+    throw new TypeError('idPrefix must be a alphanumeric string or null to omit');
   }
 }
 

@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import { ICalendarConfig, Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
 import {
-  ApiAuditoriesResponse, ApiAuditory, ApiGroup,
+  ApiRoomsResponse, ApiRoom, ApiGroup,
   ApiGroupsResponse,
 } from '../cist/types';
 import { QuotaLimiterService } from '../quota-limiter.service';
@@ -71,7 +71,7 @@ export class CalendarService {
 
   async getEnsuredCalendars(
     groupsResponse: ApiGroupsResponse,
-    roomsResponse: ApiAuditoriesResponse,
+    roomsResponse: ApiRoomsResponse,
     newToOldGroupNames: Nullable<ReadonlyMap<string, string>>,
     newToOldRoomNames: Nullable<ReadonlyMap<string, string>>,
   ) {
@@ -213,7 +213,7 @@ export class CalendarService {
 
   private async getEnsuredRoomCalendar(
     calendars: ReadonlyArray<Schema$Calendar | Schema$CalendarListEntry>,
-    cistRoom: ApiAuditory,
+    cistRoom: ApiRoom,
     calendarMap: Map<string, Schema$Calendar | Schema$CalendarListEntry>,
     newToOldRoomNames: Nullable<ReadonlyMap<string, string>>,
   ) {

@@ -79,7 +79,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 const cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding);
                 const googleRoom = rooms.find(r => r.resourceId === cistRoomId);
                 if (googleRoom) {
-                    const roomPatch = cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
+                    const roomPatch = cistRoomToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
                     if (roomPatch) {
                         if (newToOldNames && roomPatch.resourceName) {
                             newToOldNames.set(roomPatch.resourceName, 
@@ -98,7 +98,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                     logger_service_1.logger.debug(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
                     promises.push(this._insert({
                         customer: constants_1.customer,
-                        requestBody: cistAuditoryToInsertGoogleRoom(cistRoom, buildingId, cistRoomId),
+                        requestBody: cistRoomToInsertGoogleRoom(cistRoom, buildingId, cistRoomId),
                     }));
                 }
             }
@@ -197,7 +197,7 @@ RoomsService = RoomsService_1 = tslib_1.__decorate([
         google_utils_service_1.GoogleUtilsService])
 ], RoomsService);
 exports.RoomsService = RoomsService;
-function cistAuditoryToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
+function cistRoomToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
     const room = {
         resourceId: roomId,
         buildingId: googleBuildingId,
@@ -210,7 +210,7 @@ function cistAuditoryToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
     };
     return room;
 }
-function cistAuditoryToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
+function cistRoomToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
     let hasChanges = false;
     const roomPatch = {};
     if (googleBuildingId !== googleRoom.buildingId) {

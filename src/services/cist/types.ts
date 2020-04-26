@@ -2,7 +2,7 @@ import { AxiosResponse } from 'axios';
 import { DeepReadonly, Nullable } from '../../@types';
 
 export interface ICistJsonClient {
-  getRoomsResponse(): Promise<ApiAuditoriesResponse>;
+  getRoomsResponse(): Promise<ApiRoomsResponse>;
   getGroupsResponse(): Promise<ApiGroupsResponse>;
   getEventsResponse(
     type: TimetableType,
@@ -12,7 +12,7 @@ export interface ICistJsonClient {
 }
 
 export interface ICistJsonHttpParserService {
-  parseAuditoriesResponse(response: AxiosResponse): ApiAuditoriesResponse;
+  parseRoomsResponse(response: AxiosResponse): ApiRoomsResponse;
   parseGroupsResponse(response: AxiosResponse): ApiGroupsResponse;
   parseEventsResponse(response: AxiosResponse): ApiEventsResponse;
 }
@@ -41,13 +41,13 @@ export class ThrowCistJsonClient implements ICistJsonClient {
     throw new TypeError('Cist Json Client is not found');
   }
 
-  getRoomsResponse(): Promise<ApiAuditoriesResponse> {
+  getRoomsResponse(): Promise<ApiRoomsResponse> {
     throw new TypeError('Cist Json Client is not found');
   }
 
 }
 
-export interface ApiAuditoriesResponse {
+export interface ApiRoomsResponse {
   university: {
     short_name: string;
     full_name: string;
@@ -76,18 +76,18 @@ export interface ApiBuilding {
   id: string; // the same as short_name, but don't rely
   short_name: string;
   full_name: string;
-  auditories: ApiAuditory[];
+  auditories: ApiRoom[];
 }
 
-export interface ApiAuditory {
+export interface ApiRoom {
   id: string;
   short_name: string;
   floor: string; // number in fact
   is_have_power: string; // string one or (presumably) zero
-  auditory_types: ApiAuditoryType[];
+  auditory_types: ApiRoomType[];
 }
 
-export interface ApiAuditoryType {
+export interface ApiRoomType {
   id: string;
   short_name: string; // (presumably) direction (branch)
 }

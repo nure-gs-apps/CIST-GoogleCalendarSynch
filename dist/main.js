@@ -2,20 +2,29 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 // IMPORTANT! INSTALLS MONKEY PATCHES
 require("./polyfills");
-const types_1 = require("./config/types");
-const container_1 = require("./di/container");
-const types_2 = require("./di/types");
+// import { createContainer, getContainerAsyncInitializer } from './di/container';
+// import { TYPES } from './di/types';
 // initialize exit handlers
 require("./services/exit-handler.service");
-const cached_cist_json_client_service_1 = require("./services/cist/cached-cist-json-client.service");
-const cist_json_http_client_service_1 = require("./services/cist/cist-json-http-client.service");
-const assert_responses_1 = require("./utils/assert-responses");
+// import { CachedCistJsonClientService } from './services/cist/cached-cist-json-client.service';
+// import { CistJsonHttpClient } from './services/cist/cist-json-http-client.service';
+// import {
+//   assertGroupsResponse,
+//   assertRoomsResponse,
+// } from './utils/assert-responses';
 const common_1 = require("./utils/common");
 var EntityType;
 (function (EntityType) {
     EntityType["Groups"] = "groups";
     EntityType["Rooms"] = "auditories";
 })(EntityType = exports.EntityType || (exports.EntityType = {}));
+function assertHasEntities(args) {
+    if (!args.groups && !args.auditories && !args.events) {
+        throw new TypeError('No entities selected. At least one of groups, auditories or events must be chosen');
+    }
+    return true;
+}
+exports.assertHasEntities = assertHasEntities;
 var AssertCommand;
 (function (AssertCommand) {
     AssertCommand.entitiesArgName = "entities";
@@ -29,39 +38,47 @@ var AssertCommand;
             throw new TypeError(`Types ${common_1.toPrintString(types)} must be within choices ${common_1.toPrintString(validTypes)}`);
         }
     }
+    AssertCommand.assertAssertTypes = assertAssertTypes;
     async function handle(args, config) {
-        assertAssertTypes(args.entities);
-        const assertTypes = args.entities;
-        const cacheConfig = config.ncgc.caching.cist;
-        const types = [cached_cist_json_client_service_1.CachedCistJsonClientService];
-        const checkRooms = assertTypes.includes(EntityType.Rooms);
-        const checkGroups = assertTypes.includes(EntityType.Groups);
-        if ((checkGroups
-            && cacheConfig.priorities.groups.includes(types_1.CacheType.Http))
-            || (checkRooms
-                && cacheConfig.priorities.auditories.includes(types_1.CacheType.Http))) {
-            types.push(cist_json_http_client_service_1.CistJsonHttpClient);
-        }
-        const container = container_1.createContainer({
-            types,
-            forceNew: true
-        });
-        container.bind(types_2.TYPES.CistJsonClient)
-            .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
-        await container_1.getContainerAsyncInitializer();
-        const cistClient = container
-            .get(types_2.TYPES.CistJsonClient);
-        let failure = false;
-        if (checkRooms) {
-            failure = failure
-                || !assert_responses_1.assertRoomsResponse(await cistClient.getRoomsResponse());
-        }
-        if (checkGroups) {
-            failure = failure
-                || !assert_responses_1.assertGroupsResponse(await cistClient.getGroupsResponse());
-        }
-        await cistClient.dispose();
-        process.exit(failure ? 1 : 0);
+        console.log(args);
+        // assertAssertTypes(args.entities);
+        // const assertTypes = args.entities;
+        // const cacheConfig = config.ncgc.caching.cist;
+        //
+        // const types: interfaces.Newable<any>[] = [CachedCistJsonClientService];
+        // const checkRooms = assertTypes.includes(EntityType.Rooms);
+        // const checkGroups = assertTypes.includes(EntityType.Groups);
+        // if ((
+        //     checkGroups
+        //     && cacheConfig.priorities.groups.includes(CacheType.Http)
+        //   )
+        //   || (
+        //     checkRooms
+        //     && cacheConfig.priorities.auditories.includes(CacheType.Http)
+        //   )) {
+        //   types.push(CistJsonHttpClient);
+        // }
+        // const container = createContainer({
+        //   types,
+        //   forceNew: true
+        // });
+        // container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
+        //   .to(CachedCistJsonClientService);
+        // await getContainerAsyncInitializer();
+        //
+        // const cistClient = container
+        //   .get<CachedCistJsonClientService>(TYPES.CistJsonClient);
+        // let failure = false;
+        // if (checkRooms) {
+        //   failure = failure
+        //     || !assertRoomsResponse(await cistClient.getRoomsResponse());
+        // }
+        // if (checkGroups) {
+        //   failure = failure
+        //     || !assertGroupsResponse(await cistClient.getGroupsResponse());
+        // }
+        // await cistClient.dispose();
+        // process.exit(failure ? 1 : 0);
     }
     AssertCommand.handle = handle;
 })(AssertCommand = exports.AssertCommand || (exports.AssertCommand = {}));

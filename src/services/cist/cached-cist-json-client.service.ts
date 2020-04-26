@@ -27,7 +27,7 @@ import { CistJsonHttpEventsCachedValue } from './cist-json-http-events-cached-va
 import { CistJsonHttpGroupsCachedValue } from './cist-json-http-groups-cached-value';
 import { CistJsonHttpRoomsCachedValue } from './cist-json-http-rooms-cached-value';
 import {
-  ApiAuditoriesResponse,
+  ApiRoomsResponse,
   ApiEventsResponse,
   ApiGroupsResponse,
   ICistJsonClient,
@@ -58,7 +58,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   // tslint:disable-next-line:max-line-length
   private _groupsCachedValue: Nullable<CachedValue<ApiGroupsResponse>>;
   // tslint:disable-next-line:max-line-length
-  private _roomsCachedValue: Nullable<CachedValue<ApiAuditoriesResponse>>;
+  private _roomsCachedValue: Nullable<CachedValue<ApiRoomsResponse>>;
 
   constructor(
     @inject(TYPES.CacheUtils) cacheUtils: CacheUtilsService,
@@ -144,7 +144,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     return response;
   }
 
-  async getRoomsResponse(): Promise<ApiAuditoriesResponse> {
+  async getRoomsResponse(): Promise<ApiRoomsResponse> {
     if (!this._roomsCachedValue) {
       this._roomsCachedValue = await this.createRoomsCachedValue();
     }
@@ -257,7 +257,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   }
 
   private async createRoomsCachedValue() {
-    let cachedValue: Nullable<CachedValue<ApiAuditoriesResponse>> = null;
+    let cachedValue: Nullable<CachedValue<ApiRoomsResponse>> = null;
     for (
       let i = this._cacheConfig.priorities.groups.length - 1,
         type = this._cacheConfig.priorities.groups[i];
@@ -283,7 +283,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
           break;
 
         case CacheType.File:
-          cachedValue = new FileCachedValue<ApiAuditoriesResponse>(
+          cachedValue = new FileCachedValue<ApiRoomsResponse>(
             this._cacheUtils,
             path.join(this._baseDirectory, getCacheFileName(RequestType.Rooms)),
           );
