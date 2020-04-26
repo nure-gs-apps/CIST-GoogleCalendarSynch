@@ -106,7 +106,7 @@ const yargs = getBasicCliConfiguration()
         }
       })
       .demandCommand(1);
-  })
+  }, () => { throw 'Valid command is required'; })
   .completion()
   .recommendCommands()
   .demandCommand(1)

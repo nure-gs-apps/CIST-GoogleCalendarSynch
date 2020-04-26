@@ -1,32 +1,33 @@
 // IMPORTANT! INSTALLS MONKEY PATCHES
-import './polyfills';
-// import { interfaces } from 'inversify';
+import { interfaces } from 'inversify';
+import iterate from 'iterare';
 import { Arguments } from 'yargs';
 import { DeepPartial, DeepReadonly, Nullable } from './@types';
+import { CacheType, IFullAppConfig } from './config/types';
+import { createContainer, getContainerAsyncInitializer } from './di/container';
+import { TYPES } from './di/types';
+import './polyfills';
+import { CachedCistJsonClientService } from './services/cist/cached-cist-json-client.service';
+import { CistJsonHttpClient } from './services/cist/cist-json-http-client.service';
 import {
-  // CacheType,
-  IFullAppConfig,
-} from './config/types';
-// import { createContainer, getContainerAsyncInitializer } from './di/container';
-// import { TYPES } from './di/types';
+  ApiGroup,
+  ApiGroupsResponse,
+  EntityType,
+  TimetableType,
+} from './services/cist/types';
 // initialize exit handlers
 import './services/exit-handler.service';
-// import { CachedCistJsonClientService } from './services/cist/cached-cist-json-client.service';
-// import { CistJsonHttpClient } from './services/cist/cist-json-http-client.service';
-// import {
-//   assertGroupsResponse,
-//   assertRoomsResponse,
-// } from './utils/assert-responses';
+import {
+  assertEventsResponse,
+  assertGroupsResponse,
+  assertRoomsResponse,
+} from './utils/assert-responses';
 import { toPrintString } from './utils/common';
-
-export enum EntityType {
-  Groups = 'groups', Rooms = 'auditories'
-}
 
 export interface IArgsWithEntities extends Arguments<DeepPartial<IFullAppConfig>> {
   groups: boolean;
   auditories: boolean;
-  events: Nullable<number[]>;
+  events: Nullable<number[]>; // empty means all
 }
 
 export function assertHasEntities(args: DeepReadonly<IArgsWithEntities>) {
@@ -37,68 +38,103 @@ export function assertHasEntities(args: DeepReadonly<IArgsWithEntities>) {
 }
 
 export namespace AssertCommand {
-  export interface IOptions extends Arguments<DeepPartial<IFullAppConfig>> {
-    entities: EntityType[];
-  }
-
-  export const entitiesArgName = nameof<IOptions>(o => o.entities);
-
-  export function getValidAssertTypes() {
-    return Object.values(EntityType) as EntityType[];
-  }
-
-  export function assertAssertTypes<T extends ReadonlyArray<unknown>>(
-    types: T
-  ): asserts types is T {
-    const validTypes = getValidAssertTypes();
-    if (types.filter((t: any) => !validTypes.includes(t)).length !== 0) {
-      throw new TypeError(`Types ${toPrintString(types)} must be within choices ${toPrintString(validTypes)}`);
-    }
-  }
 
   export async function handle(
     args: IArgsWithEntities,
     config: DeepReadonly<IFullAppConfig>
   ) {
-    console.log(args);
-    // assertAssertTypes(args.entities);
-    // const assertTypes = args.entities;
-    // const cacheConfig = config.ncgc.caching.cist;
-    //
-    // const types: interfaces.Newable<any>[] = [CachedCistJsonClientService];
-    // const checkRooms = assertTypes.includes(EntityType.Rooms);
-    // const checkGroups = assertTypes.includes(EntityType.Groups);
-    // if ((
-    //     checkGroups
-    //     && cacheConfig.priorities.groups.includes(CacheType.Http)
-    //   )
-    //   || (
-    //     checkRooms
-    //     && cacheConfig.priorities.auditories.includes(CacheType.Http)
-    //   )) {
-    //   types.push(CistJsonHttpClient);
-    // }
-    // const container = createContainer({
-    //   types,
-    //   forceNew: true
-    // });
-    // container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
-    //   .to(CachedCistJsonClientService);
-    // await getContainerAsyncInitializer();
-    //
-    // const cistClient = container
-    //   .get<CachedCistJsonClientService>(TYPES.CistJsonClient);
-    // let failure = false;
-    // if (checkRooms) {
-    //   failure = failure
-    //     || !assertRoomsResponse(await cistClient.getRoomsResponse());
-    // }
-    // if (checkGroups) {
-    //   failure = failure
-    //     || !assertGroupsResponse(await cistClient.getGroupsResponse());
-    // }
-    // await cistClient.dispose();
-    // process.exit(failure ? 1 : 0);
+    const cacheConfig = config.ncgc.caching.cist;
+
+    const types: interfaces.Newable<any>[] = [CachedCistJsonClientService];
+    if ((
+        args.groups
+        && cacheConfig.priorities.groups.includes(CacheType.Http)
+      )
+      || (
+        args.auditories
+        && cacheConfig.priorities.auditories.includes(CacheType.Http)
+      )
+      || (
+        args.events
+        && cacheConfig.priorities.events.includes(CacheType.Http)
+      )) {
+      types.push(CistJsonHttpClient);
+    }
+    const container = createContainer({
+      types,
+      forceNew: true
+    });
+    container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
+      .to(CachedCistJsonClientService);
+    await getContainerAsyncInitializer();
+
+    const cistClient = container
+      .get<CachedCistJsonClientService>(TYPES.CistJsonClient);
+    const failures = new Map<EntityType, number[]>();
+    if (args.auditories) {
+      failures.set(
+        EntityType.Rooms,
+        assertRoomsResponse(await cistClient.getRoomsResponse()) ? [] : [0],
+      );
+    }
+    let groupsResponse: Nullable<ApiGroupsResponse> = null;
+    if (args.groups) {
+      groupsResponse = await cistClient.getGroupsResponse();
+      failures.set(
+        EntityType.Groups,
+        assertGroupsResponse(groupsResponse) ? [] : [0],
+      );
+    }
+    if (args.events) {
+      let groupIds: Iterable<number>;
+      if (args.events.length === 0) {
+        if (!groupsResponse) {
+          groupsResponse = await cistClient.getGroupsResponse();
+        }
+        groupIds = iterate(groupsResponse.university.faculties)
+          .map(f => f.directions)
+          .flatten()
+          .filter(d => !!d.groups)
+          .map(d => d.groups as ApiGroup[])
+          .flatten()
+          .map(g => g.id);
+      } else {
+        groupIds = args.events;
+      }
+      const eventFailures = [];
+      for (const groupId of groupIds) {
+        const events = await cistClient.getEventsResponse(
+          TimetableType.GROUP,
+          groupId,
+        );
+        if (!assertEventsResponse(events)) {
+          eventFailures.push(groupId);
+        }
+      }
+      failures.set(EntityType.Events, eventFailures);
+    }
+    await cistClient.dispose();
+
+    console.info('Results:');
+    let ids = failures.get(EntityType.Rooms);
+    if (ids) {
+      console.info(ids.length === 0
+        ? 'Auditories response is valid'
+        : 'Auditories response is NOT valid');
+    }
+    ids = failures.get(EntityType.Groups);
+    if (ids) {
+      console.info(ids.length === 0
+        ? 'Groups response is valid'
+        : 'Groups response is NOT valid');
+    }
+    ids = failures.get(EntityType.Events);
+    if (ids) {
+      console.info(ids.length === 0
+        ? 'All Events responses are valid'
+        : `Responses for such Group IDs are not valid: ${toPrintString(ids)}`);
+    }
+    process.exit(iterate(failures.values()).every(a => a.length === 0) ? 0 : 1);
   }
 }
 

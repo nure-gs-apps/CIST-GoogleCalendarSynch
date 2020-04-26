@@ -222,7 +222,7 @@ export function assertEventsResponse(
   for (const teacher of response.teachers) {
     const teacherOk = typeof teacher === 'object'
       && Object.keys(teacher).length === 3
-      && typeof teacher.id === 'string'
+      && typeof teacher.id === 'number'
       && typeof teacher.short_name === 'string'
       && typeof teacher.full_name === 'string';
     log(`teacher ${teacher.short_name} is ok: ${teacherOk}`);
@@ -236,8 +236,8 @@ export function assertEventsResponse(
     const subjectOk = typeof subject === 'object'
       && Object.keys(subject).length === 4
       && typeof subject.id === 'number'
-      && typeof subject.brief === 'number'
-      && typeof subject.title === 'number'
+      && typeof subject.brief === 'string'
+      && typeof subject.title === 'string'
       && Array.isArray(subject.hours);
     log(`subject ${subject.brief} is ok: ${subjectOk}`);
     if (!subjectOk) {

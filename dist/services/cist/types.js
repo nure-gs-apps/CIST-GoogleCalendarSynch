@@ -1,5 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var EntityType;
+(function (EntityType) {
+    EntityType["Events"] = "events";
+    EntityType["Groups"] = "groups";
+    EntityType["Rooms"] = "rooms";
+})(EntityType = exports.EntityType || (exports.EntityType = {}));
 class ThrowCistJsonClient {
     constructor() {
     }

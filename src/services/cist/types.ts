@@ -1,6 +1,12 @@
 import { AxiosResponse } from 'axios';
 import { DeepReadonly, Nullable } from '../../@types';
 
+export enum EntityType {
+  Events= 'events',
+  Groups = 'groups',
+  Rooms = 'rooms'
+}
+
 export interface ICistJsonClient {
   getRoomsResponse(): Promise<ApiRoomsResponse>;
   getGroupsResponse(): Promise<ApiGroupsResponse>;
@@ -131,7 +137,7 @@ export interface ApiEvent {
 }
 
 export interface ApiTeacher {
-  id: string;
+  id: number;
   short_name: string;
   full_name: string;
 }

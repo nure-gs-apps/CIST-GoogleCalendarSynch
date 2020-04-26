@@ -33,14 +33,8 @@ import {
   ICistJsonClient,
   IDateLimits,
   IEventsQueryParams,
-  TimetableType,
+  TimetableType, EntityType,
 } from './types';
-
-enum RequestType {
-  Events= 'events',
-  Groups = 'groups',
-  Rooms = 'rooms'
-}
 
 @injectable()
 export class CachedCistJsonClientService implements ICistJsonClient, IAsyncInitializable, IDisposable {
@@ -155,7 +149,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     return response;
   }
 
-  async clearEventsCache(): Promise<void> {
+  async destroyEventsCache(): Promise<void> {
     for (const cachedValue of this._eventsCachedValues.values()) {
       await cachedValue.dispose();
     }
@@ -190,7 +184,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     }
   }
 
-  async clearGroupsCache(): Promise<void> {
+  async destroyGroupsCache(): Promise<void> {
     if (!this._groupsCachedValue) {
       this._groupsCachedValue = await this.createGroupsCachedValue();
     }
@@ -198,7 +192,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     this._groupsCachedValue = null;
   }
 
-  async clearRoomsCache(): Promise<void> {
+  async destroyRoomsCache(): Promise<void> {
     if (!this._roomsCachedValue) {
       this._roomsCachedValue = await this.createRoomsCachedValue();
     }
@@ -224,7 +218,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
             this._cacheUtils,
             this._http
           );
-          if (!cachedValue.needsSource) {
+          if (!cachedValue.needsSource && oldCachedValue) {
             throw new TypeError(g('HTTP requests must be last in the cache chain'));
           }
           if (!cachedValue.isInitialized) {
@@ -237,7 +231,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
             this._cacheUtils,
             path.join(
               this._baseDirectory,
-              getCacheFileName(RequestType.Groups),
+              getCacheFileName(EntityType.Groups),
             ),
           );
           if (!cachedValue.isInitialized) {
@@ -259,10 +253,10 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   private async createRoomsCachedValue() {
     let cachedValue: Nullable<CachedValue<ApiRoomsResponse>> = null;
     for (
-      let i = this._cacheConfig.priorities.groups.length - 1,
-        type = this._cacheConfig.priorities.groups[i];
+      let i = this._cacheConfig.priorities.auditories.length - 1,
+        type = this._cacheConfig.priorities.auditories[i];
       i >= 0;
-      i -= 1, type = this._cacheConfig.priorities.groups[i]
+      i -= 1, type = this._cacheConfig.priorities.auditories[i]
     ) {
       const oldCachedValue = cachedValue;
       switch (type) {
@@ -274,7 +268,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
             this._cacheUtils,
             this._http
           );
-          if (!cachedValue.needsSource) {
+          if (!cachedValue.needsSource && oldCachedValue) {
             throw new TypeError(r('HTTP requests must be last in the cache chain'));
           }
           if (!cachedValue.isInitialized) {
@@ -285,7 +279,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
         case CacheType.File:
           cachedValue = new FileCachedValue<ApiRoomsResponse>(
             this._cacheUtils,
-            path.join(this._baseDirectory, getCacheFileName(RequestType.Rooms)),
+            path.join(this._baseDirectory, getCacheFileName(EntityType.Rooms)),
           );
           if (!cachedValue.isInitialized) {
             await cachedValue.init();
@@ -308,10 +302,10 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   ) {
     let cachedValue: Nullable<CachedValue<ApiEventsResponse>> = null;
     for (
-      let i = this._cacheConfig.priorities.groups.length - 1,
-        type = this._cacheConfig.priorities.groups[i];
+      let i = this._cacheConfig.priorities.events.length - 1,
+        type = this._cacheConfig.priorities.events[i];
       i >= 0;
-      i -= 1, type = this._cacheConfig.priorities.groups[i]
+      i -= 1, type = this._cacheConfig.priorities.events[i]
     ) {
       const oldCachedValue = cachedValue;
       switch (type) {
@@ -324,7 +318,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
             this._http,
             params,
           );
-          if (!cachedValue.needsSource) {
+          if (!cachedValue.needsSource && oldCachedValue) {
             throw new TypeError(e('HTTP requests must be last in the cache chain'));
           }
           if (!cachedValue.isInitialized) {
@@ -337,7 +331,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
             this._cacheUtils,
             path.join(
               this._baseDirectory,
-              getCacheFileName(RequestType.Events, params),
+              getCacheFileName(EntityType.Events, params),
             ),
           );
           if (!cachedValue.isInitialized) {
@@ -363,24 +357,26 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
 
 const separator = '.';
 function getCacheFileName(
-  type: RequestType.Events,
+  type: EntityType.Events,
   options: DeepReadonly<IEventsQueryParams>
 ): string;
-function getCacheFileName(type: RequestType.Groups | RequestType.Rooms): string;
+function getCacheFileName(type: EntityType.Groups | EntityType.Rooms): string;
 function getCacheFileName(
-  type: RequestType,
+  type: EntityType,
   options?: DeepReadonly<IEventsQueryParams>,
 ) {
   let hash = type.toString();
   if (options) {
-    hash += getEventsCacheFileNamePart(options);
+    hash += separator + getEventsCacheFileNamePart(options);
   }
   return `${hash}.tmp`;
 }
 
 function getEventsCacheFileNamePart(options: DeepReadonly<IEventsQueryParams>) {
   let hash = options.typeId.toString() + separator + options.entityId;
-  if (options.dateLimits) {
+  if (options.dateLimits && (
+    options.dateLimits.from || options.dateLimits.to
+  )) {
     hash += separator;
     if (options.dateLimits.from) {
       hash += dateToSeconds(options.dateLimits.from);
@@ -392,7 +388,7 @@ function getEventsCacheFileNamePart(options: DeepReadonly<IEventsQueryParams>) {
   return hash;
 }
 
-const fileNameRegex = new RegExp(`^${RequestType.Events}\.[1-3]\.\\d+(\.\\d*\.\\d*)?\.tmp`);
+const fileNameRegex = new RegExp(`^${EntityType.Events}\\.[1-3]\\.\\d+(\\.(\\d*\\.\\d+|\\d+\\.))?\\.tmp$`);
 function isEventsCacheFile(fileName: string) {
   return fileNameRegex.test(fileName);
 }

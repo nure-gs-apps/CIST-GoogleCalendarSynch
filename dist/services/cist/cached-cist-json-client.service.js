@@ -16,12 +16,7 @@ const file_cached_value_1 = require("../caching/file-cached-value");
 const cist_json_http_events_cached_value_1 = require("./cist-json-http-events-cached-value");
 const cist_json_http_groups_cached_value_1 = require("./cist-json-http-groups-cached-value");
 const cist_json_http_rooms_cached_value_1 = require("./cist-json-http-rooms-cached-value");
-var RequestType;
-(function (RequestType) {
-    RequestType["Events"] = "events";
-    RequestType["Groups"] = "groups";
-    RequestType["Rooms"] = "rooms";
-})(RequestType || (RequestType = {}));
+const types_3 = require("./types");
 let CachedCistJsonClientService = class CachedCistJsonClientService {
     constructor(cacheUtils, cacheConfig, 
     // tslint:disable-next-line:max-line-length
@@ -164,7 +159,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         }
         return response;
     }
-    async clearEventsCache() {
+    async destroyEventsCache() {
         for (const cachedValue of this._eventsCachedValues.values()) {
             await cachedValue.dispose();
         }
@@ -197,14 +192,14 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             throw new errors_1.MultiError('Multiple exceptions happened', errors);
         }
     }
-    async clearGroupsCache() {
+    async destroyGroupsCache() {
         if (!this._groupsCachedValue) {
             this._groupsCachedValue = await this.createGroupsCachedValue();
         }
         await common_1.destroyChain(this._groupsCachedValue);
         this._groupsCachedValue = null;
     }
-    async clearRoomsCache() {
+    async destroyRoomsCache() {
         if (!this._roomsCachedValue) {
             this._roomsCachedValue = await this.createRoomsCachedValue();
         }
@@ -221,7 +216,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                         throw new TypeError(g('An initialized CIST HTTP client is required'));
                     }
                     cachedValue = new cist_json_http_groups_cached_value_1.CistJsonHttpGroupsCachedValue(this._cacheUtils, this._http);
-                    if (!cachedValue.needsSource) {
+                    if (!cachedValue.needsSource && oldCachedValue) {
                         throw new TypeError(g('HTTP requests must be last in the cache chain'));
                     }
                     if (!cachedValue.isInitialized) {
@@ -229,7 +224,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                     }
                     break;
                 case types_1.CacheType.File:
-                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(RequestType.Groups)));
+                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(types_3.EntityType.Groups)));
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -246,7 +241,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
     }
     async createRoomsCachedValue() {
         let cachedValue = null;
-        for (let i = this._cacheConfig.priorities.groups.length - 1, type = this._cacheConfig.priorities.groups[i]; i >= 0; i -= 1, type = this._cacheConfig.priorities.groups[i]) {
+        for (let i = this._cacheConfig.priorities.auditories.length - 1, type = this._cacheConfig.priorities.auditories[i]; i >= 0; i -= 1, type = this._cacheConfig.priorities.auditories[i]) {
             const oldCachedValue = cachedValue;
             switch (type) {
                 case types_1.CacheType.Http:
@@ -254,7 +249,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                         throw new TypeError(r('An initialized CIST HTTP client is required'));
                     }
                     cachedValue = new cist_json_http_rooms_cached_value_1.CistJsonHttpRoomsCachedValue(this._cacheUtils, this._http);
-                    if (!cachedValue.needsSource) {
+                    if (!cachedValue.needsSource && oldCachedValue) {
                         throw new TypeError(r('HTTP requests must be last in the cache chain'));
                     }
                     if (!cachedValue.isInitialized) {
@@ -262,7 +257,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                     }
                     break;
                 case types_1.CacheType.File:
-                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(RequestType.Rooms)));
+                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(types_3.EntityType.Rooms)));
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -279,7 +274,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
     }
     async createEventsCachedValue(params) {
         let cachedValue = null;
-        for (let i = this._cacheConfig.priorities.groups.length - 1, type = this._cacheConfig.priorities.groups[i]; i >= 0; i -= 1, type = this._cacheConfig.priorities.groups[i]) {
+        for (let i = this._cacheConfig.priorities.events.length - 1, type = this._cacheConfig.priorities.events[i]; i >= 0; i -= 1, type = this._cacheConfig.priorities.events[i]) {
             const oldCachedValue = cachedValue;
             switch (type) {
                 case types_1.CacheType.Http:
@@ -287,7 +282,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                         throw new TypeError(e('An initialized CIST HTTP client is required'));
                     }
                     cachedValue = new cist_json_http_events_cached_value_1.CistJsonHttpEventsCachedValue(this._cacheUtils, this._http, params);
-                    if (!cachedValue.needsSource) {
+                    if (!cachedValue.needsSource && oldCachedValue) {
                         throw new TypeError(e('HTTP requests must be last in the cache chain'));
                     }
                     if (!cachedValue.isInitialized) {
@@ -295,7 +290,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                     }
                     break;
                 case types_1.CacheType.File:
-                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(RequestType.Events, params)));
+                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(types_3.EntityType.Events, params)));
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -327,13 +322,13 @@ const separator = '.';
 function getCacheFileName(type, options) {
     let hash = type.toString();
     if (options) {
-        hash += getEventsCacheFileNamePart(options);
+        hash += separator + getEventsCacheFileNamePart(options);
     }
     return `${hash}.tmp`;
 }
 function getEventsCacheFileNamePart(options) {
     let hash = options.typeId.toString() + separator + options.entityId;
-    if (options.dateLimits) {
+    if (options.dateLimits && (options.dateLimits.from || options.dateLimits.to)) {
         hash += separator;
         if (options.dateLimits.from) {
             hash += common_1.dateToSeconds(options.dateLimits.from);
@@ -344,7 +339,7 @@ function getEventsCacheFileNamePart(options) {
     }
     return hash;
 }
-const fileNameRegex = new RegExp(`^${RequestType.Events}\.[1-3]\.\\d+(\.\\d*\.\\d*)?\.tmp`);
+const fileNameRegex = new RegExp(`^${types_3.EntityType.Events}\\.[1-3]\\.\\d+(\\.(\\d*\\.\\d+|\\d+\\.))?\\.tmp$`);
 function isEventsCacheFile(fileName) {
     return fileNameRegex.test(fileName);
 }

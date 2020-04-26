@@ -12,7 +12,7 @@ import {
 } from './types';
 
 interface IQueryParams {
-  api_key: string;
+  idClient: string;
   type_id: TimetableType;
   timetable_id: string | number;
   time_from?: number;
@@ -23,7 +23,7 @@ interface IQueryParams {
 //   const newParams = {
 //     type_id: params.type_id,
 //     timetable_id: params.timetable_id,
-//     api_key: params.api_key,
+//     idClient: params.idClient,
 //   } as IQueryParams;
 //   if (params.time_from) {
 //     newParams.time_from = params.time_from;
@@ -83,7 +83,7 @@ export class CistJsonHttpClient implements ICistJsonClient {
     dateLimits?: DeepReadonly<IDateLimits>,
   ) {
     const queryParams: IQueryParams = {
-      api_key: this._apiKey,
+      idClient: this._apiKey,
       type_id: type,
       timetable_id: entityId,
     };

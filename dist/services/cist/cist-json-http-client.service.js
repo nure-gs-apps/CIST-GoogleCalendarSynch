@@ -11,7 +11,7 @@ const common_1 = require("../../utils/common");
 //   const newParams = {
 //     type_id: params.type_id,
 //     timetable_id: params.timetable_id,
-//     api_key: params.api_key,
+//     idClient: params.idClient,
 //   } as IQueryParams;
 //   if (params.time_from) {
 //     newParams.time_from = params.time_from;
@@ -68,7 +68,7 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
     }
     getEventsResponse(type, entityId, dateLimits) {
         const queryParams = {
-            api_key: this._apiKey,
+            idClient: this._apiKey,
             type_id: type,
             timetable_id: entityId,
         };
