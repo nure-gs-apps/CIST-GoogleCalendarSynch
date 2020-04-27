@@ -1,15 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+// IMPORTANT! INSTALLS MONKEY PATCHES
+require("./polyfills");
 const iterare_1 = require("iterare");
 const types_1 = require("./config/types");
 const container_1 = require("./di/container");
 const types_2 = require("./di/types");
-require("./polyfills");
 const cached_cist_json_client_service_1 = require("./services/cist/cached-cist-json-client.service");
 const cist_json_http_client_service_1 = require("./services/cist/cist-json-http-client.service");
 const types_3 = require("./services/cist/types");
 // initialize exit handlers
-require("./services/exit-handler.service");
 const exit_handler_service_1 = require("./services/exit-handler.service");
 const assert_responses_1 = require("./utils/assert-responses");
 const common_1 = require("./utils/common");
@@ -101,7 +101,9 @@ var AssertCommand;
                 ? 'All Events responses are valid'
                 : `Responses for such Group IDs are not valid: ${common_1.toPrintString(ids)}`);
         }
-        process.exit(iterare_1.default(failures.values()).every(a => a.length === 0) ? 0 : 1);
+        exit_handler_service_1.exitGracefully(iterare_1.default(failures.values()).every(a => a.length === 0)
+            ? 0
+            : 1);
     }
     AssertCommand.handle = handle;
 })(AssertCommand = exports.AssertCommand || (exports.AssertCommand = {}));

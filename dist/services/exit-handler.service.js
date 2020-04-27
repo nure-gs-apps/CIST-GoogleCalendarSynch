@@ -165,17 +165,18 @@ function removeListeners() {
 async function execHandlers() {
     if (handled) {
         logger_service_1.logger.info('Process exit handlers are being executed. Waiting...');
+        return;
     }
+    handled = list.length > 0;
     if (list.length > 0) {
+        logger_service_1.logger.info('The process is running exit handlers...');
         const timeout = setTimeout(() => {
             logger_service_1.logger.error('The process exited due to too long wait for exit handlers!');
             process.exit(1);
         }, 3000);
-        logger_service_1.logger.info('The process is running exit handlers...');
         for (const handler of list) {
             await handler();
         }
-        handled = true;
         clearTimeout(timeout);
     }
 }

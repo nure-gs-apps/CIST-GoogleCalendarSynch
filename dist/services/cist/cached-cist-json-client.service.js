@@ -15,7 +15,7 @@ const cache_utils_service_1 = require("../cache-utils.service");
 const file_cached_value_1 = require("../caching/file-cached-value");
 const cist_json_http_events_cached_value_1 = require("./cist-json-http-events-cached-value");
 const cist_json_http_groups_cached_value_1 = require("./cist-json-http-groups-cached-value");
-const cist_json_http_rooms_cached_value_1 = require("./cist-json-http-rooms-cached-value");
+// import { CistJsonHttpRoomsCachedValue } from './cist-json-http-rooms-cached-value';
 const types_3 = require("./types");
 let CachedCistJsonClientService = class CachedCistJsonClientService {
     constructor(cacheUtils, cacheConfig, 
@@ -245,16 +245,24 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             const oldCachedValue = cachedValue;
             switch (type) {
                 case types_1.CacheType.Http:
-                    if (!this._http) {
-                        throw new TypeError(r('An initialized CIST HTTP client is required'));
-                    }
-                    cachedValue = new cist_json_http_rooms_cached_value_1.CistJsonHttpRoomsCachedValue(this._cacheUtils, this._http);
-                    if (!cachedValue.needsSource && oldCachedValue) {
-                        throw new TypeError(r('HTTP requests must be last in the cache chain'));
-                    }
+                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, '/var/tmp/ncgc/cache/cist/rooms.tmp.tmp');
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
+                    await cachedValue.setSource(oldCachedValue);
+                    // if (!this._http) {
+                    //   throw new TypeError(r('An initialized CIST HTTP client is required'));
+                    // }
+                    // cachedValue = new CistJsonHttpRoomsCachedValue(
+                    //   this._cacheUtils,
+                    //   this._http
+                    // );
+                    // if (!cachedValue.needsSource && oldCachedValue) {
+                    //   throw new TypeError(r('HTTP requests must be last in the cache chain'));
+                    // }
+                    // if (!cachedValue.isInitialized) {
+                    //   await cachedValue.init();
+                    // }
                     break;
                 case types_1.CacheType.File:
                     cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(types_3.EntityType.Rooms)));

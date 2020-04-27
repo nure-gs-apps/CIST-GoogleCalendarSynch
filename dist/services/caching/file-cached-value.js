@@ -108,9 +108,6 @@ class FileCachedValue extends cached_value_1.CachedValue {
         if (!this._file) {
             throw new TypeError(this.t('Invalid state, file is not loaded'));
         }
-        // const { contents, found } = await fReadUntil(this._file, expirationSeparatorBuffer, 0);
-        // const b = contents.toString(encoding);
-        // console.log(b, found);
         const fileContents = await fs_1.fReadFile(this._file, encoding);
         const separatorIndex = fileContents.indexOf(expirationSeparator);
         if (separatorIndex < 0) {
@@ -177,7 +174,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
             expirationBuffer,
             expirationSeparatorBuffer,
         ]);
-        await this._file.write(bufferToWrite, 0, encoding);
+        await this._file.write(bufferToWrite, 0, bufferToWrite.length, 0);
         return bufferToWrite.length;
     }
     parseExpiration(fileContent) {

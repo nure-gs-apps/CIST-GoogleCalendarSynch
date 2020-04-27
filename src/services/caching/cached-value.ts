@@ -1,3 +1,4 @@
+import { Sema } from 'async-sema/lib';
 import { EventEmitter } from 'events';
 import { ReadonlyDate } from 'readonly-date';
 import { asReadonly, IDisposable, Nullable } from '../../@types';
@@ -16,6 +17,7 @@ export interface IReadonlyCachedValue<T> extends ICacheEventEmitter<T>, IDisposa
   readonly isDestroyable: boolean;
   readonly needsInit: boolean;
   readonly expiration: ReadonlyDate;
+  readonly backgroundTask: Nullable<Promise<any>>;
   init(): Promise<boolean>;
   loadValue(): Promise<Nullable<T>>;
   loadFromCache(): Promise<Nullable<T>>;
@@ -36,7 +38,7 @@ export interface ICacheEventEmitter<T> {
 
 export type CacheClearedListener = () => void;
 export type CacheUpdatedListener<T> = (
-  value: T, expiration: ReadonlyDate
+  value: T, expiration: ReadonlyDate, requester?: unknown
 ) => void;
 export type SourceChangedListener<T> = (
   newCache: Nullable<CachedValue<T>>, oldCache: Nullable<CachedValue<T>>
@@ -85,6 +87,8 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   private readonly clearListener: CacheClearedListener;
   private readonly updateListener: CacheUpdatedListener<T>;
   private readonly errorListener: CacheErrorListener<T>;
+  private readonly _initSema: Sema;
+  private _backgroundTask: Nullable<Promise<any>>;
 
   get source(): Nullable<CachedValue<T>> {
     if (!this.needsSource) {
@@ -105,6 +109,10 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     return !this.isInitialized;
   }
 
+  get backgroundTask() {
+    return this._backgroundTask;
+  }
+
   get [Symbol.toStringTag]() {
     return CachedValue.name;
   }
@@ -116,28 +124,34 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     this._source = null;
     this._expiration = this._utils.getMaxExpiration();
     this._isInitialized = false;
+    this._initSema = new Sema(1);
+    this._backgroundTask = null;
 
     this._clearTimeout = null;
     this.clearListener = () => throwAsyncIfAny(
-      () => this.clearCache(),
+      () => this.queueBackgroundTask(this.clearCache()),
       error => this.emit(
         'error',
         new CachedValueError(error, this, CacheEvent.CacheCleared),
       )
     ).catch(error => this.emit('error', error));
-    this.updateListener = (value, expiration) => throwAsyncIfAny(
-      () => this.saveValue(value, expiration)
-        .catch(this._saveValueErrorHandler)
-        .then(() => {
-          return this.doSetExpiration(expiration, value !== null);
-        }).then(() => {
-          this.emit(CacheEvent.CacheUpdated, value, this._expiration);
-        }),
-      error => this.emit(
-        'error',
-        new CachedValueError(error, this, CacheEvent.CacheUpdated),
-      )
-    ).catch(error => this.emit('error', error));
+    this.updateListener = (value, expiration, requester) => {
+      if (requester !== this) {
+        throwAsyncIfAny(
+          () => this.queueBackgroundTask(this.saveValue(value, expiration)
+            .catch(this._saveValueErrorHandler)
+            .then(() => {
+              return this.doSetExpiration(expiration, value !== null);
+            }).then(() => {
+              this.emit(CacheEvent.CacheUpdated, value, this._expiration);
+            })),
+          error => this.emit(
+            'error',
+            new CachedValueError(error, this, CacheEvent.CacheUpdated),
+          )
+        ).catch(error => this.emit('error', error));
+      }
+    };
     this.errorListener = error => {
       if (error instanceof CachedValueError) {
         this.emit('error', error.sourceEvent === 'error'
@@ -178,19 +192,27 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async init(): Promise<boolean> {
-    const shouldInit = this.needsInit && !this.isInitialized;
-    if (shouldInit) {
-      await this.doInit().catch(error => {
-        throw new NestedError(this.t('failed to initialize'), error);
-      });
-      this._expiration = this._utils.clampExpiration(
-        await this.loadExpirationFromCache().catch(error => {
-          throw new NestedError(this.t('failed load expiration from cache'), error);
-        })
-      );
-      this._isInitialized = true;
+    await this._initSema.acquire();
+    try {
+      const shouldInit = this.needsInit && !this.isInitialized;
+      if (shouldInit) {
+        await this.doInit().catch(error => {
+          throw new NestedError(this.t('failed to initialize'), error);
+        });
+        await this.doSetExpiration(this._utils.clampExpiration(
+          await this.loadExpirationFromCache().catch(error => {
+            throw new NestedError(
+              this.t('failed load expiration from cache'),
+              error
+            );
+          })
+        ));
+        this._isInitialized = true;
+      }
+      return shouldInit;
+    } finally {
+      await this._initSema.release();
     }
-    return shouldInit;
   }
 
   async setSource(
@@ -220,7 +242,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       this._source.on(CacheEvent.CacheCleared, this.clearListener);
       this._source.on('error', this.errorListener);
       if (loadValue) {
-        const value = await this._source.loadValue();
+        const value = await this._source.loadValueWithRequester(this);
         const shouldSetExpiration = (
           this._expiration.valueOf() < this._source.expiration.valueOf()
         );
@@ -259,9 +281,13 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     return true;
   }
 
-  async loadValue() {
+  public loadValue() {
+    return this.loadValueWithRequester(this);
+  }
+
+  protected async loadValueWithRequester(requester: any) {
     this.assertInitialized();
-    const tuple = await this.doLoadValue().catch(error => {
+    const tuple = await this.doLoadValue(requester).catch(error => {
       throw new NestedError(this.t('failed to load value'), error);
     });
     tuple[1] = this._utils.clampExpiration(
@@ -272,10 +298,15 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     if (expiration.valueOf() < this._expiration.valueOf()) {
       await this.doSetExpiration(expiration, newValue !== null);
       if (this._expiration.valueOf() > Date.now()) {
-        this.emit(CacheEvent.CacheUpdated, newValue, this._expiration);
+        this.emit(
+          CacheEvent.CacheUpdated,
+          newValue,
+          this._expiration,
+          requester,
+        );
       }
     } else {
-      this.emit(CacheEvent.CacheUpdated, newValue, this._expiration);
+      this.emit(CacheEvent.CacheUpdated, newValue, this._expiration, requester);
     }
     return newValue;
   }
@@ -294,11 +325,17 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async dispose() {
-    if (this.isDisposed) {
-      return;
+    await this._initSema.acquire();
+    try {
+      if (this.isDisposed) {
+        return;
+      }
+      await this._backgroundTask;
+      await this.doDispose();
+      this._isInitialized = false;
+    } finally {
+      await this._initSema.release();
     }
-    await this.doDispose();
-    this._isInitialized = false;
   }
 
   async destroy() {
@@ -317,7 +354,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   // virtual - intercept entire load sequence
-  protected async doLoadValue(): Promise<[Nullable<T>, ReadonlyDate]> {
+  protected async doLoadValue(
+    requester?: any
+  ): Promise<[Nullable<T>, ReadonlyDate]> {
     const cachedTuple = await this.doLoadFromCache()
       .catch(this._doLoadFromCacheErrorHandler);
     if (cachedTuple[0] !== null && cachedTuple[1].valueOf() >= Date.now()) {
@@ -340,7 +379,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     if (!source) {
       throw new TypeError(this.t('source is not set'));
     }
-    const value = await source.loadValue();
+    const value = await source.loadValueWithRequester(this);
     await this.saveValue(value, source.expiration)
       .catch(this._saveValueErrorHandler);
     return [value, source.expiration];
@@ -369,7 +408,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     newDate: ReadonlyDate,
     hasValue?: boolean
   ) {
-    if (hasValue !== undefined) {
+    if (hasValue === undefined) {
       // tslint:disable-next-line:no-parameter-reassignment
       hasValue = await this.hasCachedValue().catch(error => {
         throw new NestedError(this.t('failed check if has cached value'), error);
@@ -384,7 +423,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     }
     const now = Date.now();
     if (newDate.valueOf() > now) {
-      if (!hasValue) {
+      if (hasValue) {
         this._clearTimeout = setTimeout(() => throwAsyncIfAny(
           () => this.clearCache(),
           error => new CachedValueError(
@@ -406,5 +445,19 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   protected t(message: string) {
     return `${this[Symbol.toStringTag]}: ${message}`;
+  }
+
+  private queueBackgroundTask(task: Promise<any>) {
+    const newTask = Promise.resolve( // To ensure that Bluebird is used
+      this._backgroundTask
+      ? this._backgroundTask.finally(() => task)
+      : task
+    ).finally(() => {
+      if (newTask === this._backgroundTask) {
+        this._backgroundTask = null;
+      }
+    });
+    this._backgroundTask = newTask;
+    return task;
   }
 }

@@ -1,4 +1,5 @@
 // IMPORTANT! INSTALLS MONKEY PATCHES
+import './polyfills';
 import { interfaces } from 'inversify';
 import iterate from 'iterare';
 import { Arguments } from 'yargs';
@@ -6,7 +7,6 @@ import { DeepPartial, DeepReadonly, Nullable } from './@types';
 import { CacheType, IFullAppConfig } from './config/types';
 import { createContainer, getContainerAsyncInitializer } from './di/container';
 import { TYPES } from './di/types';
-import './polyfills';
 import { CachedCistJsonClientService } from './services/cist/cached-cist-json-client.service';
 import { CistJsonHttpClient } from './services/cist/cist-json-http-client.service';
 import {
@@ -16,8 +16,10 @@ import {
   TimetableType,
 } from './services/cist/types';
 // initialize exit handlers
-import './services/exit-handler.service';
-import { bindOnExitHandler } from './services/exit-handler.service';
+import {
+  bindOnExitHandler,
+  exitGracefully,
+} from './services/exit-handler.service';
 import {
   assertEventsResponse,
   assertGroupsResponse,
@@ -139,7 +141,9 @@ export namespace AssertCommand {
         ? 'All Events responses are valid'
         : `Responses for such Group IDs are not valid: ${toPrintString(ids)}`);
     }
-    process.exit(iterate(failures.values()).every(a => a.length === 0) ? 0 : 1);
+    exitGracefully(iterate(failures.values()).every(a => a.length === 0)
+      ? 0
+      : 1);
   }
 }
 
