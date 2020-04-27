@@ -342,10 +342,15 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     if (!this.isDestroyable) {
       return false;
     }
-    this.assertInitialized();
-    await this.dispose();
-    await this.doDestroy();
-    return true;
+    await this._initSema.acquire();
+    try {
+      this.assertInitialized();
+      await this.dispose();
+      await this.doDestroy();
+      return true;
+    } finally {
+      await this._initSema.release();
+    }
   }
 
   // virtual
