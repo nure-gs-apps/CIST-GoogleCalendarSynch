@@ -71,6 +71,7 @@ class List {
 }
 
 const list = new List();
+let handled = false;
 type SignalListenerWithCode = (
   signal: NodeJS.Signals,
   exitCode?: number,
@@ -129,11 +130,11 @@ function initListeners() {
       process.exit(exitCode);
     });
   };
-  process.once('SIGINT', onSignalHandler);
-  process.once('SIGTERM', onSignalHandler);
-  process.once('SIGQUIT', onSignalHandler);
-  process.once('SIGHUP', onSignalHandler);
-  process.once('SIGBREAK', onSignalHandler);
+  process.on('SIGINT', onSignalHandler);
+  process.on('SIGTERM', onSignalHandler);
+  process.on('SIGQUIT', onSignalHandler);
+  process.on('SIGHUP', onSignalHandler);
+  process.on('SIGBREAK', onSignalHandler);
 }
 
 function removeListeners() {
@@ -148,15 +149,19 @@ function removeListeners() {
 }
 
 async function execHandlers() {
+  if (handled) {
+    logger.info('Process exit handlers are being executed. Waiting...');
+  }
   if (list.length > 0) {
     const timeout = setTimeout(() => {
       logger.error('The process exited due to too long wait for exit handlers!');
       process.exit(1);
-    }, 1000);
+    }, 3000);
     logger.info('The process is running exit handlers...');
     for (const handler of list) {
       await handler();
     }
+    handled = true;
     clearTimeout(timeout);
   }
 }

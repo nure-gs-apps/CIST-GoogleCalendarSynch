@@ -3,6 +3,7 @@ var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const _types_1 = require("../../@types");
+const errors_1 = require("../../errors");
 const common_1 = require("../../utils/common");
 var CacheEvent;
 (function (CacheEvent) {
@@ -79,6 +80,18 @@ class CachedValue extends events_1.EventEmitter {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "_saveValueErrorHandler", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_doLoadFromCacheErrorHandler", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "_source", {
             enumerable: true,
             configurable: true,
@@ -128,7 +141,9 @@ class CachedValue extends events_1.EventEmitter {
         this._isInitialized = false;
         this._clearTimeout = null;
         this.clearListener = () => common_1.throwAsyncIfAny(() => this.clearCache(), error => this.emit('error', new CachedValueError(error, this, CacheEvent.CacheCleared))).catch(error => this.emit('error', error));
-        this.updateListener = (value, expiration) => common_1.throwAsyncIfAny(() => this.saveValue(value, expiration).then(() => {
+        this.updateListener = (value, expiration) => common_1.throwAsyncIfAny(() => this.saveValue(value, expiration)
+            .catch(this._saveValueErrorHandler)
+            .then(() => {
             return this.doSetExpiration(expiration, value !== null);
         }).then(() => {
             this.emit(CacheEvent.CacheUpdated, value, this._expiration);
@@ -142,6 +157,12 @@ class CachedValue extends events_1.EventEmitter {
             else {
                 this.emit('error', error);
             }
+        };
+        this._saveValueErrorHandler = error => {
+            throw new errors_1.NestedError(this.t('failed to save value'), error);
+        };
+        this._doLoadFromCacheErrorHandler = error => {
+            throw new errors_1.NestedError(this.t('failed to load from cache'), error);
         };
     }
     get source() {
@@ -179,8 +200,12 @@ class CachedValue extends events_1.EventEmitter {
     async init() {
         const shouldInit = this.needsInit && !this.isInitialized;
         if (shouldInit) {
-            await this.doInit();
-            this._expiration = this._utils.clampExpiration(await this.loadExpirationFromCache());
+            await this.doInit().catch(error => {
+                throw new errors_1.NestedError(this.t('failed to initialize'), error);
+            });
+            this._expiration = this._utils.clampExpiration(await this.loadExpirationFromCache().catch(error => {
+                throw new errors_1.NestedError(this.t('failed load expiration from cache'), error);
+            }));
             this._isInitialized = true;
         }
         return shouldInit;
@@ -214,7 +239,8 @@ class CachedValue extends events_1.EventEmitter {
                     ? this._source.expiration
                     : this._expiration;
                 if (value !== null) {
-                    await this.saveValue(value, newExpiration);
+                    await this.saveValue(value, newExpiration)
+                        .catch(this._saveValueErrorHandler);
                     this.emit(CacheEvent.CacheUpdated, value, newExpiration);
                 }
                 if (shouldSetExpiration) {
@@ -227,7 +253,9 @@ class CachedValue extends events_1.EventEmitter {
     }
     async clearCache() {
         var _b, _c;
-        if (!await this.doClearCache()) {
+        if (!await this.doClearCache().catch(error => {
+            throw new errors_1.NestedError(this.t('failed to clear cache'), error);
+        })) {
             return false;
         }
         this.emit(CacheEvent.CacheCleared);
@@ -240,7 +268,9 @@ class CachedValue extends events_1.EventEmitter {
     async loadValue() {
         var _b, _c;
         this.assertInitialized();
-        const tuple = await this.doLoadValue();
+        const tuple = await this.doLoadValue().catch(error => {
+            throw new errors_1.NestedError(this.t('failed to load value'), error);
+        });
         tuple[1] = this._utils.clampExpiration(tuple[1], (_c = (_b = this._source) === null || _b === void 0 ? void 0 : _b.expiration) !== null && _c !== void 0 ? _c : this._utils.getMaxExpiration());
         const [newValue, expiration] = tuple;
         if (expiration.valueOf() < this._expiration.valueOf()) {
@@ -257,7 +287,8 @@ class CachedValue extends events_1.EventEmitter {
     async loadFromCache() {
         var _b, _c;
         this.assertInitialized();
-        const tuple = await this.doLoadFromCache();
+        const tuple = await this.doLoadFromCache()
+            .catch(this._doLoadFromCacheErrorHandler);
         tuple[1] = this._utils.clampExpiration(tuple[1], (_c = (_b = this._source) === null || _b === void 0 ? void 0 : _b.expiration) !== null && _c !== void 0 ? _c : this._utils.getMaxExpiration());
         const [value, expiration] = tuple;
         await this.doSetExpiration(expiration, value !== null);
@@ -285,7 +316,8 @@ class CachedValue extends events_1.EventEmitter {
     }
     // virtual - intercept entire load sequence
     async doLoadValue() {
-        const cachedTuple = await this.doLoadFromCache();
+        const cachedTuple = await this.doLoadFromCache()
+            .catch(this._doLoadFromCacheErrorHandler);
         if (cachedTuple[0] !== null && cachedTuple[1].valueOf() >= Date.now()) {
             return cachedTuple;
         }
@@ -301,7 +333,8 @@ class CachedValue extends events_1.EventEmitter {
             throw new TypeError(this.t('source is not set'));
         }
         const value = await source.loadValue();
-        await this.saveValue(value, source.expiration);
+        await this.saveValue(value, source.expiration)
+            .catch(this._saveValueErrorHandler);
         return [value, source.expiration];
     }
     doDispose() {
@@ -317,7 +350,9 @@ class CachedValue extends events_1.EventEmitter {
     async doSetExpiration(newDate, hasValue) {
         if (hasValue !== undefined) {
             // tslint:disable-next-line:no-parameter-reassignment
-            hasValue = await this.hasCachedValue();
+            hasValue = await this.hasCachedValue().catch(error => {
+                throw new errors_1.NestedError(this.t('failed check if has cached value'), error);
+            });
         }
         if (newDate.valueOf() === this._expiration.valueOf()) {
             return;
@@ -332,7 +367,9 @@ class CachedValue extends events_1.EventEmitter {
                 this._clearTimeout = setTimeout(() => common_1.throwAsyncIfAny(() => this.clearCache(), error => new CachedValueError(error, this, CacheEvent.CacheCleared)).catch(error => this.emit('error', error)), now - newDate.valueOf());
             }
         }
-        await this.updateExpiration(this._expiration);
+        await this.updateExpiration(this._expiration).catch(error => {
+            throw new errors_1.NestedError(this.t('failed to set new expiration'), error);
+        });
     }
     assertInitialized() {
         if (!this.isInitialized) {

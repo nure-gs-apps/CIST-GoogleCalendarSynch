@@ -90,6 +90,7 @@ class List {
     }
 }
 const list = new List();
+let handled = false;
 let onSignalHandler = null;
 const errorHandler = (err, p) => {
     if (p) {
@@ -145,11 +146,11 @@ function initListeners() {
             process.exit(exitCode);
         });
     };
-    process.once('SIGINT', onSignalHandler);
-    process.once('SIGTERM', onSignalHandler);
-    process.once('SIGQUIT', onSignalHandler);
-    process.once('SIGHUP', onSignalHandler);
-    process.once('SIGBREAK', onSignalHandler);
+    process.on('SIGINT', onSignalHandler);
+    process.on('SIGTERM', onSignalHandler);
+    process.on('SIGQUIT', onSignalHandler);
+    process.on('SIGHUP', onSignalHandler);
+    process.on('SIGBREAK', onSignalHandler);
 }
 function removeListeners() {
     if (onSignalHandler) {
@@ -162,15 +163,19 @@ function removeListeners() {
     onSignalHandler = null;
 }
 async function execHandlers() {
+    if (handled) {
+        logger_service_1.logger.info('Process exit handlers are being executed. Waiting...');
+    }
     if (list.length > 0) {
         const timeout = setTimeout(() => {
             logger_service_1.logger.error('The process exited due to too long wait for exit handlers!');
             process.exit(1);
-        }, 1000);
+        }, 3000);
         logger_service_1.logger.info('The process is running exit handlers...');
         for (const handler of list) {
             await handler();
         }
+        handled = true;
         clearTimeout(timeout);
     }
 }

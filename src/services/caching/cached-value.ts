@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { ReadonlyDate } from 'readonly-date';
 import { asReadonly, IDisposable, Nullable } from '../../@types';
+import { NestedError } from '../../errors';
 import { throwAsyncIfAny } from '../../utils/common';
 import { CacheUtilsService } from '../cache-utils.service';
 
@@ -70,7 +71,11 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   abstract readonly needsSource: boolean;
   abstract readonly isDestroyable: boolean;
   abstract readonly needsInit: boolean;
+
   protected readonly _utils: CacheUtilsService;
+
+  protected readonly _saveValueErrorHandler: (error: any) => never;
+  protected readonly _doLoadFromCacheErrorHandler: (error: any) => never;
 
   private _source: Nullable<CachedValue<T>>;
   private _expiration: ReadonlyDate;
@@ -121,11 +126,13 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       )
     ).catch(error => this.emit('error', error));
     this.updateListener = (value, expiration) => throwAsyncIfAny(
-      () => this.saveValue(value, expiration).then(() => {
-        return this.doSetExpiration(expiration, value !== null);
-      }).then(() => {
-        this.emit(CacheEvent.CacheUpdated, value, this._expiration);
-      }),
+      () => this.saveValue(value, expiration)
+        .catch(this._saveValueErrorHandler)
+        .then(() => {
+          return this.doSetExpiration(expiration, value !== null);
+        }).then(() => {
+          this.emit(CacheEvent.CacheUpdated, value, this._expiration);
+        }),
       error => this.emit(
         'error',
         new CachedValueError(error, this, CacheEvent.CacheUpdated),
@@ -144,6 +151,12 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       } else {
         this.emit('error', error);
       }
+    };
+    this._saveValueErrorHandler = error => {
+      throw new NestedError(this.t('failed to save value'), error);
+    };
+    this._doLoadFromCacheErrorHandler = error => {
+      throw new NestedError(this.t('failed to load from cache'), error);
     };
   }
 
@@ -167,9 +180,13 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   async init(): Promise<boolean> {
     const shouldInit = this.needsInit && !this.isInitialized;
     if (shouldInit) {
-      await this.doInit();
+      await this.doInit().catch(error => {
+        throw new NestedError(this.t('failed to initialize'), error);
+      });
       this._expiration = this._utils.clampExpiration(
-        await this.loadExpirationFromCache()
+        await this.loadExpirationFromCache().catch(error => {
+          throw new NestedError(this.t('failed load expiration from cache'), error);
+        })
       );
       this._isInitialized = true;
     }
@@ -211,7 +228,8 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
           ? this._source.expiration
           : this._expiration;
         if (value !== null) {
-          await this.saveValue(value, newExpiration);
+          await this.saveValue(value, newExpiration)
+            .catch(this._saveValueErrorHandler);
           this.emit(CacheEvent.CacheUpdated, value, newExpiration);
         }
         if (shouldSetExpiration) {
@@ -227,7 +245,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async clearCache(): Promise<boolean> {
-    if (!await this.doClearCache()) {
+    if (!await this.doClearCache().catch(error => {
+      throw new NestedError(this.t('failed to clear cache'), error);
+    })) {
       return false;
     }
     this.emit(CacheEvent.CacheCleared);
@@ -241,7 +261,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   async loadValue() {
     this.assertInitialized();
-    const tuple = await this.doLoadValue();
+    const tuple = await this.doLoadValue().catch(error => {
+      throw new NestedError(this.t('failed to load value'), error);
+    });
     tuple[1] = this._utils.clampExpiration(
       tuple[1],
       this._source?.expiration ?? this._utils.getMaxExpiration()
@@ -260,7 +282,8 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   async loadFromCache(): Promise<Nullable<T>> {
     this.assertInitialized();
-    const tuple = await this.doLoadFromCache();
+    const tuple = await this.doLoadFromCache()
+      .catch(this._doLoadFromCacheErrorHandler);
     tuple[1] = this._utils.clampExpiration(
       tuple[1],
     this._source?.expiration ?? this._utils.getMaxExpiration()
@@ -295,7 +318,8 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   // virtual - intercept entire load sequence
   protected async doLoadValue(): Promise<[Nullable<T>, ReadonlyDate]> {
-    const cachedTuple = await this.doLoadFromCache();
+    const cachedTuple = await this.doLoadFromCache()
+      .catch(this._doLoadFromCacheErrorHandler);
     if (cachedTuple[0] !== null && cachedTuple[1].valueOf() >= Date.now()) {
       return cachedTuple;
     }
@@ -317,7 +341,8 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       throw new TypeError(this.t('source is not set'));
     }
     const value = await source.loadValue();
-    await this.saveValue(value, source.expiration);
+    await this.saveValue(value, source.expiration)
+      .catch(this._saveValueErrorHandler);
     return [value, source.expiration];
   }
 
@@ -346,7 +371,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   ) {
     if (hasValue !== undefined) {
       // tslint:disable-next-line:no-parameter-reassignment
-      hasValue = await this.hasCachedValue();
+      hasValue = await this.hasCachedValue().catch(error => {
+        throw new NestedError(this.t('failed check if has cached value'), error);
+      });
     }
     if (newDate.valueOf() === this._expiration.valueOf()) {
       return;
@@ -366,7 +393,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
         ).catch(error => this.emit('error', error)), now - newDate.valueOf());
       }
     }
-    await this.updateExpiration(this._expiration);
+    await this.updateExpiration(this._expiration).catch(error => {
+      throw new NestedError(this.t('failed to set new expiration'), error);
+    });
   }
 
   private assertInitialized() {
