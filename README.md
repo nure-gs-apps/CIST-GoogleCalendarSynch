@@ -14,6 +14,5 @@ scopes: https://www.googleapis.com/auth/admin.directory.resource.calendar,https:
 client id from enabled delegation in service account
 
 TODO:
-- add enable api step
 - process errors: https://developers.google.com/admin-sdk/directory/v1/limits
 - handle backendError
