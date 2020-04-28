@@ -38,7 +38,7 @@ export interface ICacheEventEmitter<T> {
 
 export type CacheClearedListener = () => void;
 export type CacheUpdatedListener<T> = (
-  value: T, expiration: ReadonlyDate, requester?: unknown
+  value: T, expiration: ReadonlyDate, requesters: unknown[]
 ) => void;
 export type SourceChangedListener<T> = (
   newCache: Nullable<CachedValue<T>>, oldCache: Nullable<CachedValue<T>>
@@ -76,7 +76,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   protected readonly _utils: CacheUtilsService;
 
-  protected readonly _saveValueErrorHandler: (error: any) => never;
+  protected readonly _doSaveValueErrorHandler: (error: any) => never;
   protected readonly _doLoadFromCacheErrorHandler: (error: any) => never;
 
   private _source: Nullable<CachedValue<T>>;
@@ -135,16 +135,14 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
         new CachedValueError(error, this, CacheEvent.CacheCleared),
       )
     ).catch(error => this.emit('error', error));
-    this.updateListener = (value, expiration, requester) => {
-      if (requester !== this) {
+    this.updateListener = (value, expiration, requesters) => {
+      if (requesters.includes(this)) {
         throwAsyncIfAny(
-          () => this.queueBackgroundTask(this.saveValue(value, expiration)
-            .catch(this._saveValueErrorHandler)
-            .then(() => {
-              return this.doSetExpiration(expiration, value !== null);
-            }).then(() => {
-              this.emit(CacheEvent.CacheUpdated, value, this._expiration);
-            })),
+          () => this.queueBackgroundTask(this.saveValue(
+            value,
+            expiration,
+            requesters,
+          )).catch(this._doSaveValueErrorHandler),
           error => this.emit(
             'error',
             new CachedValueError(error, this, CacheEvent.CacheUpdated),
@@ -166,7 +164,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
         this.emit('error', error);
       }
     };
-    this._saveValueErrorHandler = error => {
+    this._doSaveValueErrorHandler = error => {
       throw new NestedError(this.t('failed to save value'), error);
     };
     this._doLoadFromCacheErrorHandler = error => {
@@ -242,24 +240,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       this._source.on(CacheEvent.CacheCleared, this.clearListener);
       this._source.on('error', this.errorListener);
       if (loadValue) {
-        const value = await this._source.loadValueWithRequester(this);
-        const shouldSetExpiration = (
-          this._expiration.valueOf() < this._source.expiration.valueOf()
-        );
-        const newExpiration = shouldSetExpiration
-          ? this._source.expiration
-          : this._expiration;
-        if (value !== null) {
-          await this.saveValue(value, newExpiration)
-            .catch(this._saveValueErrorHandler);
-          this.emit(CacheEvent.CacheUpdated, value, newExpiration);
-        }
-        if (shouldSetExpiration) {
-          await this.doSetExpiration(
-            this._source.expiration,
-            value !== null
-          );
-        }
+        await this._source.loadValueWithRequester([this]);
       }
     }
     this.emit(CacheEvent.SourceChanged, this._source, oldSource);
@@ -282,12 +263,12 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   public loadValue() {
-    return this.loadValueWithRequester(this);
+    return this.loadValueWithRequester([this]);
   }
 
-  protected async loadValueWithRequester(requester: any) {
+  protected async loadValueWithRequester(requesters: unknown[]) {
     this.assertInitialized();
-    const tuple = await this.doLoadValue(requester).catch(error => {
+    const tuple = await this.doLoadValue(requesters).catch(error => {
       throw new NestedError(this.t('failed to load value'), error);
     });
     tuple[1] = this._utils.clampExpiration(
@@ -295,18 +276,23 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       this._source?.expiration ?? this._utils.getMaxExpiration()
     );
     const [newValue, expiration] = tuple;
+    await this.doSetExpiration(expiration, newValue !== null);
     if (expiration.valueOf() < this._expiration.valueOf()) {
-      await this.doSetExpiration(expiration, newValue !== null);
       if (this._expiration.valueOf() > Date.now()) {
         this.emit(
           CacheEvent.CacheUpdated,
           newValue,
           this._expiration,
-          requester,
+          requesters,
         );
       }
     } else {
-      this.emit(CacheEvent.CacheUpdated, newValue, this._expiration, requester);
+      this.emit(
+        CacheEvent.CacheUpdated,
+        newValue,
+        this._expiration,
+        requesters,
+      );
     }
     return newValue;
   }
@@ -360,14 +346,14 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   // virtual - intercept entire load sequence
   protected async doLoadValue(
-    requester?: any
+    requesters: unknown[]
   ): Promise<[Nullable<T>, ReadonlyDate]> {
     const cachedTuple = await this.doLoadFromCache()
       .catch(this._doLoadFromCacheErrorHandler);
     if (cachedTuple[0] !== null && cachedTuple[1].valueOf() >= Date.now()) {
       return cachedTuple;
     }
-    return this.loadValueFromSource();
+    return this.loadValueFromSource(requesters);
   }
 
   protected abstract doLoadFromCache(): Promise<[Nullable<T>, ReadonlyDate]>;
@@ -379,14 +365,17 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
 
   protected abstract loadExpirationFromCache(): Promise<ReadonlyDate>;
 
-  protected async loadValueFromSource(): Promise<[Nullable<T>, ReadonlyDate]> {
+  protected async loadValueFromSource(
+    requesters: unknown[]
+  ): Promise<[Nullable<T>, ReadonlyDate]> {
     const source = this._source;
     if (!source) {
       throw new TypeError(this.t('source is not set'));
     }
-    const value = await source.loadValueWithRequester(this);
-    await this.saveValue(value, source.expiration)
-      .catch(this._saveValueErrorHandler);
+    requesters.push(this);
+    const value = await source.loadValueWithRequester(requesters);
+    await this.saveValue(value, source.expiration, requesters)
+      .catch(this._doSaveValueErrorHandler);
     return [value, source.expiration];
   }
 
@@ -398,8 +387,17 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     return Promise.resolve();
   }
 
+  protected async saveValue(
+    value: Nullable<T>, expiration: ReadonlyDate, requesters: unknown[]
+  ) {
+    await this.doSaveValue(value, expiration)
+      .catch(this._doSaveValueErrorHandler);
+    await this.doSetExpiration(expiration, value !== null);
+    this.emit(CacheEvent.CacheUpdated, value, this._expiration, requesters);
+  }
+
   // virtual
-  protected saveValue(
+  protected doSaveValue(
     value: Nullable<T>, expiration: ReadonlyDate
   ): Promise<void> {
     return Promise.resolve();
@@ -416,7 +414,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     if (hasValue === undefined) {
       // tslint:disable-next-line:no-parameter-reassignment
       hasValue = await this.hasCachedValue().catch(error => {
-        throw new NestedError(this.t('failed check if has cached value'), error);
+        throw new NestedError(this.t('failed to check if has cached value'), error);
       });
     }
     if (newDate.valueOf() === this._expiration.valueOf()) {

@@ -116,7 +116,7 @@ export class FileCachedValue<T> extends CachedValue<T> {
     return [JSON.parse(stringValue), expiration];
   }
 
-  protected async saveValue(
+  protected async doSaveValue(
     value: T | null,
     expiration: ReadonlyDate,
   ): Promise<void> {

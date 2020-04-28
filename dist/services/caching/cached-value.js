@@ -156,10 +156,10 @@ class CachedValue extends events_1.EventEmitter {
         this._backgroundTask = null;
         this._clearTimeout = null;
         this.clearListener = () => common_1.throwAsyncIfAny(() => this.queueBackgroundTask(this.clearCache()), error => this.emit('error', new CachedValueError(error, this, CacheEvent.CacheCleared))).catch(error => this.emit('error', error));
-        this.updateListener = (value, expiration, requester) => {
-            if (requester !== this) {
+        this.updateListener = (value, expiration, requesters) => {
+            if (requesters.includes(this)) {
                 common_1.throwAsyncIfAny(() => this.queueBackgroundTask(this.saveValue(value, expiration)
-                    .catch(this._saveValueErrorHandler)
+                    .catch(this._doSaveValueErrorHandler)
                     .then(() => {
                     return this.doSetExpiration(expiration, value !== null);
                 }).then(() => {
@@ -177,7 +177,7 @@ class CachedValue extends events_1.EventEmitter {
                 this.emit('error', error);
             }
         };
-        this._saveValueErrorHandler = error => {
+        this._doSaveValueErrorHandler = error => {
             throw new errors_1.NestedError(this.t('failed to save value'), error);
         };
         this._doLoadFromCacheErrorHandler = error => {
@@ -261,14 +261,14 @@ class CachedValue extends events_1.EventEmitter {
             this._source.on(CacheEvent.CacheCleared, this.clearListener);
             this._source.on('error', this.errorListener);
             if (loadValue) {
-                const value = await this._source.loadValueWithRequester(this);
+                const value = await this._source.loadValueWithRequester([this]);
                 const shouldSetExpiration = (this._expiration.valueOf() < this._source.expiration.valueOf());
                 const newExpiration = shouldSetExpiration
                     ? this._source.expiration
                     : this._expiration;
                 if (value !== null) {
                     await this.saveValue(value, newExpiration)
-                        .catch(this._saveValueErrorHandler);
+                        .catch(this._doSaveValueErrorHandler);
                     this.emit(CacheEvent.CacheUpdated, value, newExpiration);
                 }
                 if (shouldSetExpiration) {
@@ -294,12 +294,12 @@ class CachedValue extends events_1.EventEmitter {
         return true;
     }
     loadValue() {
-        return this.loadValueWithRequester(this);
+        return this.loadValueWithRequester([this]);
     }
-    async loadValueWithRequester(requester) {
+    async loadValueWithRequester(requesters) {
         var _b, _c;
         this.assertInitialized();
-        const tuple = await this.doLoadValue(requester).catch(error => {
+        const tuple = await this.doLoadValue(requesters).catch(error => {
             throw new errors_1.NestedError(this.t('failed to load value'), error);
         });
         tuple[1] = this._utils.clampExpiration(tuple[1], (_c = (_b = this._source) === null || _b === void 0 ? void 0 : _b.expiration) !== null && _c !== void 0 ? _c : this._utils.getMaxExpiration());
@@ -307,11 +307,11 @@ class CachedValue extends events_1.EventEmitter {
         if (expiration.valueOf() < this._expiration.valueOf()) {
             await this.doSetExpiration(expiration, newValue !== null);
             if (this._expiration.valueOf() > Date.now()) {
-                this.emit(CacheEvent.CacheUpdated, newValue, this._expiration, requester);
+                this.emit(CacheEvent.CacheUpdated, newValue, this._expiration, requesters);
             }
         }
         else {
-            this.emit(CacheEvent.CacheUpdated, newValue, this._expiration, requester);
+            this.emit(CacheEvent.CacheUpdated, newValue, this._expiration, requesters);
         }
         return newValue;
     }
@@ -359,26 +359,27 @@ class CachedValue extends events_1.EventEmitter {
         return Promise.resolve();
     }
     // virtual - intercept entire load sequence
-    async doLoadValue(requester) {
+    async doLoadValue(requesters) {
         const cachedTuple = await this.doLoadFromCache()
             .catch(this._doLoadFromCacheErrorHandler);
         if (cachedTuple[0] !== null && cachedTuple[1].valueOf() >= Date.now()) {
             return cachedTuple;
         }
-        return this.loadValueFromSource();
+        return this.loadValueFromSource(requesters);
     }
     // virtual
     updateExpiration(date) {
         return Promise.resolve();
     }
-    async loadValueFromSource() {
+    async loadValueFromSource(requesters) {
         const source = this._source;
         if (!source) {
             throw new TypeError(this.t('source is not set'));
         }
-        const value = await source.loadValueWithRequester(this);
+        requesters.push(this);
+        const value = await source.loadValueWithRequester(requesters);
         await this.saveValue(value, source.expiration)
-            .catch(this._saveValueErrorHandler);
+            .catch(this._doSaveValueErrorHandler);
         return [value, source.expiration];
     }
     doDispose() {

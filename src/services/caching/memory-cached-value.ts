@@ -48,4 +48,12 @@ export class MemoryCachedValue<T> extends CachedValue<T> {
   protected loadExpirationFromCache(): Promise<ReadonlyDate> {
     return Promise.resolve(this._utils.getMaxExpiration());
   }
+
+  protected doSaveValue(
+    value: Nullable<T>,
+    expiration: ReadonlyDate,
+  ): Promise<void> {
+    this._value = value;
+    return Promise.resolve();
+  }
 }
