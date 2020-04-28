@@ -125,11 +125,9 @@ class FileCachedValue extends cached_value_1.CachedValue {
             throw new TypeError(this.t('Invalid state, file is not loaded'));
         }
         const bytesWritten = await this.writeExpiration(expiration, false);
+        await this._file.truncate(bytesWritten);
         if (value !== null) {
             await this._file.write(JSON.stringify(value), bytesWritten, encoding);
-        }
-        else {
-            await this._file.truncate(bytesWritten);
         }
     }
     hasCachedValue() {

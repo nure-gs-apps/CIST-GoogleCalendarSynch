@@ -343,10 +343,16 @@ class CachedValue extends events_1.EventEmitter {
         if (!this.isDestroyable) {
             return false;
         }
-        this.assertInitialized();
-        await this.dispose();
-        await this.doDestroy();
-        return true;
+        await this._initSema.acquire();
+        try {
+            this.assertInitialized();
+            await this.dispose();
+            await this.doDestroy();
+            return true;
+        }
+        finally {
+            await this._initSema.release();
+        }
     }
     // virtual
     doInit() {
