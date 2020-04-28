@@ -157,8 +157,11 @@ class CachedValue extends events_1.EventEmitter {
         this._clearTimeout = null;
         this.clearListener = () => common_1.throwAsyncIfAny(() => this.queueBackgroundTask(this.clearCache()), error => this.emit('error', new CachedValueError(error, this, CacheEvent.CacheCleared))).catch(error => this.emit('error', error));
         this.updateListener = (value, expiration, requesters) => {
-            if (requesters.includes(this)) {
+            if (!requesters.includes(this)) {
                 common_1.throwAsyncIfAny(() => this.queueBackgroundTask(this.saveValue(value, expiration, requesters)).catch(this._doSaveValueErrorHandler), error => this.emit('error', new CachedValueError(error, this, CacheEvent.CacheUpdated))).catch(error => this.emit('error', error));
+            }
+            else {
+                this.emit(CacheEvent.CacheUpdated, value, expiration, requesters);
             }
         };
         this.errorListener = error => {
@@ -358,7 +361,9 @@ class CachedValue extends events_1.EventEmitter {
         if (!source) {
             throw new TypeError(this.t('source is not set'));
         }
-        requesters.push(this);
+        if (!requesters.includes(this)) {
+            requesters.push(this);
+        }
         const value = await source.loadValueWithRequester(requesters);
         await this.saveValue(value, source.expiration, requesters)
             .catch(this._doSaveValueErrorHandler);
@@ -395,9 +400,9 @@ class CachedValue extends events_1.EventEmitter {
             clearTimeout(this._clearTimeout);
         }
         const now = Date.now();
-        if (newDate.valueOf() > now) {
+        if (newDate.valueOf() >= now) {
             if (hasValue) {
-                this._clearTimeout = setTimeout(() => common_1.throwAsyncIfAny(() => this.clearCache(), error => new CachedValueError(error, this, CacheEvent.CacheCleared)).catch(error => this.emit('error', error)), now - newDate.valueOf());
+                this._clearTimeout = setTimeout(() => common_1.throwAsyncIfAny(() => this.clearCache(), error => new CachedValueError(error, this, CacheEvent.CacheCleared)).catch(error => this.emit('error', error)), newDate.valueOf() - now);
             }
         }
         await this.updateExpiration(this._expiration).catch(error => {

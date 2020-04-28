@@ -136,7 +136,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       )
     ).catch(error => this.emit('error', error));
     this.updateListener = (value, expiration, requesters) => {
-      if (requesters.includes(this)) {
+      if (!requesters.includes(this)) {
         throwAsyncIfAny(
           () => this.queueBackgroundTask(this.saveValue(
             value,
@@ -148,6 +148,8 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
             new CachedValueError(error, this, CacheEvent.CacheUpdated),
           )
         ).catch(error => this.emit('error', error));
+      } else {
+        this.emit(CacheEvent.CacheUpdated, value, expiration, requesters);
       }
     };
     this.errorListener = error => {
@@ -372,7 +374,9 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
     if (!source) {
       throw new TypeError(this.t('source is not set'));
     }
-    requesters.push(this);
+    if (!requesters.includes(this)) {
+      requesters.push(this);
+    }
     const value = await source.loadValueWithRequester(requesters);
     await this.saveValue(value, source.expiration, requesters)
       .catch(this._doSaveValueErrorHandler);
@@ -425,14 +429,14 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
       clearTimeout(this._clearTimeout);
     }
     const now = Date.now();
-    if (newDate.valueOf() > now) {
+    if (newDate.valueOf() >= now) {
       if (hasValue) {
         this._clearTimeout = setTimeout(() => throwAsyncIfAny(
           () => this.clearCache(),
           error => new CachedValueError(
             error, this, CacheEvent.CacheCleared
           )
-        ).catch(error => this.emit('error', error)), now - newDate.valueOf());
+        ).catch(error => this.emit('error', error)), newDate.valueOf() - now);
       }
     }
     await this.updateExpiration(this._expiration).catch(error => {
