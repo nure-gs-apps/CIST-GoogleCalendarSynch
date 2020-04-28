@@ -394,7 +394,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   protected async saveValue(
     value: Nullable<T>, expiration: ReadonlyDate, requesters: unknown[]
   ) {
-    await this.doSaveValue(value, expiration)
+    await this.doSaveValue(value, expiration) // FIXME: probably, save only value here and save expiration using doSetExpiration() to save implementation request number. It is unclear, whether doSetExpiration() needs modification in this case.
       .catch(this._doSaveValueErrorHandler);
     await this.doSetExpiration(expiration, value !== null);
     this.emit(CacheEvent.CacheUpdated, value, this._expiration, requesters);
