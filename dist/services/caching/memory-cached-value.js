@@ -52,6 +52,10 @@ class MemoryCachedValue extends cached_value_1.CachedValue {
     loadExpirationFromCache() {
         return Promise.resolve(this._utils.getMaxExpiration());
     }
+    doSaveValue(value, expiration) {
+        this._value = value;
+        return Promise.resolve();
+    }
 }
 exports.MemoryCachedValue = MemoryCachedValue;
 //# sourceMappingURL=memory-cached-value.js.map

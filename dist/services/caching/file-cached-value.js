@@ -120,7 +120,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
         }
         return [JSON.parse(stringValue), expiration];
     }
-    async saveValue(value, expiration) {
+    async doSaveValue(value, expiration) {
         if (!this._file) {
             throw new TypeError(this.t('Invalid state, file is not loaded'));
         }

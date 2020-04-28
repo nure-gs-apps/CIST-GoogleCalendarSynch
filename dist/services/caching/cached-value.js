@@ -81,7 +81,7 @@ class CachedValue extends events_1.EventEmitter {
             writable: true,
             value: void 0
         });
-        Object.defineProperty(this, "_saveValueErrorHandler", {
+        Object.defineProperty(this, "_doSaveValueErrorHandler", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -158,13 +158,7 @@ class CachedValue extends events_1.EventEmitter {
         this.clearListener = () => common_1.throwAsyncIfAny(() => this.queueBackgroundTask(this.clearCache()), error => this.emit('error', new CachedValueError(error, this, CacheEvent.CacheCleared))).catch(error => this.emit('error', error));
         this.updateListener = (value, expiration, requesters) => {
             if (requesters.includes(this)) {
-                common_1.throwAsyncIfAny(() => this.queueBackgroundTask(this.saveValue(value, expiration)
-                    .catch(this._doSaveValueErrorHandler)
-                    .then(() => {
-                    return this.doSetExpiration(expiration, value !== null);
-                }).then(() => {
-                    this.emit(CacheEvent.CacheUpdated, value, this._expiration);
-                })), error => this.emit('error', new CachedValueError(error, this, CacheEvent.CacheUpdated))).catch(error => this.emit('error', error));
+                common_1.throwAsyncIfAny(() => this.queueBackgroundTask(this.saveValue(value, expiration, requesters)).catch(this._doSaveValueErrorHandler), error => this.emit('error', new CachedValueError(error, this, CacheEvent.CacheUpdated))).catch(error => this.emit('error', error));
             }
         };
         this.errorListener = error => {
@@ -261,19 +255,7 @@ class CachedValue extends events_1.EventEmitter {
             this._source.on(CacheEvent.CacheCleared, this.clearListener);
             this._source.on('error', this.errorListener);
             if (loadValue) {
-                const value = await this._source.loadValueWithRequester([this]);
-                const shouldSetExpiration = (this._expiration.valueOf() < this._source.expiration.valueOf());
-                const newExpiration = shouldSetExpiration
-                    ? this._source.expiration
-                    : this._expiration;
-                if (value !== null) {
-                    await this.saveValue(value, newExpiration)
-                        .catch(this._doSaveValueErrorHandler);
-                    this.emit(CacheEvent.CacheUpdated, value, newExpiration);
-                }
-                if (shouldSetExpiration) {
-                    await this.doSetExpiration(this._source.expiration, value !== null);
-                }
+                await this._source.loadValueWithRequester([this]);
             }
         }
         this.emit(CacheEvent.SourceChanged, this._source, oldSource);
@@ -304,8 +286,8 @@ class CachedValue extends events_1.EventEmitter {
         });
         tuple[1] = this._utils.clampExpiration(tuple[1], (_c = (_b = this._source) === null || _b === void 0 ? void 0 : _b.expiration) !== null && _c !== void 0 ? _c : this._utils.getMaxExpiration());
         const [newValue, expiration] = tuple;
+        await this.doSetExpiration(expiration, newValue !== null);
         if (expiration.valueOf() < this._expiration.valueOf()) {
-            await this.doSetExpiration(expiration, newValue !== null);
             if (this._expiration.valueOf() > Date.now()) {
                 this.emit(CacheEvent.CacheUpdated, newValue, this._expiration, requesters);
             }
@@ -378,7 +360,7 @@ class CachedValue extends events_1.EventEmitter {
         }
         requesters.push(this);
         const value = await source.loadValueWithRequester(requesters);
-        await this.saveValue(value, source.expiration)
+        await this.saveValue(value, source.expiration, requesters)
             .catch(this._doSaveValueErrorHandler);
         return [value, source.expiration];
     }
@@ -388,15 +370,21 @@ class CachedValue extends events_1.EventEmitter {
     doDestroy() {
         return Promise.resolve();
     }
+    async saveValue(value, expiration, requesters) {
+        await this.doSaveValue(value, expiration)
+            .catch(this._doSaveValueErrorHandler);
+        await this.doSetExpiration(expiration, value !== null);
+        this.emit(CacheEvent.CacheUpdated, value, this._expiration, requesters);
+    }
     // virtual
-    saveValue(value, expiration) {
+    doSaveValue(value, expiration) {
         return Promise.resolve();
     }
     async doSetExpiration(newDate, hasValue) {
         if (hasValue === undefined) {
             // tslint:disable-next-line:no-parameter-reassignment
             hasValue = await this.hasCachedValue().catch(error => {
-                throw new errors_1.NestedError(this.t('failed check if has cached value'), error);
+                throw new errors_1.NestedError(this.t('failed to check if has cached value'), error);
             });
         }
         if (newDate.valueOf() === this._expiration.valueOf()) {
