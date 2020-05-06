@@ -1,9 +1,9 @@
+#!/usr/bin/env node
 // IMPORTANT! INSTALLS MONKEY PATCHES
 import './polyfills';
 import iterate from 'iterare';
 import { EOL } from 'os';
-// import { Arguments } from 'yargs';
-// import { DeepPartial } from './@types';
+import { addEntitiesOptions, IArgsWithEntities } from './cli/common';
 import {
   getFullConfig,
   getSupportedConfigExtensionsInPriorityOrder,
@@ -12,17 +12,10 @@ import {
 import { getDefaultConfigDirectory } from './config/constants';
 import {
   getBasicCliConfiguration,
-  // IFullAppConfig
 } from './config/types';
-import {
-  AssertCommand,
-  assertHasEntities,
-  // EntityType,
-  IArgsWithEntities,
-} from './main';
 import { exitGracefully } from './services/exit-handler.service';
-import { toPrintString } from './utils/common';
-// import { toPrintString } from './utils/common';
+import { handleCistAssert } from './tasks/cist-assert';
+import * as packageInfo from '../package.json';
 
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
@@ -54,60 +47,33 @@ Lastly, command line arguments are used. They are described at the beginning of 
 
 const yargs = getBasicCliConfiguration()
   .usage(usage)
+  .scriptName(packageInfo.name)
   .middleware(initializeMiddleware)
-  .command('cache', 'CIST Cache utilities', (yargs) => {
-    const groupsName = nameof<IArgsWithEntities>(a => a.groups);
-    const auditoriesName = nameof<IArgsWithEntities>(a => a.auditories);
-    const eventsName = nameof<IArgsWithEntities>(a => a.events);
-    return yargs
-      .option(groupsName, {
-        alias: groupsName[0],
-        description: 'Operate on groups',
-        type: 'boolean'
-      })
-      .option(auditoriesName, {
-        alias: auditoriesName[0],
-        description: 'Operate on auditories',
-        type: 'boolean'
-      })
-      .option(eventsName, {
-        alias: eventsName[0],
-        description: 'Operate on events. Supply "all", "" or nothing for all events. Supply list of coma-separated (no spaces) Group IDs to fetch events for',
-        type: 'string',
-        coerce(value: any) {
-          const str = value as string;
-          if (str === '' || str === 'all') {
-            return [];
-          }
-          if (!value) {
-            return null;
-          }
-          const initialArgs = str.split(/\s*,\s*/);
-          const ids = iterate(initialArgs)
-            .map(v => Number.parseInt(v, 10))
-            .filter(v => !Number.isNaN(v))
-            .toArray();
-          if (ids.length === 0) {
-            throw new TypeError('No Group IDs parsed');
-          }
-          if (initialArgs.length !== ids.length) {
-            console.warn(`Only such IDs found: ${toPrintString(ids)}`);
-          }
-          return ids;
-        },
-        requiresArg: false,
-      })
-      .check(args => assertHasEntities(args as any))
+  .command('cist', 'CIST Commands', (yargs) => (
+    yargs
       .command({
         command: 'assert',
         describe: 'Check responses for validity',
         handler(argv) {
-          AssertCommand.handle(argv as IArgsWithEntities, getFullConfig())
+          handleCistAssert(argv as IArgsWithEntities, getFullConfig())
             .catch(failStart);
+        },
+        builder(yargs) {
+          return addEntitiesOptions(yargs);
         }
       })
-      .demandCommand(1);
-  }, () => { throw 'Valid command is required'; })
+      .command({
+        command: 'extend-cache',
+        describe: 'Extend cache expiration',
+        handler(argv) {
+          console.log('asdf');
+        },
+        builder(yargs) {
+          return addEntitiesOptions(yargs);
+        }
+      })
+      .demandCommand(1)
+  ), () => { throw 'Valid command is required'; })
   .completion()
   .recommendCommands()
   .demandCommand(1)

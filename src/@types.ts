@@ -55,10 +55,13 @@ export interface IPartialMarker<P> {
 }
 export type DeepPartial<T> =
   T extends IPartialMarker<infer PT> ? T[typeof asPartial]
-    : T extends ReadonlyArray<infer V> ? ReadonlyArray<DeepReadonly<V>>
-    // tslint:disable-next-line:no-shadowed-variable
-    : T extends (infer V)[] ? DeepReadonly<V>[]
-      : DeepPartialObject<T>;
+  : T extends Map<infer K, infer V> ? Map<DeepPartial<K>,  DeepPartial<V>>
+  : T extends Set<infer V> ? Set<DeepPartial<V>>
+  : T extends (infer V)[] ? DeepPartial<V>[]
+  : T extends ReadonlyMap<infer K, infer V> ? ReadonlyMap<DeepPartial<K>,  DeepPartial<V>>
+  : T extends ReadonlySet<infer V> ? ReadonlySet<DeepPartial<V>>
+  : T extends ReadonlyArray<infer V> ? ReadonlyArray<DeepPartial<V>>
+  : DeepPartialObject<T>;
 
 export type DeepPartialObject<T> = {
   [P in keyof T]?: DeepPartial<T[P]>;
@@ -126,4 +129,10 @@ export const ASYNC_INIT: unique symbol = Symbol.for('@asyncInit');
 
 export interface IAsyncInitializable {
   readonly [ASYNC_INIT]: Promise<any>;
+}
+
+export interface IEntitiesToOperateOn {
+  groups: boolean;
+  auditories: boolean;
+  events: Nullable<number[]>; // empty means all
 }

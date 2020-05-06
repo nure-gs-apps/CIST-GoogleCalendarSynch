@@ -39,6 +39,7 @@ let boundTypes: Nullable<ReadonlySet<ServiceIdentifier<any>>> = null;
 
 export interface ICreateContainerOptions {
   types: Iterable<interfaces.Newable<any>>;
+  skip: Iterable<ServiceIdentifier<any>>;
   forceNew: boolean;
 }
 
@@ -47,14 +48,16 @@ export function hasContainer() {
 }
 
 export function createContainer(options?: Partial<ICreateContainerOptions>) {
-  const { forceNew, types: typesIterable } = Object.assign({
+  const { forceNew, types: typesIterable, skip: skipIterable } = Object.assign({
     forceNew: false,
+    skip: [],
     types: [],
   }, options);
 
   if (!forceNew && container) {
     throw new TypeError('Container is already created');
   }
+  const skip = new Set(skipIterable);
   const types = new Set<ServiceIdentifier<any>>(typesIterable);
   const allRequired = types.size === 0;
 
@@ -64,78 +67,76 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
     autoBindInjectable: true,
   });
 
-  if (allRequired || types.has(CachedCistJsonClientService)) {
+  if ((
+    allRequired || types.has(CachedCistJsonClientService)
+  ) && !skip.has(CachedCistJsonClientService)) {
     types.add(TYPES.CacheUtils);
     types.add(TYPES.CistCacheConfig);
   }
 
-  if (
-    allRequired
-    || types.has(CistJsonHttpClient)
-  ) {
+  if ((
+    allRequired || types.has(CistJsonHttpClient)
+  ) && !skip.has(CistJsonHttpClient)) {
     types.add(TYPES.CistBaseApiUrl);
     types.add(TYPES.CistApiKey);
     types.add(TYPES.CistJsonHttpParser);
   }
 
-  if (
-    allRequired
-    || (
+  if ((
+    allRequired || (
       types.has(TYPES.CistJsonHttpClient)
       || types.has(CistJsonHttpClient)
     ) && types.has(CachedCistJsonClientService)
-  ) {
+  ) && !skip.has(CistJsonHttpClient) && !skip.has(TYPES.CistJsonHttpClient)) {
     container.bind<CistJsonHttpClient>(TYPES.CistJsonHttpClient)
       .to(CistJsonHttpClient);
   }
 
-  if (
+  if ((
     allRequired
     || types.has(TYPES.CacheUtils)
     || types.has(CacheUtilsService)
-  ) {
+  ) && !skip.has(CacheUtilsService) && !skip.has(TYPES.CacheUtils)) {
     container.bind<CacheUtilsService>(TYPES.CacheUtils).to(CacheUtilsService);
     types.add(TYPES.CacheMaxExpiration);
   }
 
   if (
-    allRequired
-    || types.has(TYPES.CistJsonHttpParser)
-    || types.has(CistJsonHttpParserService)
+    (allRequired
+      || types.has(TYPES.CistJsonHttpParser)
+      || types.has(CistJsonHttpParserService))
+    && !skip.has(CistJsonHttpParserService)
+    && !skip.has(TYPES.CistJsonHttpParser)
   ) {
     container.bind<CistJsonHttpParserService>(TYPES.CistJsonHttpParser)
       .to(CistJsonHttpParserService);
   }
 
-  if (
-    allRequired
-    || types.has(TYPES.CistCacheConfig)
-  ) {
+  if ((
+    allRequired || types.has(TYPES.CistCacheConfig)
+  ) && skip.has(TYPES.CistCacheConfig)) {
     container.bind<DeepReadonly<CistCacheConfig>>(TYPES.CistCacheConfig)
       .toConstantValue(getConfig().caching.cist);
   }
 
-  if (
-    allRequired
-    || types.has(TYPES.CacheMaxExpiration)
-  ) {
+  if ((
+    allRequired || types.has(TYPES.CacheMaxExpiration)
+  ) && skip.has(TYPES.CacheMaxExpiration)) {
     container.bind<IMaxCacheExpiration>(TYPES.CacheMaxExpiration)
       .toConstantValue(getConfig().caching.maxExpiration);
   }
 
-  if (
-    allRequired
-    || types.has(TYPES.CistApiKey)
-  ) {
+  if ((
+    allRequired || types.has(TYPES.CistApiKey)
+  ) && skip.has(TYPES.CistApiKey)) {
     container.bind<string>(TYPES.CistApiKey).toConstantValue(
       getConfig().cist.apiKey,
     );
   }
 
-  if (
-    allRequired
-    || types.has(TYPES.CistBaseApiUrl)
-  ) {
+  if ((
+    allRequired || types.has(TYPES.CistBaseApiUrl)
+  ) && skip.has(TYPES.CistBaseApiUrl)) {
     container.bind<string>(TYPES.CistBaseApiUrl).toConstantValue(
       getConfig().cist.baseUrl,
     );

@@ -1,21 +1,24 @@
 {
-  "name": "cist-google-calendar-sync",
+  "name": "ncgc",
   "version": "1.0.0",
-  "description": "A project for synchronizing NURE CIST with Google Calendar",
+  "description": "A project for synchronizing NURE CIST with G Suite & Google Calendar",
   "main": "dist/index.js",
   "engines": {
     "node": "^10.18.1"
   },
+  "bin": {
+    "ncgc": "./dist/cli.js"
+  },
   "scripts": {
     "test": "jest",
     "lint": "tslint -p .",
-    "start": "node ./dist",
+    "start": "node ./dist/cli",
     "clear": "rimraf ./dist",
     "build": "npm run clear && ttsc",
     "start:b": "npm run build && npm start",
-    "start:brk": "node --inspect-brk ./dist",
+    "start:brk": "node --inspect-brk ./dist/cli",
     "start:b:brk": "npm run build && npm run start:brk",
-    "start:dev": "node --inspect=9229 ./dist",
+    "start:dev": "node --inspect=9229 ./dist/cli",
     "start:b:dev": "npm run build && npm run start:dev",
     "watch": "nodemon -w src/ -w config/ -e ts,yaml -x \"npm run start:b:dev\""
   },

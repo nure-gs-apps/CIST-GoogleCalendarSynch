@@ -1,4 +1,3 @@
-import { IFormat } from 'nconf';
 import * as nconf from 'nconf';
 import * as path from 'path';
 import { promises as fs, constants } from 'graceful-fs';
@@ -9,6 +8,7 @@ import { DeepPartial, DeepReadonly, Nullable, t } from '../@types';
 import { commonCamelCase, PathUtils } from '../utils/common';
 import * as YAML from 'yaml';
 import * as TOML from '@iarna/toml';
+import IFormat = nconf.IFormat;
 
 let config: Nullable<IFullAppConfig> = null;
 
@@ -84,9 +84,9 @@ const fileExtensionsAndFormats = (() => {
   const yaml = new Format(YAML);
   return [
     t('.toml', new Format(TOML)),
+    t('.json', new Format(JSON)),
     t('.yml', yaml),
     t('.yaml', yaml),
-    t('.json', new Format(JSON)),
   ] as ReadonlyArray<[string, Readonly<nconf.IFormat>]>;
 })();
 
