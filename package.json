@@ -12,13 +12,13 @@
   "scripts": {
     "test": "jest",
     "lint": "tslint -p .",
-    "start": "node ./dist/cli",
+    "start": "node ./dist/cli.js",
     "clear": "rimraf ./dist",
-    "build": "npm run clear && ttsc",
+    "build": "npm run clear && ttsc --build ./src",
     "start:b": "npm run build && npm start",
-    "start:brk": "node --inspect-brk ./dist/cli",
+    "start:brk": "node --inspect-brk ./dist/cli.js",
     "start:b:brk": "npm run build && npm run start:brk",
-    "start:dev": "node --inspect=9229 ./dist/cli",
+    "start:dev": "node --inspect=9229 ./dist/cli.js",
     "start:b:dev": "npm run build && npm run start:dev",
     "watch": "nodemon -w src/ -w config/ -e ts,yaml -x \"npm run start:b:dev\""
   },
