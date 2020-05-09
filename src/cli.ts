@@ -14,7 +14,7 @@ import {
   getBasicCliConfiguration,
 } from './config/types';
 import { exitGracefully } from './services/exit-handler.service';
-import { handleCistAssert } from './tasks/cist-assert';
+import { handleCistAssert } from './jobs/cist-assert';
 import * as packageInfo from '../package.json';
 
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.

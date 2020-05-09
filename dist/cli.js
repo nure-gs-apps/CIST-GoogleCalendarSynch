@@ -10,7 +10,7 @@ const config_1 = require("./config");
 const constants_1 = require("./config/constants");
 const types_1 = require("./config/types");
 const exit_handler_service_1 = require("./services/exit-handler.service");
-const cist_assert_1 = require("./tasks/cist-assert");
+const cist_assert_1 = require("./jobs/cist-assert");
 const packageInfo = require("../package.json");
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
