@@ -1,5 +1,4 @@
 import iterate from 'iterare';
-import { Nullable } from '../@types';
 import { TaskDefinition, TaskStepExecutor } from './types';
 import { cloneDeep } from 'lodash';
 
@@ -33,18 +32,6 @@ export class TaskRunner {
     this._isRunning = false;
   }
 
-  hasUndoneTasks() {
-    return this.getRemainingSteps() > 0;
-  }
-
-  getRemainingSteps() {
-    return this._tasks.reduce((sum, t) => sum + (
-      !t.steps || t.steps.length === 0 ? (
-        t.failedSteps && t.failedSteps.length > 0 ? 0 : 1
-      ) : t.steps.length
-    ), 0);
-  }
-
   enqueueTask(task: TaskDefinition<any>, clone = true) {
     const newTask = clone ? cloneDeep(task) : task;
     if (newTask.steps && newTask.steps.length > 0) {
@@ -54,6 +41,18 @@ export class TaskRunner {
       newTask.failedSteps = Array.from(new Set(newTask.failedSteps));
     }
     this._tasks.push(clone ? cloneDeep(task) : task);
+  }
+
+  hasUndoneTasks() {
+    return this.getRemainingStepCount() > 0;
+  }
+
+  getRemainingStepCount() {
+    return this._tasks.reduce((sum, t) => sum + (
+      !t.steps || t.steps.length === 0 ? (
+        t.failedSteps && t.failedSteps.length > 0 ? 0 : 1
+      ) : t.steps.length
+    ), 0);
   }
 
   async runAll() {
@@ -88,7 +87,7 @@ export class TaskRunner {
             task.failedSteps.push({ error, value: s });
           })
           .tap(() => {
-            if (task.steps) {
+            if (task.steps && task.steps.length > 0) {
               const i = task.steps.indexOf(s);
               if (i >= 0) {
                 task.steps.splice(i, 1);
@@ -106,10 +105,12 @@ export class TaskRunner {
       promises = [
         Promise.resolve(this._taskStepExecutor.run(task.taskType)
           .catch(error => task.failedSteps = [{ error, value: null }])
-          .then(() => {
-            const i = this._tasks.indexOf(task);
-            if (i >= 0) {
-              this._tasks.splice(i, 1);
+          .tap(() => {
+            if (!task.failedSteps || task.failedSteps.length === 0) {
+              const i = this._tasks.indexOf(task);
+              if (i >= 0) {
+                this._tasks.splice(i, 1);
+              }
             }
           })),
       ];
@@ -118,6 +119,50 @@ export class TaskRunner {
     return this._isRunning
       ? Promise.all(promises).tap(() => this._isRunning = false)
       : Promise.resolve([]);
+  }
+
+  async getAllUndoneTasks(clone = true) {
+    return clone ? cloneDeep(this._tasks) : this._tasks;
+  }
+
+  async getUndoneTasks(clone = true) {
+    let tasks = iterate(this._tasks).filter(t => (
+      !!t.steps
+      && t.steps.length > 0
+    ) || !t.failedSteps || t.failedSteps.length === 0);
+    if (clone) {
+      tasks = tasks.map(cloneDeep);
+    }
+    return tasks.toArray();
+  }
+
+  async getFailedTasks(clone = true) {
+    let tasks = iterate(this._tasks).filter(t => !!t.failedSteps
+      && t.failedSteps.length > 0);
+    if (clone) {
+      tasks = tasks.map(cloneDeep);
+    }
+    return tasks.toArray();
+  }
+
+  hasFailedTasks() {
+    return this.getFailedStepCount() > 0;
+  }
+
+  getFailedStepCount() {
+    return this._tasks.reduce((sum, t) => sum + (
+      !t.steps || t.steps.length === 0 ? 0 : t.steps.length
+    ), 0);
+  }
+
+  async runAllFailed() {
+    for await (const _ of this.asFailedRunnableGenerator()) {}
+  }
+
+  async* asFailedRunnableGenerator() {
+    while (this.hasFailedTasks()) {
+      yield this.rerunFailedStep();
+    }
   }
 
   rerunFailedStep() {
@@ -133,21 +178,11 @@ export class TaskRunner {
     if (!task.failedSteps || task.failedSteps.length === 0) {
       return Promise.all([]);
     }
-    let failedTask = this._failedTasks.find(
-      t => t.taskType === task.taskType,
-    ) ?? null;
-    if (!failedTask) {
-      failedTask = {
-        taskType: task.taskType,
-        failedSteps: [],
-      };
-      this._failedTasks.push(failedTask);
-    } else {
-      failedTask.failedSteps = [];
-    }
-    if (task.steps) {
-      failedTask.steps = task.steps;
-    }
+    const failedTask = {
+      taskType: task.taskType,
+      failedSteps: [] as any[],
+    };
+    this._failedTasks.push(failedTask);
     const hasSteps = task.steps && task.steps.length > 0;
     const promises = iterate(task.failedSteps)
       .take(this._maxConcurrentSteps)
@@ -158,7 +193,7 @@ export class TaskRunner {
           s.error,
         ) : this._taskStepExecutor.rerunFailed(task.taskType, s.error))
           .catch(error => {
-            if (!failedTask || !failedTask.failedSteps) {
+            if (!failedTask.failedSteps) {
               return;
             }
             failedTask.failedSteps.push({
@@ -188,8 +223,17 @@ export class TaskRunner {
       : Promise.resolve([]);
   }
 
-  async getUndoneTasks(clone = true) {
-    return clone ? cloneDeep(this._tasks) : this._tasks;
+  getDoublyFailedTaskCount() {
+    return this._failedTasks.reduce((sum, t) => !!t.failedSteps
+      && t.failedSteps.length > 0 ? sum + t.failedSteps.length : sum, 0);
+  }
+
+  getDoublyFailedTasks(clone = true) {
+    return clone ? cloneDeep(this._failedTasks) : this._failedTasks;
+  }
+
+  enqueueDoublyFailedTasks() {
+    this._tasks.push(...this._failedTasks);
   }
 }
 
