@@ -23,3 +23,10 @@ export interface TaskDefinition<T> {
   steps?: T[];
   failedSteps?: TaskFailedStep<T>[];
 }
+
+export interface TaskStepExecutor {
+  run<T>(taskType: string): Promise<any>;
+  run<T>(taskType: string, step: T): Promise<any>;
+  rerunFailed<T>(taskType: string, error: any): Promise<any>;
+  rerunFailed<T>(taskType: string, step: T, error: any): Promise<any>;
+}
