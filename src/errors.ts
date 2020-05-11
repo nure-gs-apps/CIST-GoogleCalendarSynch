@@ -1,3 +1,5 @@
+import { makePropertyEnumerable } from './utils/common';
+
 export class MultiError extends Error {
   readonly errors: any[];
 
@@ -16,3 +18,14 @@ export class NestedError extends Error {
   }
 }
 
+export function makeJsonSerializable(
+  error: Error,
+  ...propertyNames: (keyof Error)[]
+) {
+  const properties: ReadonlyArray<keyof Error> = propertyNames.length > 0
+    ? propertyNames
+    : ['message', 'stack', 'name'];
+  for (const property of properties) {
+    makePropertyEnumerable(error, property);
+  }
+}

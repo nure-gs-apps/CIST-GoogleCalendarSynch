@@ -156,3 +156,11 @@ export async function destroyChain<T>(cachedValue: CachedValue<T>) {
 export function toPrintString(strings: ReadonlyArray<unknown>) {
   return `"${strings.join('", "')}"`;
 }
+
+export function makePropertyEnumerable<T extends object = object>(object: T, property: keyof T) {
+  const descriptor = Object.getOwnPropertyDescriptor(object, property);
+  if (descriptor && !descriptor.enumerable) {
+    descriptor.enumerable = true;
+    Object.defineProperty(object, property, descriptor);
+  }
+}

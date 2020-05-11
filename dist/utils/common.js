@@ -141,4 +141,12 @@ function toPrintString(strings) {
     return `"${strings.join('", "')}"`;
 }
 exports.toPrintString = toPrintString;
+function makePropertyEnumerable(object, property) {
+    const descriptor = Object.getOwnPropertyDescriptor(object, property);
+    if (descriptor && !descriptor.enumerable) {
+        descriptor.enumerable = true;
+        Object.defineProperty(object, property, descriptor);
+    }
+}
+exports.makePropertyEnumerable = makePropertyEnumerable;
 //# sourceMappingURL=common.js.map

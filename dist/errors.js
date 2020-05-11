@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const common_1 = require("./utils/common");
 class MultiError extends Error {
     constructor(message, errors) {
         super(message);
@@ -26,4 +27,13 @@ class NestedError extends Error {
     }
 }
 exports.NestedError = NestedError;
+function makeJsonSerializable(error, ...propertyNames) {
+    const properties = propertyNames.length > 0
+        ? propertyNames
+        : ['message', 'stack', 'name'];
+    for (const property of properties) {
+        common_1.makePropertyEnumerable(error, property);
+    }
+}
+exports.makeJsonSerializable = makeJsonSerializable;
 //# sourceMappingURL=errors.js.map
