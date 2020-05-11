@@ -43,29 +43,48 @@ const yargs = types_1.getBasicCliConfiguration()
     .usage(usage)
     .scriptName(packageInfo.name)
     .middleware(initializeMiddleware)
-    .command('cist', 'CIST Commands', (yargs) => (yargs
-    .command({
-    command: 'assert',
-    describe: 'Check responses for validity',
-    handler(argv) {
-        cist_assert_1.handleCistAssert(argv, config_1.getFullConfig())
-            .catch(failStart);
-    },
-    builder(yargs) {
-        return common_1.addEntitiesOptions(yargs);
-    }
-})
-    .command({
-    command: 'extend-cache',
-    describe: 'Extend cache expiration',
-    handler(argv) {
-        console.log('asdf');
-    },
-    builder(yargs) {
-        return common_1.addEntitiesOptions(yargs);
-    }
-})
-    .demandCommand(1)), () => { throw 'Valid command is required'; })
+    .command('cist', 'CIST Commands', (yargs) => {
+    const expirationArg = "expiration";
+    return yargs
+        .command({
+        command: 'assert',
+        describe: 'Check responses for validity',
+        handler(argv) {
+            cist_assert_1.handleCistAssert(argv, config_1.getFullConfig())
+                .catch(failStart);
+        },
+        builder(yargs) {
+            return common_1.addEntitiesOptions(yargs);
+        }
+    })
+        .command({
+        command: `extend-cache`,
+        describe: 'Extend cache expiration',
+        handler(argv) {
+            var _a, _b;
+            const args = argv;
+            console.log(args);
+            console.log('exp', (_a = args.expiration) === null || _a === void 0 ? void 0 : _a.toISOString(), 'rooms', args.auditories, 'grou', args.groups, 'even', (_b = args.events) === null || _b === void 0 ? void 0 : _b.join(', '));
+        },
+        builder(yargs) {
+            return common_1.addEntitiesOptions(yargs)
+                .option(expirationArg, {
+                type: 'string',
+                alias: ['date', 'd', 'exp'],
+                demandOption: true,
+                describe: 'New expiration to set. Preferably ISO-8601 date-time string or date only.',
+                coerce(value) {
+                    const date = new Date(value);
+                    if (Number.isNaN(date.valueOf())) {
+                        throw new TypeError(`Invalid date format: ${value}`);
+                    }
+                    return date;
+                }
+            });
+        }
+    })
+        .demandCommand(1);
+}, () => { throw 'Valid command is required'; })
     .completion()
     .recommendCommands()
     .demandCommand(1)

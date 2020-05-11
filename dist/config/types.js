@@ -32,7 +32,7 @@ function getBasicCliConfiguration() {
         'unknown-options-as-args': true // allows usage of undocumented options (not in help)
     })
         .option(o("ncgc.configDir"), {
-        alias: 'd',
+        alias: ['config'],
         type: 'string',
         default: constants_1.getDefaultConfigDirectory(),
         description: 'Path to directory of configs',

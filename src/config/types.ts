@@ -84,7 +84,7 @@ export function getBasicCliConfiguration(
       'unknown-options-as-args': true // allows usage of undocumented options (not in help)
     })
     .option(o(nameof.full<IFullAppConfig>(c => c.ncgc.configDir)), {
-      alias: 'd',
+      alias: ['config'],
       type: 'string', // TODO: add regex for path
       default: getDefaultConfigDirectory(),
       description: 'Path to directory of configs',

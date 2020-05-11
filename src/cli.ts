@@ -45,12 +45,17 @@ You can also use .env file configuration in this case.
 Lastly, command line arguments are used. They are described at the beginning of this message and override all previously set values.
 `;
 
+export interface ICistCacheExtendOptions extends IArgsWithEntities {
+  expiration: Date;
+}
+
 const yargs = getBasicCliConfiguration()
   .usage(usage)
   .scriptName(packageInfo.name)
   .middleware(initializeMiddleware)
-  .command('cist', 'CIST Commands', (yargs) => (
-    yargs
+  .command('cist', 'CIST Commands', (yargs) => {
+    const expirationArg = nameof<ICistCacheExtendOptions>(o => o.expiration);
+    return yargs
       .command({
         command: 'assert',
         describe: 'Check responses for validity',
@@ -63,17 +68,41 @@ const yargs = getBasicCliConfiguration()
         }
       })
       .command({
-        command: 'extend-cache',
+        command: `extend-cache`,
         describe: 'Extend cache expiration',
         handler(argv) {
-          console.log('asdf');
+          const args = argv as ICistCacheExtendOptions;
+          console.log(args);
+          console.log(
+            'exp',
+            args.expiration?.toISOString(),
+            'rooms',
+            args.auditories,
+            'grou',
+            args.groups,
+            'even',
+            args.events?.join(', ')
+          );
         },
         builder(yargs) {
-          return addEntitiesOptions(yargs);
+          return addEntitiesOptions(yargs)
+            .option(expirationArg, {
+              type: 'string',
+              alias: ['date', 'd', 'exp'],
+              demandOption: true,
+              describe: 'New expiration to set. Preferably ISO-8601 date-time string or date only.',
+              coerce(value: string) {
+                const date = new Date(value);
+                if (Number.isNaN(date.valueOf())) {
+                  throw new TypeError(`Invalid date format: ${value}`);
+                }
+                return date;
+              }
+            });
         }
       })
-      .demandCommand(1)
-  ), () => { throw 'Valid command is required'; })
+      .demandCommand(1);
+  }, () => { throw 'Valid command is required'; })
   .completion()
   .recommendCommands()
   .demandCommand(1)
