@@ -1,13 +1,19 @@
+import { isObjectLike } from '../utils/common';
+
 export enum TaskType {
   EnsureBuildings= 'ensureBuildings',
-  EnsureRooms = 'ensureBuildings',
-  EnsureGroups = 'ensureGroups'
+  EnsureRooms = 'ensureRooms',
+  EnsureGroups = 'ensureGroups',
+
+  DeleteIrrelevantBuildings = 'deleteIrrelevantBuildings',
+  DeleteIrrelevantRooms = 'deleteIrrelevantRooms',
+  DeleteIrrelevantGroups = 'deleteIrrelevantGroups'
 }
 
 /**
  * The type `T` and error must be fully JSON-serializable and later parsable with the same result
  */
-export interface TaskFailedStep<T> {
+export interface ITaskFailedStep<T> {
   error: any;
   value: T;
 }
@@ -15,18 +21,46 @@ export interface TaskFailedStep<T> {
 /**
  * The type `T` must be fully JSON-serializable and later parsable with the same result
  */
-export interface TaskDefinition<T> {
+export interface ITaskDefinition<T> {
   taskType: string;
   /**
    * Empty or absent array means either all steps to do or no steps required
    */
   steps?: T[];
-  failedSteps?: TaskFailedStep<T>[];
+  failedSteps?: ITaskFailedStep<T>[];
 }
 
-export interface TaskStepExecutor {
+export function isTaskDefinition<T = any>(
+  task: unknown,
+  // tslint:disable-next-line:variable-name
+  TGuard: (step: T) => boolean = () => true,
+) {
+  return isObjectLike<ITaskDefinition<T>>(task)
+    && typeof task.taskType === 'string'
+    && (
+      !('steps' in task)
+      || Array.isArray(task.steps) && task.steps.every(TGuard)
+    )
+    && (
+      !('failedSteps' in task)
+      || Array.isArray(task.failedSteps) && task.failedSteps.every(
+        s => isObjectLike<ITaskFailedStep<T>>(s)
+          && 'error' in s && TGuard(s.value)
+      )
+    );
+}
+
+export interface ITaskStepExecutor {
+  requiresSteps(taskType: string): boolean;
+
+  /**
+   * Should be as much idempotent as possible.
+   */
   run<T>(taskType: string): Promise<any>;
   run<T>(taskType: string, step: T): Promise<any>;
+  /**
+   * Should be as much idempotent as possible.
+   */
   rerunFailed<T>(taskType: string, error: any): Promise<any>;
   rerunFailed<T>(taskType: string, step: T, error: any): Promise<any>;
 }
