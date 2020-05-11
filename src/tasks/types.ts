@@ -15,7 +15,7 @@ export enum TaskType {
  */
 export interface ITaskFailedStep<T> {
   error: any;
-  value: T;
+  value?: T;
 }
 
 /**
@@ -45,7 +45,7 @@ export function isTaskDefinition<T = any>(
       !('failedSteps' in task)
       || Array.isArray(task.failedSteps) && task.failedSteps.every(
         s => isObjectLike<ITaskFailedStep<T>>(s)
-          && 'error' in s && TGuard(s.value)
+          && 'error' in s && (!('value' in s) || TGuard(s.value as any))
       )
     );
 }
