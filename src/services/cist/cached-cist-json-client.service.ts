@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import { inject, injectable, optional } from 'inversify';
 import * as path from 'path';
+import { ReadonlyDate } from 'readonly-date';
 import { DeepReadonly, Nullable, Optional } from '../../@types';
 import {
   ASYNC_INIT,
@@ -10,11 +11,14 @@ import {
 import { CacheType, CistCacheConfig } from '../../config/types';
 import { TYPES } from '../../di/types';
 import { MultiError, NestedError } from '../../errors';
+import {
+  destroyChain,
+  disposeChain,
+  setExpirationInChain,
+} from '../../utils/caching';
 import { includesCache } from '../../utils/cist';
 import {
-  dateToSeconds, destroyChain,
-  disposeChain,
-  isWindows,
+  dateToSeconds, isWindows,
   PathUtils,
 } from '../../utils/common';
 import { CacheUtilsService } from '../caching/cache-utils.service';
@@ -91,6 +95,9 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   }
 
   async dispose(): Promise<void> {
+    if (this._isDisposed) {
+      return;
+    }
     const promises = [];
     if (this._groupsCachedValue) {
       promises.push(disposeChain<any>(this._groupsCachedValue));
@@ -104,6 +111,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     if (promises.length > 0) {
       await Promise.all(promises);
     }
+    this._isDisposed = true;
   }
 
   async getEventsResponse(
@@ -111,13 +119,11 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     entityId: number | string,
     dateLimits?: DeepReadonly<IDateLimits>
   ): Promise<ApiEventsResponse> {
-    const params = { entityId, dateLimits, typeId: type };
-    const hash = getEventsCacheFileNamePart(params);
-    let cachedValue = this._eventsCachedValues.get(hash);
-    if (!cachedValue) {
-      cachedValue = await this.createEventsCachedValue(params);
-      this._eventsCachedValues.set(hash, cachedValue);
-    }
+    const cachedValue = await this.getEventsCachedValue(
+      type,
+      entityId,
+      dateLimits,
+    );
     const response = await cachedValue.loadValue();
     if (!response) {
       throw new TypeError(e('failed to find value in cache chain!'));
@@ -147,13 +153,41 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     return response;
   }
 
+  async setEventsCacheExpiration(
+    expiration: ReadonlyDate,
+    type: TimetableType,
+    entityId: number | string,
+    dateLimits?: DeepReadonly<IDateLimits>,
+  ) {
+    const cachedValue = await this.getEventsCachedValue(
+      type,
+      entityId,
+      dateLimits,
+    );
+    await setExpirationInChain(cachedValue, expiration);
+  }
+
+  async setGroupsCacheExpiration(expiration: ReadonlyDate) {
+    if (!this._groupsCachedValue) {
+      this._groupsCachedValue = await this.createGroupsCachedValue();
+    }
+    await setExpirationInChain(this._groupsCachedValue, expiration);
+  }
+
+  async setRoomsCacheExpiration(expiration: ReadonlyDate) {
+    if (!this._roomsCachedValue) {
+      this._roomsCachedValue = await this.createRoomsCachedValue();
+    }
+    await setExpirationInChain(this._roomsCachedValue, expiration);
+  }
+
   async destroyEventsCache(): Promise<void> {
     for (const cachedValue of this._eventsCachedValues.values()) {
       await cachedValue.dispose();
     }
     this._eventsCachedValues.clear();
     const errors = [];
-    if (this._cacheConfig.priorities.events.includes(CacheType.Http)) {
+    if (this._cacheConfig.priorities.events.includes(CacheType.File)) {
       const fileNames = await fs.readdir(this._baseDirectory);
       for (const fileName of fileNames) {
         if (!isEventsCacheFile(fileName)) {
@@ -299,6 +333,21 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     }
     if (!cachedValue) {
       throw new TypeError(r('No cache sources found'));
+    }
+    return cachedValue;
+  }
+
+  private async getEventsCachedValue(
+    type: TimetableType,
+    entityId: number | string,
+    dateLimits?: DeepReadonly<IDateLimits>
+  ) {
+    const params = { entityId, dateLimits, typeId: type };
+    const hash = getEventsCacheFileNamePart(params);
+    let cachedValue = this._eventsCachedValues.get(hash);
+    if (!cachedValue) {
+      cachedValue = await this.createEventsCachedValue(params);
+      this._eventsCachedValues.set(hash, cachedValue);
     }
     return cachedValue;
   }

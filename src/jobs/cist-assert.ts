@@ -1,53 +1,34 @@
-import { interfaces } from 'inversify';
 import iterate from 'iterare';
 import { DeepReadonly, Nullable } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IInfoLogger } from '../@types/logging';
-import { CacheType, IFullAppConfig } from '../config/types';
+import { IFullAppConfig } from '../config/types';
 import { createContainer, getContainerAsyncInitializer } from '../di/container';
 import { TYPES } from '../di/types';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
-import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.service';
 import {
-  ApiGroup,
   ApiGroupsResponse,
   EntityType, TimetableType,
 } from '../@types/cist';
 import {
   bindOnExitHandler,
-  exitGracefully,
+  exitGracefully, unbindOnExitHandler,
 } from '../services/exit-handler.service';
 import {
   assertEventsResponse,
   assertGroupsResponse,
   assertRoomsResponse,
 } from '../utils/assert-responses';
-import { toPrintString } from '../utils/common';
+import { toGroupIds, toPrintString } from '../utils/common';
+import { getCistCachedClientTypes } from '../utils/jobs';
 
 export async function handleCistAssert(
   args: IEntitiesToOperateOn,
   config: DeepReadonly<IFullAppConfig>,
   logger: IInfoLogger,
 ) {
-  const cacheConfig = config.ncgc.caching.cist;
-
-  const types: interfaces.Newable<any>[] = [CachedCistJsonClientService];
-  if ((
-      args.groups
-      && cacheConfig.priorities.groups.includes(CacheType.Http)
-    )
-    || (
-      args.auditories
-      && cacheConfig.priorities.auditories.includes(CacheType.Http)
-    )
-    || (
-      args.events
-      && cacheConfig.priorities.events.includes(CacheType.Http)
-    )) {
-    types.push(CistJsonHttpClient);
-  }
   const container = createContainer({
-    types,
+    types: getCistCachedClientTypes(args, config.ncgc.caching.cist.priorities),
     forceNew: true,
   });
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
@@ -83,13 +64,7 @@ export async function handleCistAssert(
       if (!groupsResponse) {
         groupsResponse = await cistClient.getGroupsResponse();
       }
-      groupIds = iterate(groupsResponse.university.faculties)
-        .map(f => f.directions)
-        .flatten()
-        .filter(d => !!d.groups)
-        .map(d => d.groups as ApiGroup[])
-        .flatten()
-        .map(g => g.id);
+      groupIds = toGroupIds(groupsResponse);
     } else {
       groupIds = args.events;
     }
@@ -126,6 +101,8 @@ export async function handleCistAssert(
       ? 'All Events responses are valid'
       : `Responses for such Group IDs are not valid: ${toPrintString(ids)}`);
   }
+  await dispose();
+  unbindOnExitHandler(dispose);
   exitGracefully(iterate(failures.values()).every(a => a.length === 0)
     ? 0
     : 1);

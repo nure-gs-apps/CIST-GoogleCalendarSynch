@@ -37,7 +37,7 @@ export class CacheUtilsService {
     return expiration.toDate() as ReadonlyDate;
   }
 
-  assertValidExpiration(date: ReadonlyDate) {
+  assertTodayValidExpiration(date: ReadonlyDate) {
     if (date.valueOf() > this.getMaxExpiration().valueOf()) {
       throw new TypeError('Cache expiration cannot exceed 5 hours in the morning');
     }

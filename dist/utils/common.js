@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const change_case_1 = require("change-case");
+const iterare_1 = require("iterare");
 const lodash_1 = require("lodash");
 function arrayContentEqual(first, second) {
     return first.length === second.length && first.every(e => second.includes(e));
@@ -112,31 +113,6 @@ var PathUtils;
             });
         };
 })(PathUtils = exports.PathUtils || (exports.PathUtils = {}));
-async function disposeChain(cachedValue) {
-    const disposables = [cachedValue.dispose()];
-    let currentValue = cachedValue;
-    while (currentValue.needsSource && currentValue.source) {
-        disposables.push(currentValue.source.dispose());
-        currentValue = currentValue.source;
-    }
-    return Promise.all(disposables);
-}
-exports.disposeChain = disposeChain;
-async function destroyChain(cachedValue) {
-    const disposables = [];
-    if (cachedValue.isDestroyable) {
-        disposables.push(cachedValue.destroy());
-    }
-    let currentValue = cachedValue;
-    while (currentValue.needsSource && currentValue.source) {
-        if (currentValue.isDestroyable) {
-            disposables.push(currentValue.source.destroy());
-        }
-        currentValue = currentValue.source;
-    }
-    return Promise.all(disposables);
-}
-exports.destroyChain = destroyChain;
 function toPrintString(strings) {
     return `"${strings.join('", "')}"`;
 }
@@ -149,4 +125,14 @@ function makePropertyEnumerable(object, property) {
     }
 }
 exports.makePropertyEnumerable = makePropertyEnumerable;
+function toGroupIds(groupsResponse) {
+    return iterare_1.default(groupsResponse.university.faculties)
+        .map(f => f.directions)
+        .flatten()
+        .filter(d => !!d.groups)
+        .map(d => d.groups)
+        .flatten()
+        .map(g => g.id);
+}
+exports.toGroupIds = toGroupIds;
 //# sourceMappingURL=common.js.map

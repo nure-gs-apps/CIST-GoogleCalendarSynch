@@ -182,7 +182,7 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async setExpiration(date: ReadonlyDate) {
-    this._utils.assertValidExpiration(date);
+    this._utils.assertTodayValidExpiration(date);
     if (!this.canUseExpiration(date)) {
       throw new TypeError(this.t(`Cannot set expiration longer than parent ${this._source?.[Symbol.toStringTag]} has`));
     }

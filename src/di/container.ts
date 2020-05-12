@@ -4,11 +4,7 @@ import { ASYNC_INIT } from '../@types/object';
 import { TYPES } from './types';
 import { getConfig } from '../config';
 import { BindingScopeEnum, Container, interfaces } from 'inversify';
-import {
-  ICalendarConfig,
-
-
-} from '../@types/services';
+import { ICalendarConfig } from '../@types/services';
 import { ConfigService } from '../config/config.service';
 import { CistCacheConfig } from '../config/types';
 import { CacheUtilsService } from '../services/caching/cache-utils.service';
@@ -39,7 +35,7 @@ let container: Nullable<Container> = null;
 let boundTypes: Nullable<ReadonlySet<ServiceIdentifier<any>>> = null;
 
 export interface ICreateContainerOptions {
-  types: Iterable<interfaces.Newable<any>>;
+  types: Iterable<ServiceIdentifier<any>>;
   skip: Iterable<ServiceIdentifier<any>>;
   forceNew: boolean;
 }
@@ -115,21 +111,21 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
   if ((
     allRequired || types.has(TYPES.CistCacheConfig)
-  ) && skip.has(TYPES.CistCacheConfig)) {
+  ) && !skip.has(TYPES.CistCacheConfig)) {
     container.bind<DeepReadonly<CistCacheConfig>>(TYPES.CistCacheConfig)
       .toConstantValue(getConfig().caching.cist);
   }
 
   if ((
     allRequired || types.has(TYPES.CacheMaxExpiration)
-  ) && skip.has(TYPES.CacheMaxExpiration)) {
+  ) && !skip.has(TYPES.CacheMaxExpiration)) {
     container.bind<IMaxCacheExpiration>(TYPES.CacheMaxExpiration)
       .toConstantValue(getConfig().caching.maxExpiration);
   }
 
   if ((
     allRequired || types.has(TYPES.CistApiKey)
-  ) && skip.has(TYPES.CistApiKey)) {
+  ) && !skip.has(TYPES.CistApiKey)) {
     container.bind<string>(TYPES.CistApiKey).toConstantValue(
       getConfig().cist.apiKey,
     );
@@ -137,7 +133,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
   if ((
     allRequired || types.has(TYPES.CistBaseApiUrl)
-  ) && skip.has(TYPES.CistBaseApiUrl)) {
+  ) && !skip.has(TYPES.CistBaseApiUrl)) {
     container.bind<string>(TYPES.CistBaseApiUrl).toConstantValue(
       getConfig().cist.baseUrl,
     );

@@ -9,6 +9,7 @@ const object_1 = require("../../@types/object");
 const types_1 = require("../../config/types");
 const types_2 = require("../../di/types");
 const errors_1 = require("../../errors");
+const caching_1 = require("../../utils/caching");
 const cist_1 = require("../../utils/cist");
 const common_1 = require("../../utils/common");
 const cache_utils_service_1 = require("../caching/cache-utils.service");
@@ -111,28 +112,26 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         return this._isDisposed;
     }
     async dispose() {
+        if (this._isDisposed) {
+            return;
+        }
         const promises = [];
         if (this._groupsCachedValue) {
-            promises.push(common_1.disposeChain(this._groupsCachedValue));
+            promises.push(caching_1.disposeChain(this._groupsCachedValue));
         }
         if (this._roomsCachedValue) {
-            promises.push(common_1.disposeChain(this._roomsCachedValue));
+            promises.push(caching_1.disposeChain(this._roomsCachedValue));
         }
         for (const cachedValue of this._eventsCachedValues.values()) {
-            promises.push(common_1.disposeChain(cachedValue));
+            promises.push(caching_1.disposeChain(cachedValue));
         }
         if (promises.length > 0) {
             await Promise.all(promises);
         }
+        this._isDisposed = true;
     }
     async getEventsResponse(type, entityId, dateLimits) {
-        const params = { entityId, dateLimits, typeId: type };
-        const hash = getEventsCacheFileNamePart(params);
-        let cachedValue = this._eventsCachedValues.get(hash);
-        if (!cachedValue) {
-            cachedValue = await this.createEventsCachedValue(params);
-            this._eventsCachedValues.set(hash, cachedValue);
-        }
+        const cachedValue = await this.getEventsCachedValue(type, entityId, dateLimits);
         const response = await cachedValue.loadValue();
         if (!response) {
             throw new TypeError(e('failed to find value in cache chain!'));
@@ -159,13 +158,29 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         }
         return response;
     }
+    async setEventsCacheExpiration(expiration, type, entityId, dateLimits) {
+        const cachedValue = await this.getEventsCachedValue(type, entityId, dateLimits);
+        await caching_1.setExpirationInChain(cachedValue, expiration);
+    }
+    async setGroupsCacheExpiration(expiration) {
+        if (!this._groupsCachedValue) {
+            this._groupsCachedValue = await this.createGroupsCachedValue();
+        }
+        await caching_1.setExpirationInChain(this._groupsCachedValue, expiration);
+    }
+    async setRoomsCacheExpiration(expiration) {
+        if (!this._roomsCachedValue) {
+            this._roomsCachedValue = await this.createRoomsCachedValue();
+        }
+        await caching_1.setExpirationInChain(this._roomsCachedValue, expiration);
+    }
     async destroyEventsCache() {
         for (const cachedValue of this._eventsCachedValues.values()) {
             await cachedValue.dispose();
         }
         this._eventsCachedValues.clear();
         const errors = [];
-        if (this._cacheConfig.priorities.events.includes(types_1.CacheType.Http)) {
+        if (this._cacheConfig.priorities.events.includes(types_1.CacheType.File)) {
             const fileNames = await fs_1.promises.readdir(this._baseDirectory);
             for (const fileName of fileNames) {
                 if (!isEventsCacheFile(fileName)) {
@@ -196,14 +211,14 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         if (!this._groupsCachedValue) {
             this._groupsCachedValue = await this.createGroupsCachedValue();
         }
-        await common_1.destroyChain(this._groupsCachedValue);
+        await caching_1.destroyChain(this._groupsCachedValue);
         this._groupsCachedValue = null;
     }
     async destroyRoomsCache() {
         if (!this._roomsCachedValue) {
             this._roomsCachedValue = await this.createRoomsCachedValue();
         }
-        await common_1.destroyChain(this._roomsCachedValue);
+        await caching_1.destroyChain(this._roomsCachedValue);
         this._roomsCachedValue = null;
     }
     async createGroupsCachedValue() {
@@ -277,6 +292,16 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         }
         if (!cachedValue) {
             throw new TypeError(r('No cache sources found'));
+        }
+        return cachedValue;
+    }
+    async getEventsCachedValue(type, entityId, dateLimits) {
+        const params = { entityId, dateLimits, typeId: type };
+        const hash = getEventsCacheFileNamePart(params);
+        let cachedValue = this._eventsCachedValues.get(hash);
+        if (!cachedValue) {
+            cachedValue = await this.createEventsCachedValue(params);
+            this._eventsCachedValues.set(hash, cachedValue);
         }
         return cachedValue;
     }

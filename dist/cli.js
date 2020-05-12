@@ -9,6 +9,7 @@ const common_1 = require("./cli/common");
 const config_1 = require("./config");
 const constants_1 = require("./config/constants");
 const types_1 = require("./config/types");
+const cist_cache_extend_1 = require("./jobs/cist-cache-extend");
 const exit_handler_service_1 = require("./services/exit-handler.service");
 const cist_assert_1 = require("./jobs/cist-assert");
 const packageInfo = require("../package.json");
@@ -51,7 +52,7 @@ const yargs = types_1.getBasicCliConfiguration()
         command: 'assert',
         describe: 'Check responses for validity',
         handler(argv) {
-            cist_assert_1.handleCistAssert(argv, config_1.getFullConfig(), console).catch(failStart);
+            cist_assert_1.handleCistAssert(argv, config_1.getFullConfig(), console).catch(handleError);
         },
         builder(yargs) {
             return common_1.addEntitiesOptions(yargs);
@@ -61,10 +62,9 @@ const yargs = types_1.getBasicCliConfiguration()
         command: `extend-cache`,
         describe: 'Extend cache expiration',
         handler(argv) {
-            var _a, _b;
             const args = argv;
-            console.log(args);
-            console.log('exp', (_a = args.expiration) === null || _a === void 0 ? void 0 : _a.toISOString(), 'rooms', args.auditories, 'grou', args.groups, 'even', (_b = args.events) === null || _b === void 0 ? void 0 : _b.join(', '));
+            cist_cache_extend_1.handleCistCacheExtend(args, args.expiration, config_1.getFullConfig())
+                .catch(handleError);
         },
         builder(yargs) {
             return common_1.addEntitiesOptions(yargs)
@@ -94,7 +94,7 @@ yargs.parse();
 function initializeMiddleware() {
     return config_1.initializeConfig(yargs);
 }
-function failStart(error) {
+function handleError(error) {
     console.error(error);
     exit_handler_service_1.exitGracefully(1);
 }

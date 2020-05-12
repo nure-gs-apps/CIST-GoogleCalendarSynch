@@ -16,6 +16,7 @@ import { getDefaultConfigDirectory } from './config/constants';
 import {
   getBasicCliConfiguration,
 } from './config/types';
+import { handleCistCacheExtend } from './jobs/cist-cache-extend';
 import { exitGracefully, setExitLogger } from './services/exit-handler.service';
 import { handleCistAssert } from './jobs/cist-assert';
 import * as packageInfo from '../package.json';
@@ -69,7 +70,7 @@ const yargs = getBasicCliConfiguration()
             argv as IArgsWithEntities,
             getFullConfig(),
             console,
-          ).catch(failStart);
+          ).catch(handleError);
         },
         builder(yargs) {
           return addEntitiesOptions(yargs);
@@ -80,17 +81,8 @@ const yargs = getBasicCliConfiguration()
         describe: 'Extend cache expiration',
         handler(argv) {
           const args = argv as ICistCacheExtendOptions;
-          console.log(args);
-          console.log(
-            'exp',
-            args.expiration?.toISOString(),
-            'rooms',
-            args.auditories,
-            'grou',
-            args.groups,
-            'even',
-            args.events?.join(', ')
-          );
+          handleCistCacheExtend(args, args.expiration, getFullConfig())
+            .catch(handleError);
         },
         builder(yargs) {
           return addEntitiesOptions(yargs)
@@ -123,7 +115,7 @@ function initializeMiddleware() {
   return initializeConfig(yargs);
 }
 
-function failStart(error: any) {
+function handleError(error: any) {
   console.error(error);
   exitGracefully(1);
 }

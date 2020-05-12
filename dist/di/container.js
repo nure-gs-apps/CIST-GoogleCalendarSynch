@@ -71,18 +71,18 @@ function createContainer(options) {
         container.bind(types_1.TYPES.CistJsonHttpParser)
             .to(cist_json_http_parser_service_1.CistJsonHttpParserService);
     }
-    if ((allRequired || types.has(types_1.TYPES.CistCacheConfig)) && skip.has(types_1.TYPES.CistCacheConfig)) {
+    if ((allRequired || types.has(types_1.TYPES.CistCacheConfig)) && !skip.has(types_1.TYPES.CistCacheConfig)) {
         container.bind(types_1.TYPES.CistCacheConfig)
             .toConstantValue(config_1.getConfig().caching.cist);
     }
-    if ((allRequired || types.has(types_1.TYPES.CacheMaxExpiration)) && skip.has(types_1.TYPES.CacheMaxExpiration)) {
+    if ((allRequired || types.has(types_1.TYPES.CacheMaxExpiration)) && !skip.has(types_1.TYPES.CacheMaxExpiration)) {
         container.bind(types_1.TYPES.CacheMaxExpiration)
             .toConstantValue(config_1.getConfig().caching.maxExpiration);
     }
-    if ((allRequired || types.has(types_1.TYPES.CistApiKey)) && skip.has(types_1.TYPES.CistApiKey)) {
+    if ((allRequired || types.has(types_1.TYPES.CistApiKey)) && !skip.has(types_1.TYPES.CistApiKey)) {
         container.bind(types_1.TYPES.CistApiKey).toConstantValue(config_1.getConfig().cist.apiKey);
     }
-    if ((allRequired || types.has(types_1.TYPES.CistBaseApiUrl)) && skip.has(types_1.TYPES.CistBaseApiUrl)) {
+    if ((allRequired || types.has(types_1.TYPES.CistBaseApiUrl)) && !skip.has(types_1.TYPES.CistBaseApiUrl)) {
         container.bind(types_1.TYPES.CistBaseApiUrl).toConstantValue(config_1.getConfig().cist.baseUrl);
     }
     container.bind(types_1.TYPES.GoogleAuthSubject).toConstantValue(config_1.getConfig().google.auth.subjectEmail);

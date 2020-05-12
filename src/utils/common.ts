@@ -1,7 +1,8 @@
 import { camelCase, camelCaseTransformMerge } from 'change-case';
+import iterate from 'iterare';
 import { isObjectLike as _isObjectLike } from 'lodash';
 import { ReadonlyDate } from 'readonly-date';
-import { CachedValue } from '../services/caching/cached-value';
+import { ApiGroup, ApiGroupsResponse } from '../@types/cist';
 
 export function arrayContentEqual<T>(
   first: ReadonlyArray<T>,
@@ -128,31 +129,6 @@ export namespace PathUtils {
     };
 }
 
-export async function disposeChain<T>(cachedValue: CachedValue<T>) {
-  const disposables = [cachedValue.dispose()];
-  let currentValue = cachedValue;
-  while (currentValue.needsSource && currentValue.source) {
-    disposables.push(currentValue.source.dispose());
-    currentValue = currentValue.source;
-  }
-  return Promise.all(disposables);
-}
-
-export async function destroyChain<T>(cachedValue: CachedValue<T>) {
-  const disposables = [];
-  if (cachedValue.isDestroyable) {
-    disposables.push(cachedValue.destroy());
-  }
-  let currentValue = cachedValue;
-  while (currentValue.needsSource && currentValue.source) {
-    if (currentValue.isDestroyable) {
-      disposables.push(currentValue.source.destroy());
-    }
-    currentValue = currentValue.source;
-  }
-  return Promise.all(disposables);
-}
-
 export function toPrintString(strings: ReadonlyArray<unknown>) {
   return `"${strings.join('", "')}"`;
 }
@@ -163,4 +139,14 @@ export function makePropertyEnumerable<T extends object = object>(object: T, pro
     descriptor.enumerable = true;
     Object.defineProperty(object, property, descriptor);
   }
+}
+
+export function toGroupIds(groupsResponse: ApiGroupsResponse) {
+  return iterate(groupsResponse.university.faculties)
+    .map(f => f.directions)
+    .flatten()
+    .filter(d => !!d.groups)
+    .map(d => d.groups as ApiGroup[])
+    .flatten()
+    .map(g => g.id);
 }

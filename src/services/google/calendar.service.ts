@@ -1,7 +1,7 @@
 import { calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { Nullable } from '../../@types';
-import { ICalendarConfig} from '../../@types/services';
+import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
 import {
   ApiRoomsResponse, ApiRoom, ApiGroup,

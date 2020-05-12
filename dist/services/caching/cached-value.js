@@ -207,7 +207,7 @@ class CachedValue extends events_1.EventEmitter {
     }
     async setExpiration(date) {
         var _b;
-        this._utils.assertValidExpiration(date);
+        this._utils.assertTodayValidExpiration(date);
         if (!this.canUseExpiration(date)) {
             throw new TypeError(this.t(`Cannot set expiration longer than parent ${(_b = this._source) === null || _b === void 0 ? void 0 : _b[Symbol.toStringTag]} has`));
         }
