@@ -1,5 +1,18 @@
 import { Nullable } from '../@types';
-import { logger } from './logger.service';
+import {
+  IErrorLogger,
+  IInfoLogger,
+  IWarnLogger,
+  nullLogger,
+} from '../@types/logging';
+
+export interface IExitLogger extends IInfoLogger, IWarnLogger, IErrorLogger {}
+
+let logger: IExitLogger = nullLogger;
+
+export function setExitLogger(newLogger: IExitLogger) {
+  logger = newLogger;
+}
 
 class ListNode {
   // prev: Maybe<Node>;

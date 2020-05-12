@@ -9,7 +9,7 @@ import {
   fShiftForward,
   fSize,
 } from '../../utils/fs';
-import { CacheUtilsService } from '../cache-utils.service';
+import { CacheUtilsService } from './cache-utils.service';
 import { CachedValue } from './cached-value';
 import { promises as fs, constants as fsConstants } from 'graceful-fs';
 import { lock } from 'proper-lockfile';

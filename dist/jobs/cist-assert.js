@@ -6,11 +6,11 @@ const container_1 = require("../di/container");
 const types_2 = require("../di/types");
 const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-json-client.service");
 const cist_json_http_client_service_1 = require("../services/cist/cist-json-http-client.service");
-const types_3 = require("../services/cist/types");
+const cist_1 = require("../@types/cist");
 const exit_handler_service_1 = require("../services/exit-handler.service");
 const assert_responses_1 = require("../utils/assert-responses");
 const common_1 = require("../utils/common");
-async function handleCistAssert(args, config) {
+async function handleCistAssert(args, config, logger) {
     const cacheConfig = config.ncgc.caching.cist;
     const types = [cached_cist_json_client_service_1.CachedCistJsonClientService];
     if ((args.groups
@@ -23,7 +23,7 @@ async function handleCistAssert(args, config) {
     }
     const container = container_1.createContainer({
         types,
-        forceNew: true
+        forceNew: true,
     });
     container.bind(types_2.TYPES.CistJsonClient)
         .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
@@ -36,12 +36,14 @@ async function handleCistAssert(args, config) {
     exit_handler_service_1.bindOnExitHandler(dispose);
     const failures = new Map();
     if (args.auditories) {
-        failures.set(types_3.EntityType.Rooms, assert_responses_1.assertRoomsResponse(await cistClient.getRoomsResponse()) ? [] : [0]);
+        failures.set(cist_1.EntityType.Rooms, assert_responses_1.assertRoomsResponse(await cistClient.getRoomsResponse(), logger)
+            ? []
+            : [0]);
     }
     let groupsResponse = null;
     if (args.groups) {
         groupsResponse = await cistClient.getGroupsResponse();
-        failures.set(types_3.EntityType.Groups, assert_responses_1.assertGroupsResponse(groupsResponse) ? [] : [0]);
+        failures.set(cist_1.EntityType.Groups, assert_responses_1.assertGroupsResponse(groupsResponse, logger) ? [] : [0]);
     }
     if (args.events) {
         let groupIds;
@@ -62,30 +64,30 @@ async function handleCistAssert(args, config) {
         }
         const eventFailures = [];
         for (const groupId of groupIds) {
-            const events = await cistClient.getEventsResponse(types_3.TimetableType.Group, groupId);
-            if (!assert_responses_1.assertEventsResponse(events)) {
+            const events = await cistClient.getEventsResponse(cist_1.TimetableType.Group, groupId);
+            if (!assert_responses_1.assertEventsResponse(events, logger)) {
                 eventFailures.push(groupId);
             }
         }
-        failures.set(types_3.EntityType.Events, eventFailures);
+        failures.set(cist_1.EntityType.Events, eventFailures);
     }
     await cistClient.dispose();
-    console.info('Results:');
-    let ids = failures.get(types_3.EntityType.Rooms);
+    logger.info('Results:');
+    let ids = failures.get(cist_1.EntityType.Rooms);
     if (ids) {
-        console.info(ids.length === 0
+        logger.info(ids.length === 0
             ? 'Auditories response is valid'
             : 'Auditories response is NOT valid');
     }
-    ids = failures.get(types_3.EntityType.Groups);
+    ids = failures.get(cist_1.EntityType.Groups);
     if (ids) {
-        console.info(ids.length === 0
+        logger.info(ids.length === 0
             ? 'Groups response is valid'
             : 'Groups response is NOT valid');
     }
-    ids = failures.get(types_3.EntityType.Events);
+    ids = failures.get(cist_1.EntityType.Events);
     if (ids) {
-        console.info(ids.length === 0
+        logger.info(ids.length === 0
             ? 'All Events responses are valid'
             : `Responses for such Group IDs are not valid: ${common_1.toPrintString(ids)}`);
     }

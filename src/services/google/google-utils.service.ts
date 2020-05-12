@@ -9,7 +9,7 @@ import {
   ApiRoom,
   ApiBuilding,
   ApiGroup,
-} from '../cist/types';
+} from '../../@types/cist';
 import Schema$Building = admin_directory_v1.Schema$Building;
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import Schema$Group = admin_directory_v1.Schema$Group;

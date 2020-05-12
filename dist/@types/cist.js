@@ -38,4 +38,4 @@ var TimetableType;
     TimetableType[TimetableType["Teacher"] = 2] = "Teacher";
     TimetableType[TimetableType["Room"] = 3] = "Room";
 })(TimetableType = exports.TimetableType || (exports.TimetableType = {}));
-//# sourceMappingURL=types.js.map
+//# sourceMappingURL=cist.js.map

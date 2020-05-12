@@ -1,12 +1,12 @@
 import { ReadonlyDate } from 'readonly-date';
 import { DeepReadonly, Nullable } from '../../@types';
-import { CacheUtilsService } from '../cache-utils.service';
+import { CacheUtilsService } from '../caching/cache-utils.service';
 import { CachedValueSource } from '../caching/cached-value-source';
 import { CistJsonHttpClient } from './cist-json-http-client.service';
 import {
   ApiEventsResponse,
   IEventsQueryParams,
-} from './types';
+} from '../../@types/cist';
 
 export class CistJsonHttpEventsCachedValue extends CachedValueSource<ApiEventsResponse> {
   readonly isDestroyable = false;

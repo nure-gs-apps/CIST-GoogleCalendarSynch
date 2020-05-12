@@ -1,6 +1,8 @@
 import iterate from 'iterare';
 import { Arguments, Argv } from 'yargs';
-import { DeepPartial, DeepReadonly, IEntitiesToOperateOn } from '../@types';
+import { DeepPartial, DeepReadonly } from '../@types';
+import { IEntitiesToOperateOn } from '../@types/jobs';
+import { IWarnLogger } from '../@types/logging';
 import { IFullAppConfig } from '../config/types';
 import { toPrintString } from '../utils/common';
 
@@ -16,7 +18,7 @@ export function assertHasEntities(args: DeepReadonly<IArgsWithEntities>) {
 
 export function addEntitiesOptions<T extends DeepPartial<IFullAppConfig> =  DeepPartial<IFullAppConfig>>(
   yargs: Argv<T>,
-  logger: { warn: Console['warn'] } = console
+  logger: IWarnLogger = console,
 ): Argv<T & IEntitiesToOperateOn> {
   const groupsName = nameof<IEntitiesToOperateOn>(e => e.groups);
   const auditoriesName = nameof<IEntitiesToOperateOn>(e => e.auditories);

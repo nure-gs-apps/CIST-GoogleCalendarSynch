@@ -1,6 +1,6 @@
 import Bottleneck from 'bottleneck';
 import { interfaces } from 'inversify';
-import { IApiQuota } from '../@types';
+import { IApiQuota } from '../@types/services';
 import { bindOnExitHandler } from './exit-handler.service';
 
 export function getQuotaLimiterFactory(

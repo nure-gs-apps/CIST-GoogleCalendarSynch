@@ -1,14 +1,12 @@
 import { promises as fs } from 'fs';
 import { inject, injectable, optional } from 'inversify';
 import * as path from 'path';
+import { DeepReadonly, Nullable, Optional } from '../../@types';
 import {
   ASYNC_INIT,
-  DeepReadonly,
   IAsyncInitializable,
   IDisposable,
-  Nullable,
-  Optional,
-} from '../../@types';
+} from '../../@types/object';
 import { CacheType, CistCacheConfig } from '../../config/types';
 import { TYPES } from '../../di/types';
 import { MultiError, NestedError } from '../../errors';
@@ -19,7 +17,7 @@ import {
   isWindows,
   PathUtils,
 } from '../../utils/common';
-import { CacheUtilsService } from '../cache-utils.service';
+import { CacheUtilsService } from '../caching/cache-utils.service';
 import { CachedValue } from '../caching/cached-value';
 import { FileCachedValue } from '../caching/file-cached-value';
 import { CistJsonHttpClient } from './cist-json-http-client.service';
@@ -34,7 +32,7 @@ import {
   IDateLimits,
   IEventsQueryParams,
   TimetableType, EntityType,
-} from './types';
+} from '../../@types/cist';
 
 @injectable()
 export class CachedCistJsonClientService implements ICistJsonClient, IAsyncInitializable, IDisposable {

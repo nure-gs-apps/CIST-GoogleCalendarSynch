@@ -1,8 +1,11 @@
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment-timezone';
 import { ReadonlyDate } from 'readonly-date';
-import { assertMaxCacheExpiration, IMaxCacheExpiration } from '../@types';
-import { TYPES } from '../di/types';
+import {
+  assertMaxCacheExpiration,
+  IMaxCacheExpiration,
+} from '../../@types/caching';
+import { TYPES } from '../../di/types';
 
 @injectable()
 export class CacheUtilsService {

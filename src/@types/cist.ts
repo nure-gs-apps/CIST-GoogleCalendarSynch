@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { DeepReadonly, Nullable } from '../../@types';
+import { DeepReadonly, Nullable } from './index';
 
 export enum EntityType {
   Events= 'events',

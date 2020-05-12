@@ -3,7 +3,10 @@
 import './polyfills';
 import iterate from 'iterare';
 import { EOL } from 'os';
-import { addEntitiesOptions, IArgsWithEntities } from './cli/common';
+import {
+  addEntitiesOptions,
+  IArgsWithEntities,
+} from './cli/common';
 import {
   getFullConfig,
   getSupportedConfigExtensionsInPriorityOrder,
@@ -13,9 +16,11 @@ import { getDefaultConfigDirectory } from './config/constants';
 import {
   getBasicCliConfiguration,
 } from './config/types';
-import { exitGracefully } from './services/exit-handler.service';
+import { exitGracefully, setExitLogger } from './services/exit-handler.service';
 import { handleCistAssert } from './jobs/cist-assert';
 import * as packageInfo from '../package.json';
+
+setExitLogger(console);
 
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
@@ -60,8 +65,11 @@ const yargs = getBasicCliConfiguration()
         command: 'assert',
         describe: 'Check responses for validity',
         handler(argv) {
-          handleCistAssert(argv as IArgsWithEntities, getFullConfig())
-            .catch(failStart);
+          handleCistAssert(
+            argv as IArgsWithEntities,
+            getFullConfig(),
+            console,
+          ).catch(failStart);
         },
         builder(yargs) {
           return addEntitiesOptions(yargs);

@@ -1,16 +1,17 @@
+import { DeepReadonly, Nullable } from '../@types';
+import { IMaxCacheExpiration } from '../@types/caching';
+import { ASYNC_INIT } from '../@types/object';
 import { TYPES } from './types';
 import { getConfig } from '../config';
 import { BindingScopeEnum, Container, interfaces } from 'inversify';
 import {
-  ASYNC_INIT,
-  DeepReadonly,
   ICalendarConfig,
-  IMaxCacheExpiration,
-  Nullable,
-} from '../@types';
+
+
+} from '../@types/services';
 import { ConfigService } from '../config/config.service';
 import { CistCacheConfig } from '../config/types';
-import { CacheUtilsService } from '../services/cache-utils.service';
+import { CacheUtilsService } from '../services/caching/cache-utils.service';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.service';
 import { CistJsonHttpParserService } from '../services/cist/cist-json-http-parser.service';
@@ -25,7 +26,7 @@ import { GoogleApiCalendar } from '../services/google/google-api-calendar';
 import { GoogleAuth } from '../services/google/google-auth';
 import { GoogleApiDirectory } from '../services/google/google-api-directory';
 import { GroupsService } from '../services/google/groups.service';
-import { IGoogleAuth } from '../services/google/interfaces';
+import { IGoogleAuth } from '../services/google/types';
 import { RoomsService } from '../services/google/rooms.service';
 import { GoogleUtilsService } from '../services/google/google-utils.service';
 import {

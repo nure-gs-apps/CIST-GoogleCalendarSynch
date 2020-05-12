@@ -1,12 +1,13 @@
 /* tslint:disable:ter-indent */
 import * as yargs from 'yargs';
+import { DeepPartial, Nullable } from '../@types';
 import {
-  DeepPartial,
   IApiQuota,
   ICalendarConfig,
-  IMaxCacheExpiration,
-  Nullable,
-} from '../@types';
+
+
+} from '../@types/services';
+import { IMaxCacheExpiration } from '../@types/caching';
 import { getDefaultConfigDirectory } from './constants';
 import { paramCase } from 'change-case';
 import { getConfig } from './index';

@@ -8,7 +8,7 @@ const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 const errors_1 = require("../../errors");
 const common_1 = require("../../utils/common");
-const types_2 = require("./types");
+const cist_1 = require("../../@types/cist");
 // function cloneQueryParams(params: IQueryParams) {
 //   const newParams = {
 //     type_id: params.type_id,
@@ -89,7 +89,7 @@ let CistJsonHttpClient = CistJsonHttpClient_1 = class CistJsonHttpClient {
         })
             .then(response => this._cistParser.parseEventsResponse(response))
             .catch(error => {
-            let message = `CIST Events request error. type: ${types_2.TimetableType[type]}, id: ${entityId}`;
+            let message = `CIST Events request error. type: ${cist_1.TimetableType[type]}, id: ${entityId}`;
             if (dateLimits) {
                 if (dateLimits.from) {
                     message += `, timeFrom: ${dateLimits.from.toISOString()}`;

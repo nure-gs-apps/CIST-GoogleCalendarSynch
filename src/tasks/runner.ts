@@ -1,6 +1,6 @@
 import iterate from 'iterare';
 import { Nullable } from '../@types';
-import { ITaskDefinition, ITaskFailedStep, ITaskStepExecutor } from './types';
+import { ITaskDefinition, ITaskFailedStep, ITaskStepExecutor } from '../@types/tasks';
 import { cloneDeep } from 'lodash';
 
 // FIXME: possibly add `isError` monad in run steps

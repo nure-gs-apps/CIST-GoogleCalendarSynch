@@ -1,8 +1,9 @@
 import { inject, injectable } from 'inversify';
 import { google } from 'googleapis';
-import { ASYNC_INIT, IAsyncInitializable, Nullable } from '../../@types';
+import { Nullable } from '../../@types';
+import { ASYNC_INIT, IAsyncInitializable } from '../../@types/object';
 import { TYPES } from '../../di/types';
-import { IGoogleAuth } from './interfaces';
+import { IGoogleAuth } from './types';
 
 @injectable()
 export class GoogleAuth implements IGoogleAuth, IAsyncInitializable {

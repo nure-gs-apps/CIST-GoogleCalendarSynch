@@ -12,6 +12,7 @@ const types_1 = require("./config/types");
 const exit_handler_service_1 = require("./services/exit-handler.service");
 const cist_assert_1 = require("./jobs/cist-assert");
 const packageInfo = require("../package.json");
+exit_handler_service_1.setExitLogger(console);
 const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
 
 The script accepts command line options that override configuration of the script.
@@ -50,8 +51,7 @@ const yargs = types_1.getBasicCliConfiguration()
         command: 'assert',
         describe: 'Check responses for validity',
         handler(argv) {
-            cist_assert_1.handleCistAssert(argv, config_1.getFullConfig())
-                .catch(failStart);
+            cist_assert_1.handleCistAssert(argv, config_1.getFullConfig(), console).catch(failStart);
         },
         builder(yargs) {
             return common_1.addEntitiesOptions(yargs);

@@ -5,18 +5,18 @@ const tslib_1 = require("tslib");
 const fs_1 = require("fs");
 const inversify_1 = require("inversify");
 const path = require("path");
-const _types_1 = require("../../@types");
+const object_1 = require("../../@types/object");
 const types_1 = require("../../config/types");
 const types_2 = require("../../di/types");
 const errors_1 = require("../../errors");
 const cist_1 = require("../../utils/cist");
 const common_1 = require("../../utils/common");
-const cache_utils_service_1 = require("../cache-utils.service");
+const cache_utils_service_1 = require("../caching/cache-utils.service");
 const file_cached_value_1 = require("../caching/file-cached-value");
 const cist_json_http_events_cached_value_1 = require("./cist-json-http-events-cached-value");
 const cist_json_http_groups_cached_value_1 = require("./cist-json-http-groups-cached-value");
 const cist_json_http_rooms_cached_value_1 = require("./cist-json-http-rooms-cached-value");
-const types_3 = require("./types");
+const cist_2 = require("../../@types/cist");
 let CachedCistJsonClientService = class CachedCistJsonClientService {
     constructor(cacheUtils, cacheConfig, 
     // tslint:disable-next-line:max-line-length
@@ -84,13 +84,13 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         this._groupsCachedValue = null;
         this._roomsCachedValue = null;
         this._isDisposed = false;
-        this[_types_1.ASYNC_INIT] = Promise.resolve();
+        this[object_1.ASYNC_INIT] = Promise.resolve();
         // File cache
         if (this.includesCache(types_1.CacheType.File)) {
             this._baseDirectory = path.resolve(common_1.PathUtils.expandVars(common_1.isWindows()
                 ? this._cacheConfig.configs[types_1.CacheType.File].directory.win
                 : this._cacheConfig.configs[types_1.CacheType.File].directory.unix));
-            this[_types_1.ASYNC_INIT] = this[_types_1.ASYNC_INIT]
+            this[object_1.ASYNC_INIT] = this[object_1.ASYNC_INIT]
                 .then(() => fs_1.promises.mkdir(this._baseDirectory, { recursive: true }));
         }
         else {
@@ -224,7 +224,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                     }
                     break;
                 case types_1.CacheType.File:
-                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(types_3.EntityType.Groups)));
+                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(cist_2.EntityType.Groups)));
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -265,7 +265,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                     }
                     break;
                 case types_1.CacheType.File:
-                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(types_3.EntityType.Rooms)));
+                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(cist_2.EntityType.Rooms)));
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -298,7 +298,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
                     }
                     break;
                 case types_1.CacheType.File:
-                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(types_3.EntityType.Events, params)));
+                    cachedValue = new file_cached_value_1.FileCachedValue(this._cacheUtils, path.join(this._baseDirectory, getCacheFileName(cist_2.EntityType.Events, params)));
                     if (!cachedValue.isInitialized) {
                         await cachedValue.init();
                     }
@@ -317,7 +317,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         return cist_1.includesCache(this._cacheConfig, type);
     }
 };
-_a = _types_1.ASYNC_INIT;
+_a = object_1.ASYNC_INIT;
 CachedCistJsonClientService = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_2.TYPES.CacheUtils)),
@@ -347,7 +347,7 @@ function getEventsCacheFileNamePart(options) {
     }
     return hash;
 }
-const fileNameRegex = new RegExp(`^${types_3.EntityType.Events}\\.[1-3]\\.\\d+(\\.(\\d*\\.\\d+|\\d+\\.))?\\.tmp$`);
+const fileNameRegex = new RegExp(`^${cist_2.EntityType.Events}\\.[1-3]\\.\\d+(\\.(\\d*\\.\\d+|\\d+\\.))?\\.tmp$`);
 function isEventsCacheFile(fileName) {
     return fileNameRegex.test(fileName);
 }

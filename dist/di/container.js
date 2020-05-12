@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const object_1 = require("../@types/object");
 const types_1 = require("./types");
 const config_1 = require("../config");
 const inversify_1 = require("inversify");
-const _types_1 = require("../@types");
 const config_service_1 = require("../config/config.service");
-const cache_utils_service_1 = require("../services/cache-utils.service");
+const cache_utils_service_1 = require("../services/caching/cache-utils.service");
 const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-json-client.service");
 const cist_json_http_client_service_1 = require("../services/cist/cist-json-http-client.service");
 const cist_json_http_parser_service_1 = require("../services/cist/cist-json-http-parser.service");
@@ -137,11 +137,11 @@ function getInitPromise() {
     if (boundTypes.size === 0
         || boundTypes.has(types_1.TYPES.GoogleAuth)
         || boundTypes.has(google_auth_1.GoogleAuth)) {
-        promises.push(container.get(types_1.TYPES.GoogleAuth)[_types_1.ASYNC_INIT]);
+        promises.push(container.get(types_1.TYPES.GoogleAuth)[object_1.ASYNC_INIT]);
     }
     if (boundTypes.size === 0
         || boundTypes.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
-        promises.push(container.get(types_1.TYPES.CistJsonClient)[_types_1.ASYNC_INIT]);
+        promises.push(container.get(types_1.TYPES.CistJsonClient)[object_1.ASYNC_INIT]);
     }
     return Promise.all(promises);
 }

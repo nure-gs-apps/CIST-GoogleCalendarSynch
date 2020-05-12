@@ -4,8 +4,8 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const moment = require("moment-timezone");
 const readonly_date_1 = require("readonly-date");
-const _types_1 = require("../@types");
-const types_1 = require("../di/types");
+const caching_1 = require("../../@types/caching");
+const types_1 = require("../../di/types");
 let CacheUtilsService = class CacheUtilsService {
     constructor(maxCacheExpirationConfig) {
         Object.defineProperty(this, "maxCacheExpirationConfig", {
@@ -14,7 +14,7 @@ let CacheUtilsService = class CacheUtilsService {
             writable: true,
             value: void 0
         });
-        _types_1.assertMaxCacheExpiration(maxCacheExpirationConfig);
+        caching_1.assertMaxCacheExpiration(maxCacheExpirationConfig);
         this.maxCacheExpirationConfig = maxCacheExpirationConfig;
     }
     clampExpiration(date = new readonly_date_1.ReadonlyDate(), max = this.getMaxExpiration()) {

@@ -5,7 +5,7 @@ import {
   ApiEventsResponse,
   ApiGroupsResponse,
   ICistJsonHttpParserService,
-} from './types';
+} from '../../@types/cist';
 
 @injectable()
 export class CistJsonHttpParserService implements ICistJsonHttpParserService {

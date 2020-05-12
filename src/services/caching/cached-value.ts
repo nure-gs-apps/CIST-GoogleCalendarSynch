@@ -1,10 +1,11 @@
 import { Sema } from 'async-sema/lib';
 import { EventEmitter } from 'events';
 import { ReadonlyDate } from 'readonly-date';
-import { asReadonly, IDisposable, Nullable } from '../../@types';
+import { asReadonly, Nullable } from '../../@types';
+import { IDisposable } from '../../@types/object';
 import { NestedError } from '../../errors';
 import { throwAsyncIfAny } from '../../utils/common';
-import { CacheUtilsService } from '../cache-utils.service';
+import { CacheUtilsService } from './cache-utils.service';
 
 export enum CacheEvent {
   CacheUpdated = 'cache-updated',

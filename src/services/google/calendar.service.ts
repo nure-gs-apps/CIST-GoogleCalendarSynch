@@ -1,11 +1,12 @@
 import { calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
-import { ICalendarConfig, Nullable } from '../../@types';
+import { Nullable } from '../../@types';
+import { ICalendarConfig} from '../../@types/services';
 import { TYPES } from '../../di/types';
 import {
   ApiRoomsResponse, ApiRoom, ApiGroup,
   ApiGroupsResponse,
-} from '../cist/types';
+} from '../../@types/cist';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { GoogleApiCalendar } from './google-api-calendar';
 import { GoogleUtilsService } from './google-utils.service';

@@ -5,7 +5,7 @@ import { TYPES } from '../../di/types';
 import {
   ApiRoomsResponse,
   ApiRoom,
-} from '../cist/types';
+} from '../../@types/cist';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';

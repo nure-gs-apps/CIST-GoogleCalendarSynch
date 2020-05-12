@@ -1,4 +1,5 @@
-import { DeepReadonly, IEntitiesToOperateOn } from '../@types';
+import { DeepReadonly } from '../@types';
+import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IFullAppConfig } from '../config/types';
 
 export async function handleCistCacheExtend(

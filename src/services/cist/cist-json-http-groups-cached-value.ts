@@ -1,9 +1,9 @@
 import { ReadonlyDate } from 'readonly-date';
 import { Nullable } from '../../@types';
-import { CacheUtilsService } from '../cache-utils.service';
+import { CacheUtilsService } from '../caching/cache-utils.service';
 import { CachedValueSource } from '../caching/cached-value-source';
 import { CistJsonHttpClient } from './cist-json-http-client.service';
-import { ApiGroupsResponse } from './types';
+import { ApiGroupsResponse } from '../../@types/cist';
 
 export class CistJsonHttpGroupsCachedValue extends CachedValueSource<ApiGroupsResponse> {
   protected readonly _http: CistJsonHttpClient;

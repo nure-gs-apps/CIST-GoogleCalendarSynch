@@ -8,7 +8,7 @@ import { arrayContentEqual } from '../../utils/common';
 import {
   ApiRoomsResponse,
   ApiBuilding,
-} from '../cist/types';
+} from '../../@types/cist';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';

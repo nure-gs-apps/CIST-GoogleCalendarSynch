@@ -10,7 +10,7 @@ import {
   ICistJsonHttpParserService,
   IDateLimits,
   TimetableType,
-} from './types';
+} from '../../@types/cist';
 
 interface IQueryParams {
   idClient: string;

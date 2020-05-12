@@ -22,4 +22,4 @@ TGuard = () => true) {
                 && 'error' in s && (!('value' in s) || TGuard(s.value))));
 }
 exports.isTaskDefinition = isTaskDefinition;
-//# sourceMappingURL=types.js.map
+//# sourceMappingURL=tasks.js.map

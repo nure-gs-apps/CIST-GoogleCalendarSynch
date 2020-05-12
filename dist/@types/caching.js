@@ -1,17 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.asReadonly = Symbol('asReadonly');
-exports.asPartial = Symbol('asPartial');
-function t(...args) {
-    return args;
-}
-exports.t = t;
-function isDisposable(obj) {
-    const value = obj;
-    return typeof value.dispose === 'function'
-        && typeof value.isDisposed === 'boolean';
-}
-exports.isDisposable = isDisposable;
 function assertMaxCacheExpiration(config) {
     if (typeof config !== 'object'
         || typeof config.hours !== 'number'
@@ -26,5 +14,4 @@ function assertMaxCacheExpiration(config) {
     }
 }
 exports.assertMaxCacheExpiration = assertMaxCacheExpiration;
-exports.ASYNC_INIT = Symbol.for('@asyncInit');
-//# sourceMappingURL=@types.js.map
+//# sourceMappingURL=caching.js.map

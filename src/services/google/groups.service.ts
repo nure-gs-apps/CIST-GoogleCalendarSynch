@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
 import { TYPES } from '../../di/types';
-import { ApiGroup, ApiGroupsResponse } from '../cist/types';
+import { ApiGroup, ApiGroupsResponse } from '../../@types/cist';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';

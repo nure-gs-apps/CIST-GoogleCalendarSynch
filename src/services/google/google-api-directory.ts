@@ -1,7 +1,7 @@
 import { admin_directory_v1, google } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../di/types';
-import { IGoogleAuth } from './interfaces';
+import { IGoogleAuth } from './types';
 import Admin = admin_directory_v1.Admin;
 
 @injectable()

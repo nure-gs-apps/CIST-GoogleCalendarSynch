@@ -1,6 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_service_1 = require("./logger.service");
+const logging_1 = require("../@types/logging");
+let logger = logging_1.nullLogger;
+function setExitLogger(newLogger) {
+    logger = newLogger;
+}
+exports.setExitLogger = setExitLogger;
 class ListNode {
     constructor(handler /*, prev?: Node*/, next = null) {
         // prev: Maybe<Node>;
@@ -94,19 +99,19 @@ let handled = false;
 let onSignalHandler = null;
 const errorHandler = (err, p) => {
     if (p) {
-        logger_service_1.logger.error('Unhandled promise rejection for ');
-        logger_service_1.logger.error(p);
+        logger.error('Unhandled promise rejection for ');
+        logger.error(p);
     }
     else {
-        logger_service_1.logger.error('Unhandled exception!');
+        logger.error('Unhandled exception!');
     }
-    logger_service_1.logger.error(err);
+    logger.error(err);
     execHandlers().catch(err => {
-        logger_service_1.logger.error('The process is not shut down gracefully! Error while error handling.');
-        logger_service_1.logger.error(err);
+        logger.error('The process is not shut down gracefully! Error while error handling.');
+        logger.error(err);
     }).finally(() => {
         process.on('exit', () => {
-            logger_service_1.logger.warn('WARNING! Non-one exit code!');
+            logger.warn('WARNING! Non-one exit code!');
             process.kill(process.pid);
         });
         process.exit(1);
@@ -140,7 +145,7 @@ exports.exitGracefully = exitGracefully;
 function initListeners() {
     onSignalHandler = (signal, exitCode = 0) => {
         execHandlers().catch((err) => {
-            logger_service_1.logger.error(err);
+            logger.error(err);
             process.exit(1);
         }).then(() => {
             process.exit(exitCode);
@@ -164,14 +169,14 @@ function removeListeners() {
 }
 async function execHandlers() {
     if (handled) {
-        logger_service_1.logger.info('Process exit handlers are being executed. Waiting...');
+        logger.info('Process exit handlers are being executed. Waiting...');
         return;
     }
     handled = list.length > 0;
     if (list.length > 0) {
-        logger_service_1.logger.info('The process is running exit handlers...');
+        logger.info('The process is running exit handlers...');
         const timeout = setTimeout(() => {
-            logger_service_1.logger.error('The process exited due to too long wait for exit handlers!');
+            logger.error('The process exited due to too long wait for exit handlers!');
             process.exit(1);
         }, 3000);
         for (const handler of list) {

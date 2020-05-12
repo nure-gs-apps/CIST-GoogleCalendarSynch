@@ -1,7 +1,7 @@
 import { calendar_v3, google } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../di/types';
-import { IGoogleAuth } from './interfaces';
+import { IGoogleAuth } from './types';
 
 @injectable()
 export class GoogleApiCalendar {

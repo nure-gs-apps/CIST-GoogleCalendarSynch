@@ -1,7 +1,7 @@
 import { iterate } from 'iterare';
 import { DeepReadonly } from '../@types';
 import { CacheType, CistCacheConfig } from '../config/types';
-import { ApiBuilding } from '../services/cist/types';
+import { ApiBuilding } from '../@types/cist';
 import { transformFloorname } from '../services/google/google-utils.service';
 
 export function getFloornamesFromBuilding(building: ApiBuilding) {

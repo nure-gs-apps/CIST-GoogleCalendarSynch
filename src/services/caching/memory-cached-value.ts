@@ -1,6 +1,6 @@
 import { ReadonlyDate } from 'readonly-date';
 import { Nullable } from '../../@types';
-import { CacheUtilsService } from '../cache-utils.service';
+import { CacheUtilsService } from './cache-utils.service';
 import {
   CachedValue,
   IReadonlyCachedValue,
