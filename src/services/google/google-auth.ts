@@ -36,25 +36,30 @@ export class GoogleAuth implements IGoogleAuth, IAsyncInitializable {
   }
 }
 
+export interface IGoogleAuth {
+  readonly authClient: AnyGoogleAuthClient;
+}
+
 export type OnError = (error: any, keyFilePath?: string) => any;
+export type AnyGoogleAuthClient = Compute | JWT | UserRefreshClient;
 
 let defaultScopes: string[] = [];
 export function clearDefaultScopes() {
   defaultScopes = [];
 }
-export function addDefaultScopes(newScopes: string[]) {
+export function addDefaultScopes(newScopes: ReadonlyArray<string>) {
   defaultScopes = defaultScopes.concat(newScopes);
 }
 
 export function createAuthWithFallback(
   key: JWTInput, scopes: string | string[], onError?: OnError
-): Promise<Compute | JWT | UserRefreshClient>;
+): Promise<AnyGoogleAuthClient>;
 export function createAuthWithFallback(
   keyFilePath: string, scopes: string | string[], onError?: OnError
-): Promise<Compute | JWT | UserRefreshClient>;
+): Promise<AnyGoogleAuthClient>;
 export async function createAuthWithFallback(
   key: JWTInput | string, scopes: string | string[], onError = noop
-): Promise<Compute | JWT | UserRefreshClient> {
+): Promise<AnyGoogleAuthClient> {
   if (typeof key === 'string' && !path.isAbsolute(key)) {
     let filePath = path.resolve(key);
     try {
@@ -79,14 +84,14 @@ export async function createAuthWithFallback(
 
 export function createAuth(
   key: JWTInput, scopes: string | string[]
-): Promise<Compute | JWT | UserRefreshClient>;
+): Promise<AnyGoogleAuthClient>;
 export function createAuth(
   keyFilePath: string, scopes: string | string[]
-): Promise<Compute | JWT | UserRefreshClient>;
-export function createAuth(): Promise<Compute | JWT | UserRefreshClient>;
+): Promise<AnyGoogleAuthClient>;
+export function createAuth(): Promise<AnyGoogleAuthClient>;
 export function createAuth(
   key?: JWTInput | string, scopes?: string | string[]
-): Promise<Compute | JWT | UserRefreshClient> {
+): Promise<AnyGoogleAuthClient> {
   if (!key) {
     return google.auth.getClient({
       scopes: defaultScopes

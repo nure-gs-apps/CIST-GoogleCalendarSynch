@@ -1,6 +1,8 @@
 import { DeepReadonly, Nullable } from '../@types';
 import { IMaxCacheExpiration } from '../@types/caching';
+import { ILogger } from '../@types/logging';
 import { ASYNC_INIT } from '../@types/object';
+import { logger } from '../services/logger.service';
 import { TYPES } from './types';
 import { getConfig } from '../config';
 import { BindingScopeEnum, Container, interfaces } from 'inversify';
@@ -15,7 +17,7 @@ import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
 import {
   calenderAuthScopes,
-  directoryAuthScopes,
+  adminDirectoryAuthScopes,
 } from '../services/google/constants';
 import { EventsService } from '../services/google/events.service';
 import { GoogleApiCalendar } from '../services/google/google-api-calendar';
@@ -150,7 +152,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
         || process.env.GOOGLE_APPLICATION_CREDENTIALS!,
     );
   container.bind<ReadonlyArray<string>>(TYPES.GoogleAuthScopes)
-    .toConstantValue(directoryAuthScopes.concat(calenderAuthScopes));
+    .toConstantValue(adminDirectoryAuthScopes.concat(calenderAuthScopes));
   container.bind<ICalendarConfig>(TYPES.GoogleCalendarConfig).toConstantValue(
     getConfig().google.calendar,
   );
@@ -184,6 +186,12 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
   container.bind<GoogleUtilsService>(TYPES.GoogleUtils).to(GoogleUtilsService);
   container.bind<ConfigService>(TYPES.Config).to(ConfigService);
+
+  if ((
+    allRequired || types.has(TYPES.Logger)
+  ) && !skip.has(TYPES.Logger)) {
+    container.bind<ILogger>(TYPES.Logger).toConstantValue(logger);
+  }
 
   boundTypes = types;
 

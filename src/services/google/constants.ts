@@ -1,6 +1,6 @@
 export const customer = 'my_customer';
 
-export const directoryAuthScopes = [
+export const adminDirectoryAuthScopes = [
   'https://www.googleapis.com/auth/admin.directory.resource.calendar',
   'https://www.googleapis.com/auth/admin.directory.group',
 ] as ReadonlyArray<string>;

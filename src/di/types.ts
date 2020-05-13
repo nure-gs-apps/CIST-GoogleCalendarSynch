@@ -7,6 +7,7 @@ export const TYPES = {
 
   CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
   CistApiKey: Symbol.for('CistApiKey'),
+  GoogleAuthAdminDirectoryKey: Symbol.for('GoogleAuthAdminDirectoryKey'),
   GoogleAuthKeyFilepath: Symbol.for('GoogleAuthKeyFilepath'),
   GoogleAuthCalendarKeyFilepath: Symbol.for('GoogleAuthCalendarKeyFilepath'),
   GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
@@ -19,6 +20,8 @@ export const TYPES = {
 
   // class tokens
   Config: Symbol.for('Config'),
+  Logger: Symbol.for('Logger'),
+
   CistJsonHttpClient: Symbol.for('CistJsonHttpClient'),
   CistJsonClient: Symbol.for('CistJsonClient'),
   CistJsonHttpParser: Symbol.for('CistJsonHttpParser'),

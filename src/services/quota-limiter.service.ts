@@ -1,5 +1,6 @@
 import Bottleneck from 'bottleneck';
 import { interfaces } from 'inversify';
+import { IDisposable } from '../@types/object';
 import { IApiQuota } from '../@types/services';
 import { bindOnExitHandler } from './exit-handler.service';
 
@@ -16,14 +17,14 @@ export function getQuotaLimiterFactory(
   };
 }
 
-export class QuotaLimiterService {
+export class QuotaLimiterService implements IDisposable {
   static readonly DAY_MS = 24 * 60 * 60 * 1000;
 
   readonly dailyLimiter: Bottleneck;
   readonly limiter: Bottleneck;
   private _disposed: boolean;
 
-  get disposed() {
+  get isDisposed() {
     return this._disposed;
   }
 
@@ -63,7 +64,7 @@ export class QuotaLimiterService {
 
   dispose() {
     if (this._disposed) {
-      return;
+      return Promise.resolve();
     }
     this.limiter.chain(undefined);
     this._disposed = true;
@@ -72,6 +73,6 @@ export class QuotaLimiterService {
       this.dailyLimiter.stop(),
       this.limiter.disconnect(),
       this.dailyLimiter.disconnect(),
-    );
+    ) as Promise<any>;
   }
 }
