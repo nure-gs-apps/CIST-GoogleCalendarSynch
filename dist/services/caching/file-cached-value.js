@@ -69,7 +69,7 @@ class FileCachedValue extends cached_value_1.CachedValue {
             if (!fileStats.isFile()) {
                 throw new TypeError(this.t('is expected to be a file'));
             }
-            if (!graceful_fs_1.promises.access(this._fileName, graceful_fs_1.constants.F_OK | graceful_fs_1.constants.R_OK | graceful_fs_1.constants.W_OK).then(() => true).catch(() => false)) {
+            if (!await fs_1.fAccess(this._fileName, graceful_fs_1.constants.F_OK | graceful_fs_1.constants.R_OK | graceful_fs_1.constants.W_OK)) {
                 throw new Error(this.t(`Cache file ${this._fileName} is not accessible for read and write`));
             }
         }

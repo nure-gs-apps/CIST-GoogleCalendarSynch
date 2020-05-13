@@ -8,10 +8,10 @@ const types_1 = require("../../di/types");
 const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
-const google_api_directory_1 = require("./google-api-directory");
+const google_api_admin_directory_1 = require("./google-api-admin-directory");
 const google_utils_service_1 = require("./google-utils.service");
 let RoomsService = RoomsService_1 = class RoomsService {
-    constructor(googleApiDirectory, quotaLimiter, utils) {
+    constructor(googleApiAdminDirectory, quotaLimiter, utils) {
         Object.defineProperty(this, "_utils", {
             enumerable: true,
             configurable: true,
@@ -61,7 +61,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
             value: void 0
         });
         this._utils = utils;
-        this._directory = googleApiDirectory;
+        this._directory = googleApiAdminDirectory;
         this._rooms = this._directory.googleDirectory.resources.calendars;
         this._quotaLimiter = quotaLimiter;
         this._insert = this._quotaLimiter.limiter.wrap(this._rooms.insert.bind(this._rooms));
@@ -189,10 +189,10 @@ Object.defineProperty(RoomsService, "CONFERENCE_ROOM", {
 });
 RoomsService = RoomsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiDirectory)),
-    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleDirectoryQuotaLimiter)),
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiAdminDirectory)),
+    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)),
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
-    tslib_1.__metadata("design:paramtypes", [google_api_directory_1.GoogleApiDirectory,
+    tslib_1.__metadata("design:paramtypes", [google_api_admin_directory_1.GoogleApiAdminDirectory,
         quota_limiter_service_1.QuotaLimiterService,
         google_utils_service_1.GoogleUtilsService])
 ], RoomsService);

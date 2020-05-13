@@ -3,6 +3,7 @@ import * as path from 'path';
 import { promises as fs, constants } from 'graceful-fs';
 import { Argv } from 'yargs';
 import { DeepPartial, DeepReadonly, Nullable, t } from '../@types';
+import { fAccess } from '../utils/fs';
 import { getDefaultConfigDirectory } from './constants';
 import { AppConfig, assertConfigPrefixId, IFullAppConfig } from './types';
 import { commonCamelCase, PathUtils } from '../utils/common';
@@ -117,8 +118,7 @@ async function doInitializeConfig<T extends DeepPartial<IFullAppConfig>>(
   ));
 
   if (
-    await fs.access(configDir, constants.R_OK | constants.F_OK)
-      .catch(() => true)
+    !await fAccess(configDir, constants.R_OK | constants.F_OK)
     || !(await fs.stat(configDir)).isDirectory()
   ) {
     throw new TypeError(`Could not find path to config directory: ${configDir}`);

@@ -1,5 +1,6 @@
 /* tslint:disable:ter-indent */
 import * as yargs from 'yargs';
+import { JWTInput } from 'google-auth-library';
 import { DeepPartial, Nullable } from '../@types';
 import {
   IApiQuota,
@@ -47,11 +48,13 @@ export interface IFullAppConfig {
       idPrefix: Nullable<string>;
       calendar: ICalendarConfig;
       auth: {
+        adminDirectoryKey: Nullable<string | JWTInput>;
+        calendarKey: Nullable<string | JWTInput>
         subjectEmail: string;
         keyFilepath: string;
       };
       quotas: {
-        directoryApi: IApiQuota;
+        adminDirectoryApi: IApiQuota;
         calendarApi: IApiQuota;
       };
     };

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs_1 = require("fs");
 async function fSize(file) {
     return (await file.stat()).size;
 }
@@ -105,4 +106,8 @@ async function fShiftForward(file, start, offset, chunkBufferSize = 256) {
     } while (readOffset >= start);
 }
 exports.fShiftForward = fShiftForward;
+function fAccess(path, mode) {
+    return fs_1.promises.access(path, mode).then(() => true).catch(() => false);
+}
+exports.fAccess = fAccess;
 //# sourceMappingURL=fs.js.map

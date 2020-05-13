@@ -7,7 +7,7 @@ import { ApiGroup, ApiGroupsResponse } from '../../@types/cist';
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
-import { GoogleApiDirectory } from './google-api-directory';
+import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 import Resource$Groups = admin_directory_v1.Resource$Groups;
 import { GaxiosPromise } from 'gaxios';
@@ -17,7 +17,7 @@ import { isSameGroupIdenity, GoogleUtilsService } from './google-utils.service';
 export class GroupsService {
   static readonly ROOMS_PAGE_SIZE = 200; // max limit
   private readonly _utils: GoogleUtilsService;
-  private readonly _directory: GoogleApiDirectory;
+  private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
   private readonly _groups: Resource$Groups;
@@ -28,15 +28,17 @@ export class GroupsService {
   private readonly _list: Resource$Groups['list'];
 
   constructor(
-    @inject(TYPES.GoogleApiDirectory) googleApiDirectory: GoogleApiDirectory,
     @inject(
-      TYPES.GoogleDirectoryQuotaLimiter,
+      TYPES.GoogleApiAdminDirectory
+    ) googleApiAdminDirectory: GoogleApiAdminDirectory,
+    @inject(
+      TYPES.GoogleAdminDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
   ) {
     this._utils = utils;
 
-    this._directory = googleApiDirectory;
+    this._directory = googleApiAdminDirectory;
     this._groups = this._directory.googleDirectory.groups;
     this._quotaLimiter = quotaLimiter;
 

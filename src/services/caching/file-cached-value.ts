@@ -3,6 +3,7 @@ import { ReadonlyDate } from 'readonly-date';
 import { Nullable } from '../../@types';
 import { asyncNoop } from '../../utils/common';
 import {
+  fAccess,
   fCutOut,
   fReadFile,
   fReadUntil,
@@ -54,10 +55,10 @@ export class FileCachedValue<T> extends CachedValue<T> {
       if (!fileStats.isFile()) {
         throw new TypeError(this.t('is expected to be a file'));
       }
-      if (!fs.access(
+      if (!await fAccess(
         this._fileName,
         fsConstants.F_OK | fsConstants.R_OK | fsConstants.W_OK,
-      ).then(() => true).catch(() => false)) {
+      )) {
         throw new Error(this.t(`Cache file ${this._fileName} is not accessible for read and write`));
       }
     }

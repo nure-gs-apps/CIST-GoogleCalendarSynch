@@ -20,7 +20,7 @@ import {
 import { EventsService } from '../services/google/events.service';
 import { GoogleApiCalendar } from '../services/google/google-api-calendar';
 import { GoogleAuth } from '../services/google/google-auth';
-import { GoogleApiDirectory } from '../services/google/google-api-directory';
+import { GoogleApiAdminDirectory } from '../services/google/google-api-admin-directory';
 import { GroupsService } from '../services/google/groups.service';
 import { IGoogleAuth } from '../services/google/types';
 import { RoomsService } from '../services/google/rooms.service';
@@ -158,9 +158,9 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   container.bind<IGoogleAuth>(TYPES.GoogleAuth)
     .to(GoogleAuth);
 
-  container.bind<QuotaLimiterService>(TYPES.GoogleDirectoryQuotaLimiter)
+  container.bind<QuotaLimiterService>(TYPES.GoogleAdminDirectoryQuotaLimiter)
     .toDynamicValue(getQuotaLimiterFactory(
-      getConfig().google.quotas.directoryApi,
+      getConfig().google.quotas.adminDirectoryApi,
       defaultScope === BindingScopeEnum.Singleton,
     ));
   container.bind<QuotaLimiterService>(TYPES.GoogleCalendarQuotaLimiter)
@@ -169,8 +169,8 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       defaultScope === BindingScopeEnum.Singleton,
     ));
 
-  container.bind<GoogleApiDirectory>(TYPES.GoogleApiDirectory)
-    .to(GoogleApiDirectory);
+  container.bind<GoogleApiAdminDirectory>(TYPES.GoogleApiAdminDirectory)
+    .to(GoogleApiAdminDirectory);
   container.bind<GoogleApiCalendar>(TYPES.GoogleApiCalendar)
     .to(GoogleApiCalendar);
 

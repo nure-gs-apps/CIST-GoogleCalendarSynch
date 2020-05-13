@@ -1,4 +1,5 @@
-import { promises as fs } from 'fs';
+import { PathLike, promises as fs } from 'fs';
+import { Optional } from '../@types';
 
 export interface IFileReadResult {
   bytesRead: number;
@@ -134,4 +135,8 @@ export async function fShiftForward(
     readOffset -= chunkBufferSize;
     writeOffset -= chunkBufferSize;
   } while (readOffset >= start);
+}
+
+export function fAccess(path: PathLike, mode: Optional<number>) {
+  return fs.access(path, mode).then(() => true).catch(() => false);
 }

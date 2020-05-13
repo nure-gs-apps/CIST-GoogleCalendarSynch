@@ -23,11 +23,13 @@ ncgc:
       prefix: 'CIST ' # basically name for calendar. Can be used for searching if id is not overriden
       timeZone: Europe/Kiev # timezone for calendar creation
     auth:
+      adminDirectoryKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
+      calendarKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
       subjectEmail: yourEmail # Required for admin. email of user belonging to the domain of G Suite.
       keyFilepath: ./keys/cist-calendar.json
       directoryKeyFilepath: ./keys/cist-calendar.json
     quotas:
-      directoryApi:
+      adminDirectoryApi:
         daily: 150_000 # daily limit
         period: 100_000 # ms
         queries: 460 # per period. Fallback to 425 if problems. Actual is 1500, but decreased for reliability

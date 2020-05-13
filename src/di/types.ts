@@ -27,9 +27,9 @@ export const TYPES = {
 
   GoogleAuth: Symbol.for('GoogleAuth'),
   GoogleUtils: Symbol.for('GoogleUtils'),
-  GoogleDirectoryQuotaLimiter: Symbol.for('GoogleDirectoryQuotaLimiter'),
+  GoogleAdminDirectoryQuotaLimiter: Symbol.for('GoogleAdminDirectoryQuotaLimiter'),
   GoogleCalendarQuotaLimiter: Symbol.for('GoogleCalendarQuotaLimiter'),
-  GoogleApiDirectory: Symbol.for('GoogleApiDirectory'),
+  GoogleApiAdminDirectory: Symbol.for('GoogleApiAdminDirectory'),
   GoogleApiCalendar: Symbol.for('GoogleApiCalendar'),
 
   BuildingsService: Symbol.for('BuildingsService'),

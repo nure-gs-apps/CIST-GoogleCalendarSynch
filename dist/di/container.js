@@ -15,7 +15,7 @@ const constants_1 = require("../services/google/constants");
 const events_service_1 = require("../services/google/events.service");
 const google_api_calendar_1 = require("../services/google/google-api-calendar");
 const google_auth_1 = require("../services/google/google-auth");
-const google_api_directory_1 = require("../services/google/google-api-directory");
+const google_api_admin_directory_1 = require("../services/google/google-api-admin-directory");
 const groups_service_1 = require("../services/google/groups.service");
 const rooms_service_1 = require("../services/google/rooms.service");
 const google_utils_service_1 = require("../services/google/google-utils.service");
@@ -95,12 +95,12 @@ function createContainer(options) {
     container.bind(types_1.TYPES.GoogleCalendarConfig).toConstantValue(config_1.getConfig().google.calendar);
     container.bind(types_1.TYPES.GoogleAuth)
         .to(google_auth_1.GoogleAuth);
-    container.bind(types_1.TYPES.GoogleDirectoryQuotaLimiter)
-        .toDynamicValue(quota_limiter_service_1.getQuotaLimiterFactory(config_1.getConfig().google.quotas.directoryApi, defaultScope === inversify_1.BindingScopeEnum.Singleton));
+    container.bind(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)
+        .toDynamicValue(quota_limiter_service_1.getQuotaLimiterFactory(config_1.getConfig().google.quotas.adminDirectoryApi, defaultScope === inversify_1.BindingScopeEnum.Singleton));
     container.bind(types_1.TYPES.GoogleCalendarQuotaLimiter)
         .toDynamicValue(quota_limiter_service_1.getQuotaLimiterFactory(config_1.getConfig().google.quotas.calendarApi, defaultScope === inversify_1.BindingScopeEnum.Singleton));
-    container.bind(types_1.TYPES.GoogleApiDirectory)
-        .to(google_api_directory_1.GoogleApiDirectory);
+    container.bind(types_1.TYPES.GoogleApiAdminDirectory)
+        .to(google_api_admin_directory_1.GoogleApiAdminDirectory);
     container.bind(types_1.TYPES.GoogleApiCalendar)
         .to(google_api_calendar_1.GoogleApiCalendar);
     container.bind(types_1.TYPES.BuildingsService)

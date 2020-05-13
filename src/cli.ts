@@ -23,7 +23,7 @@ import * as packageInfo from '../package.json';
 
 setExitLogger(console);
 
-const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Directory.
+const usage = `A script for synchronysing NURE CIST schedule to Google Calendar and Google Admin Directory.
 
 The script accepts command line options that override configuration of the script.
 The options described in help to this script may not include all the properties. All possible values can be seen by default in "${getDefaultConfigDirectory()}".

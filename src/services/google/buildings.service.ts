@@ -12,7 +12,7 @@ import {
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
-import { GoogleApiDirectory } from './google-api-directory';
+import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import { GoogleUtilsService } from './google-utils.service';
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
 import Schema$Building = admin_directory_v1.Schema$Building;
@@ -21,7 +21,7 @@ import Schema$Building = admin_directory_v1.Schema$Building;
 export class BuildingsService {
   static readonly BUILDING_PAGE_SIZE = 100;
   private readonly _utils: GoogleUtilsService;
-  private readonly _directory: GoogleApiDirectory;
+  private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
   private readonly _buildings: Resource$Resources$Buildings;
@@ -32,15 +32,17 @@ export class BuildingsService {
   private readonly _list: Resource$Resources$Buildings['list'];
 
   constructor(
-    @inject(TYPES.GoogleApiDirectory) googleApiDirectory: GoogleApiDirectory,
     @inject(
-      TYPES.GoogleDirectoryQuotaLimiter,
+      TYPES.GoogleApiAdminDirectory
+    ) googleApiAdminDirectory: GoogleApiAdminDirectory,
+    @inject(
+      TYPES.GoogleAdminDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
   ) {
     this._utils = utils;
 
-    this._directory = googleApiDirectory;
+    this._directory = googleApiAdminDirectory;
     this._buildings = this._directory.googleDirectory.resources.buildings;
     this._quotaLimiter = quotaLimiter;
 

@@ -9,7 +9,7 @@ import {
 import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
-import { GoogleApiDirectory } from './google-api-directory';
+import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise } from 'gaxios';
 import { transformFloorname, GoogleUtilsService } from './google-utils.service';
@@ -19,7 +19,7 @@ export class RoomsService {
   static readonly ROOMS_PAGE_SIZE = 500; // maximum
   static readonly CONFERENCE_ROOM = 'CONFERENCE_ROOM';
   private readonly _utils: GoogleUtilsService;
-  private readonly _directory: GoogleApiDirectory;
+  private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
 
   private readonly _rooms: admin_directory_v1.Resource$Resources$Calendars;
@@ -30,15 +30,17 @@ export class RoomsService {
   private readonly _list: admin_directory_v1.Resource$Resources$Calendars['list'];
 
   constructor(
-    @inject(TYPES.GoogleApiDirectory) googleApiDirectory: GoogleApiDirectory,
     @inject(
-      TYPES.GoogleDirectoryQuotaLimiter,
+      TYPES.GoogleApiAdminDirectory
+    ) googleApiAdminDirectory: GoogleApiAdminDirectory,
+    @inject(
+      TYPES.GoogleAdminDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
   ) {
     this._utils = utils;
 
-    this._directory = googleApiDirectory;
+    this._directory = googleApiAdminDirectory;
     this._rooms = this._directory.googleDirectory.resources.calendars;
     this._quotaLimiter = quotaLimiter;
 
