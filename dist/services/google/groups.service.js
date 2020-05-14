@@ -4,19 +4,12 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
-const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_admin_directory_1 = require("./google-api-admin-directory");
 const google_utils_service_1 = require("./google-utils.service");
 let GroupsService = class GroupsService {
-    constructor(googleApiAdminDirectory, quotaLimiter, utils) {
-        Object.defineProperty(this, "_utils", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+    constructor(googleApiAdminDirectory, quotaLimiter, utils, logger) {
         Object.defineProperty(this, "_directory", {
             enumerable: true,
             configurable: true,
@@ -24,6 +17,18 @@ let GroupsService = class GroupsService {
             value: void 0
         });
         Object.defineProperty(this, "_quotaLimiter", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_utils", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_logger", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -60,6 +65,7 @@ let GroupsService = class GroupsService {
             value: void 0
         });
         this._utils = utils;
+        this._logger = logger;
         this._directory = googleApiAdminDirectory;
         this._groups = this._directory.googleAdminDirectory.groups;
         this._quotaLimiter = quotaLimiter;
@@ -181,7 +187,7 @@ let GroupsService = class GroupsService {
                     // tslint:disable-next-line:no-non-null-assertion
                     newToOldNames.set(groupPatch.name, googleGroup.name);
                 }
-                logger_service_1.logger.debug(`Patching group ${cistGroup.name}`);
+                this._logger.info(`Patching group ${cistGroup.name}`);
                 return this._patch({
                     customer: constants_1.customer,
                     groupKey: googleGroupEmail,
@@ -193,7 +199,7 @@ let GroupsService = class GroupsService {
         if (insertedGroups.has(googleGroupEmail)) {
             return null;
         }
-        logger_service_1.logger.debug(`Inserting group ${cistGroup.name}`);
+        this._logger.info(`Inserting group ${cistGroup.name}`);
         insertedGroups.add(googleGroupEmail);
         return this._insert({
             requestBody: this.cistGroupToInsertGoogleGroup(cistGroup, googleGroupEmail),
@@ -249,9 +255,10 @@ GroupsService = tslib_1.__decorate([
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiAdminDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)),
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
+    tslib_1.__param(3, inversify_1.inject(types_1.TYPES.Logger)),
     tslib_1.__metadata("design:paramtypes", [google_api_admin_directory_1.GoogleApiAdminDirectory,
         quota_limiter_service_1.QuotaLimiterService,
-        google_utils_service_1.GoogleUtilsService])
+        google_utils_service_1.GoogleUtilsService, Object])
 ], GroupsService);
 exports.GroupsService = GroupsService;
 //# sourceMappingURL=groups.service.js.map

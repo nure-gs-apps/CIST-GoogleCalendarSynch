@@ -2,9 +2,9 @@ import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import { Nullable } from '../../@types';
+import { ILogger } from '../../@types/logging';
 import { TYPES } from '../../di/types';
 import { ApiGroup, ApiGroupsResponse } from '../../@types/cist';
-import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
@@ -16,9 +16,10 @@ import { isSameGroupIdentity, GoogleUtilsService } from './google-utils.service'
 @injectable()
 export class GroupsService {
   static readonly ROOMS_PAGE_SIZE = 200; // max limit
-  private readonly _utils: GoogleUtilsService;
   private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
+  private readonly _utils: GoogleUtilsService;
+  private readonly _logger: ILogger;
 
   private readonly _groups: Resource$Groups;
 
@@ -35,8 +36,10 @@ export class GroupsService {
       TYPES.GoogleAdminDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
+    @inject(TYPES.Logger) logger: ILogger,
   ) {
     this._utils = utils;
+    this._logger = logger;
 
     this._directory = googleApiAdminDirectory;
     this._groups = this._directory.googleAdminDirectory.groups;
@@ -211,7 +214,7 @@ export class GroupsService {
           // tslint:disable-next-line:no-non-null-assertion
           newToOldNames.set(groupPatch.name, googleGroup.name!);
         }
-        logger.debug(`Patching group ${cistGroup.name}`);
+        this._logger.info(`Patching group ${cistGroup.name}`);
         return this._patch({
           customer,
           groupKey: googleGroupEmail,
@@ -223,7 +226,7 @@ export class GroupsService {
     if (insertedGroups.has(googleGroupEmail)) {
       return null;
     }
-    logger.debug(`Inserting group ${cistGroup.name}`);
+    this._logger.info(`Inserting group ${cistGroup.name}`);
     insertedGroups.add(googleGroupEmail);
     return this._insert({
       requestBody: this.cistGroupToInsertGoogleGroup(

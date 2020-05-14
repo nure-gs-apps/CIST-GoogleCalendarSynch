@@ -10,8 +10,6 @@ exports.TYPES = {
     GoogleAuthAdminDirectoryKey: Symbol.for('GoogleAuthAdminDirectoryKey'),
     GoogleAdminDirectoryQuotaLimiterConfig: Symbol.for('GoogleAdminDirectoryQuotaLimiterConfig'),
     GoogleCalendarQuotaLimiterConfig: Symbol.for('GoogleAdminDirectoryQuotaLimiterConfig'),
-    GoogleAuthKeyFilepath: Symbol.for('GoogleAuthKeyFilepath'),
-    GoogleAuthCalendarKeyFilepath: Symbol.for('GoogleAuthCalendarKeyFilepath'),
     GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
     GoogleEntityIdPrefix: Symbol.for('GoogleEntityIdPrefix'),
     GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
@@ -36,11 +34,6 @@ exports.TYPES = {
     CalendarService: Symbol.for('CalendarService'),
     EventsService: Symbol.for('EventsService'),
 };
-var ContainerType;
-(function (ContainerType) {
-    ContainerType[ContainerType["FULL"] = 0] = "FULL";
-    ContainerType[ContainerType["CIST_JSON_ONLY"] = 1] = "CIST_JSON_ONLY";
-})(ContainerType = exports.ContainerType || (exports.ContainerType = {}));
 const injectables = new Set();
 function ensureInjectable(type) {
     if (injectables.has(type)) {

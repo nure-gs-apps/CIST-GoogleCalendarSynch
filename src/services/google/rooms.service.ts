@@ -1,12 +1,12 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
+import { ILogger } from '../../@types/logging';
 import { TYPES } from '../../di/types';
 import {
   ApiRoomsResponse,
   ApiRoom,
 } from '../../@types/cist';
-import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
@@ -18,9 +18,10 @@ import { transformFloorName, GoogleUtilsService } from './google-utils.service';
 export class RoomsService {
   static readonly ROOMS_PAGE_SIZE = 500; // maximum
   static readonly CONFERENCE_ROOM = 'CONFERENCE_ROOM';
-  private readonly _utils: GoogleUtilsService;
   private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
+  private readonly _utils: GoogleUtilsService;
+  private readonly _logger: ILogger;
 
   private readonly _rooms: admin_directory_v1.Resource$Resources$Calendars;
 
@@ -37,8 +38,10 @@ export class RoomsService {
       TYPES.GoogleAdminDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
+    @inject(TYPES.Logger) logger: ILogger,
   ) {
     this._utils = utils;
+    this._logger = logger;
 
     this._directory = googleApiAdminDirectory;
     this._rooms = this._directory.googleAdminDirectory.resources.calendars;
@@ -87,7 +90,7 @@ export class RoomsService {
                 googleRoom.resourceName!,
               );
             }
-            logger.debug(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
+            this._logger.info(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
             promises.push(
               this._patch({
                 customer,
@@ -97,7 +100,7 @@ export class RoomsService {
             );
           }
         } else {
-          logger.debug(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
+          this._logger.info(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
           promises.push(
             this._insert({
               customer,

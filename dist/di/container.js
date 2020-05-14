@@ -71,10 +71,6 @@ function createContainer(options) {
         container.bind(types_1.TYPES.CistJsonHttpParser)
             .to(cist_json_http_parser_service_1.CistJsonHttpParserService);
     }
-    if ((allRequired || types.has(types_1.TYPES.CistCacheConfig)) && !skip.has(types_1.TYPES.CistCacheConfig)) {
-        container.bind(types_1.TYPES.CistCacheConfig)
-            .toConstantValue(config_1.getConfig().caching.cist);
-    }
     if ((allRequired
         || types.has(types_1.TYPES.BuildingsService)
         || types.has(buildings_service_1.BuildingsService))
@@ -82,10 +78,34 @@ function createContainer(options) {
         && !skip.has(types_1.TYPES.BuildingsService)) {
         container.bind(types_1.TYPES.BuildingsService)
             .to(buildings_service_1.BuildingsService);
-        types.add(types_1.TYPES.Logger);
         types.add(types_1.TYPES.GoogleApiAdminDirectory);
         types.add(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter);
         types.add(types_1.TYPES.GoogleUtils);
+        types.add(types_1.TYPES.Logger);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.RoomsService)
+        || types.has(rooms_service_1.RoomsService))
+        && !skip.has(rooms_service_1.RoomsService)
+        && !skip.has(types_1.TYPES.RoomsService)) {
+        container.bind(types_1.TYPES.RoomsService)
+            .to(rooms_service_1.RoomsService);
+        types.add(types_1.TYPES.GoogleApiAdminDirectory);
+        types.add(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter);
+        types.add(types_1.TYPES.GoogleUtils);
+        types.add(types_1.TYPES.Logger);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.GroupsService)
+        || types.has(groups_service_1.GroupsService))
+        && !skip.has(groups_service_1.GroupsService)
+        && !skip.has(types_1.TYPES.GroupsService)) {
+        container.bind(types_1.TYPES.GroupsService)
+            .to(groups_service_1.GroupsService);
+        types.add(types_1.TYPES.GoogleApiAdminDirectory);
+        types.add(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter);
+        types.add(types_1.TYPES.GoogleUtils);
+        types.add(types_1.TYPES.Logger);
     }
     if ((allRequired
         || types.has(types_1.TYPES.GoogleApiAdminDirectory)
@@ -130,6 +150,10 @@ function createContainer(options) {
         container.bind(types_1.TYPES.Logger).toConstantValue(logger_service_1.logger);
     }
     // Constants
+    if ((allRequired || types.has(types_1.TYPES.CistCacheConfig)) && !skip.has(types_1.TYPES.CistCacheConfig)) {
+        container.bind(types_1.TYPES.CistCacheConfig)
+            .toConstantValue(config_1.getConfig().caching.cist);
+    }
     if ((allRequired || types.has(types_1.TYPES.CacheMaxExpiration)) && !skip.has(types_1.TYPES.CacheMaxExpiration)) {
         container.bind(types_1.TYPES.CacheMaxExpiration)
             .toConstantValue(config_1.getConfig().caching.maxExpiration);

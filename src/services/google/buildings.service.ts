@@ -2,6 +2,7 @@ import { GaxiosPromise } from 'gaxios';
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
+import { ILogger } from '../../@types/logging';
 import { TYPES } from '../../di/types';
 import { getFloornamesFromBuilding } from '../../utils/cist';
 import { arrayContentEqual } from '../../utils/common';
@@ -9,7 +10,6 @@ import {
   ApiRoomsResponse,
   ApiBuilding,
 } from '../../@types/cist';
-import { logger } from '../logger.service';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
@@ -20,9 +20,10 @@ import Schema$Building = admin_directory_v1.Schema$Building;
 @injectable()
 export class BuildingsService {
   static readonly BUILDING_PAGE_SIZE = 100;
-  private readonly _utils: GoogleUtilsService;
   private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
+  private readonly _utils: GoogleUtilsService;
+  private readonly _logger: ILogger;
 
   private readonly _buildings: Resource$Resources$Buildings;
 
@@ -39,8 +40,10 @@ export class BuildingsService {
       TYPES.GoogleAdminDirectoryQuotaLimiter,
     ) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
+    @inject(TYPES.Logger) logger: ILogger,
   ) {
     this._utils = utils;
+    this._logger = logger;
 
     this._directory = googleApiAdminDirectory;
     this._buildings = this._directory.googleAdminDirectory.resources.buildings;
@@ -77,7 +80,7 @@ export class BuildingsService {
           googleBuilding,
         );
         if (buildingPatch) {
-          logger.debug(`Patching building ${cistBuilding.short_name}`);
+          this._logger.info(`Patching building ${cistBuilding.short_name}`);
           promises.push(
             this._patch({
               customer,
@@ -87,7 +90,7 @@ export class BuildingsService {
           );
         }
       } else {
-        logger.debug(`Inserting building ${cistBuilding.short_name}`);
+        this._logger.info(`Inserting building ${cistBuilding.short_name}`);
         promises.push(
           this._insert({
             customer,

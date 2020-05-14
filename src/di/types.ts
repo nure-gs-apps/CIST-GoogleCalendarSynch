@@ -4,14 +4,11 @@ import 'reflect-metadata';
 
 export const TYPES = {
   // constants tokens
-
   CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
   CistApiKey: Symbol.for('CistApiKey'),
   GoogleAuthAdminDirectoryKey: Symbol.for('GoogleAuthAdminDirectoryKey'),
   GoogleAdminDirectoryQuotaLimiterConfig: Symbol.for('GoogleAdminDirectoryQuotaLimiterConfig'),
   GoogleCalendarQuotaLimiterConfig: Symbol.for('GoogleAdminDirectoryQuotaLimiterConfig'),
-  GoogleAuthKeyFilepath: Symbol.for('GoogleAuthKeyFilepath'),
-  GoogleAuthCalendarKeyFilepath: Symbol.for('GoogleAuthCalendarKeyFilepath'),
   GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
   GoogleEntityIdPrefix: Symbol.for('GoogleEntityIdPrefix'),
   GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
@@ -44,10 +41,6 @@ export const TYPES = {
   CalendarService: Symbol.for('CalendarService'),
   EventsService: Symbol.for('EventsService'),
 };
-
-export enum ContainerType {
-  FULL, CIST_JSON_ONLY,
-}
 
 const injectables = new Set<any>();
 export function ensureInjectable(type: any) {

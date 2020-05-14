@@ -7,19 +7,12 @@ const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
 const cist_1 = require("../../utils/cist");
 const common_1 = require("../../utils/common");
-const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_admin_directory_1 = require("./google-api-admin-directory");
 const google_utils_service_1 = require("./google-utils.service");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
-    constructor(googleApiAdminDirectory, quotaLimiter, utils) {
-        Object.defineProperty(this, "_utils", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+    constructor(googleApiAdminDirectory, quotaLimiter, utils, logger) {
         Object.defineProperty(this, "_directory", {
             enumerable: true,
             configurable: true,
@@ -27,6 +20,18 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
             value: void 0
         });
         Object.defineProperty(this, "_quotaLimiter", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_utils", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_logger", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -63,6 +68,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
             value: void 0
         });
         this._utils = utils;
+        this._logger = logger;
         this._directory = googleApiAdminDirectory;
         this._buildings = this._directory.googleAdminDirectory.resources.buildings;
         this._quotaLimiter = quotaLimiter;
@@ -80,7 +86,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
             if (googleBuilding) {
                 const buildingPatch = cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding);
                 if (buildingPatch) {
-                    logger_service_1.logger.debug(`Patching building ${cistBuilding.short_name}`);
+                    this._logger.info(`Patching building ${cistBuilding.short_name}`);
                     promises.push(this._patch({
                         customer: constants_1.customer,
                         buildingId: googleBuildingId,
@@ -89,7 +95,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
                 }
             }
             else {
-                logger_service_1.logger.debug(`Inserting building ${cistBuilding.short_name}`);
+                this._logger.info(`Inserting building ${cistBuilding.short_name}`);
                 promises.push(this._insert({
                     customer: constants_1.customer,
                     requestBody: this.cistBuildingToInsertGoogleBuilding(cistBuilding, googleBuildingId),
@@ -170,9 +176,10 @@ BuildingsService = BuildingsService_1 = tslib_1.__decorate([
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiAdminDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)),
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
+    tslib_1.__param(3, inversify_1.inject(types_1.TYPES.Logger)),
     tslib_1.__metadata("design:paramtypes", [google_api_admin_directory_1.GoogleApiAdminDirectory,
         quota_limiter_service_1.QuotaLimiterService,
-        google_utils_service_1.GoogleUtilsService])
+        google_utils_service_1.GoogleUtilsService, Object])
 ], BuildingsService);
 exports.BuildingsService = BuildingsService;
 function cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding) {

@@ -110,13 +110,6 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       .to(CistJsonHttpParserService);
   }
 
-  if ((
-    allRequired || types.has(TYPES.CistCacheConfig)
-  ) && !skip.has(TYPES.CistCacheConfig)) {
-    container.bind<DeepReadonly<CistCacheConfig>>(TYPES.CistCacheConfig)
-      .toConstantValue(getConfig().caching.cist);
-  }
-
   if (
     (allRequired
       || types.has(TYPES.BuildingsService)
@@ -126,10 +119,40 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   ) {
     container.bind<BuildingsService>(TYPES.BuildingsService)
       .to(BuildingsService);
-    types.add(TYPES.Logger);
     types.add(TYPES.GoogleApiAdminDirectory);
     types.add(TYPES.GoogleAdminDirectoryQuotaLimiter);
     types.add(TYPES.GoogleUtils);
+    types.add(TYPES.Logger);
+  }
+
+  if (
+    (allRequired
+      || types.has(TYPES.RoomsService)
+      || types.has(RoomsService))
+    && !skip.has(RoomsService)
+    && !skip.has(TYPES.RoomsService)
+  ) {
+    container.bind<RoomsService>(TYPES.RoomsService)
+      .to(RoomsService);
+    types.add(TYPES.GoogleApiAdminDirectory);
+    types.add(TYPES.GoogleAdminDirectoryQuotaLimiter);
+    types.add(TYPES.GoogleUtils);
+    types.add(TYPES.Logger);
+  }
+
+  if (
+    (allRequired
+      || types.has(TYPES.GroupsService)
+      || types.has(GroupsService))
+    && !skip.has(GroupsService)
+    && !skip.has(TYPES.GroupsService)
+  ) {
+    container.bind<GroupsService>(TYPES.GroupsService)
+      .to(GroupsService);
+    types.add(TYPES.GoogleApiAdminDirectory);
+    types.add(TYPES.GoogleAdminDirectoryQuotaLimiter);
+    types.add(TYPES.GoogleUtils);
+    types.add(TYPES.Logger);
   }
 
   if (
@@ -199,6 +222,14 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   }
 
   // Constants
+
+  if ((
+    allRequired || types.has(TYPES.CistCacheConfig)
+  ) && !skip.has(TYPES.CistCacheConfig)) {
+    container.bind<DeepReadonly<CistCacheConfig>>(TYPES.CistCacheConfig)
+      .toConstantValue(getConfig().caching.cist);
+  }
+
   if ((
     allRequired || types.has(TYPES.CacheMaxExpiration)
   ) && !skip.has(TYPES.CacheMaxExpiration)) {

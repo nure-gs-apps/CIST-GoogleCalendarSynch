@@ -5,19 +5,12 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const types_1 = require("../../di/types");
-const logger_service_1 = require("../logger.service");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
 const google_api_admin_directory_1 = require("./google-api-admin-directory");
 const google_utils_service_1 = require("./google-utils.service");
 let RoomsService = RoomsService_1 = class RoomsService {
-    constructor(googleApiAdminDirectory, quotaLimiter, utils) {
-        Object.defineProperty(this, "_utils", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+    constructor(googleApiAdminDirectory, quotaLimiter, utils, logger) {
         Object.defineProperty(this, "_directory", {
             enumerable: true,
             configurable: true,
@@ -25,6 +18,18 @@ let RoomsService = RoomsService_1 = class RoomsService {
             value: void 0
         });
         Object.defineProperty(this, "_quotaLimiter", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_utils", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_logger", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -61,6 +66,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
             value: void 0
         });
         this._utils = utils;
+        this._logger = logger;
         this._directory = googleApiAdminDirectory;
         this._rooms = this._directory.googleAdminDirectory.resources.calendars;
         this._quotaLimiter = quotaLimiter;
@@ -86,7 +92,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                             // tslint:disable-next-line:no-non-null-assertion
                             googleRoom.resourceName);
                         }
-                        logger_service_1.logger.debug(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
+                        this._logger.info(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
                         promises.push(this._patch({
                             customer: constants_1.customer,
                             calendarResourceId: cistRoomId,
@@ -95,7 +101,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
                     }
                 }
                 else {
-                    logger_service_1.logger.debug(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
+                    this._logger.info(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
                     promises.push(this._insert({
                         customer: constants_1.customer,
                         requestBody: cistRoomToInsertGoogleRoom(cistRoom, buildingId, cistRoomId),
@@ -192,9 +198,10 @@ RoomsService = RoomsService_1 = tslib_1.__decorate([
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiAdminDirectory)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)),
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleUtils)),
+    tslib_1.__param(3, inversify_1.inject(types_1.TYPES.Logger)),
     tslib_1.__metadata("design:paramtypes", [google_api_admin_directory_1.GoogleApiAdminDirectory,
         quota_limiter_service_1.QuotaLimiterService,
-        google_utils_service_1.GoogleUtilsService])
+        google_utils_service_1.GoogleUtilsService, Object])
 ], RoomsService);
 exports.RoomsService = RoomsService;
 function cistRoomToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
