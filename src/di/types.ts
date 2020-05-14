@@ -1,5 +1,5 @@
 // VITALLY IMPORTANT FOR INVERSIFY AS PRECEDING IMPORT
-import { decorate, injectable } from 'inversify';
+import { decorate, injectable, interfaces } from 'inversify';
 import 'reflect-metadata';
 
 export const TYPES = {
@@ -20,6 +20,9 @@ export const TYPES = {
   // class tokens
   Config: Symbol.for('Config'),
   Logger: Symbol.for('Logger'),
+  Container: Symbol.for('Container'),
+
+  TaskStepExecutor: Symbol.for('TaskStepExecutor'),
 
   CistJsonHttpClient: Symbol.for('CistJsonHttpClient'),
   CistJsonClient: Symbol.for('CistJsonClient'),
@@ -49,4 +52,8 @@ export function ensureInjectable(type: any) {
   }
   decorate(injectable(), type);
   injectables.add(type);
+}
+
+export interface IContainer {
+  get<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>): T;
 }

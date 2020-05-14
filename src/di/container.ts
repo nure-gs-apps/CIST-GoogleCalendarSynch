@@ -1,18 +1,13 @@
+import { BindingScopeEnum, Container, interfaces } from 'inversify';
 import { DeepReadonly, Nullable } from '../@types';
 import { IMaxCacheExpiration } from '../@types/caching';
 import { ILogger } from '../@types/logging';
 import { ASYNC_INIT } from '../@types/object';
-import { GoogleAuthAdminDirectory } from '../services/google/google-auth-admin-directory';
-import { logger } from '../services/logger.service';
-import { TYPES } from './types';
-import { getConfig } from '../config';
-import { BindingScopeEnum, Container, interfaces } from 'inversify';
 import { IApiQuota, ICalendarConfig } from '../@types/services';
+import { ITaskStepExecutor } from '../@types/tasks';
+import { getConfig } from '../config';
 import { ConfigService } from '../config/config.service';
-import {
-  CistCacheConfig,
-  GoogleAuthConfigKey,
-} from '../config/types';
+import { CistCacheConfig, GoogleAuthConfigKey } from '../config/types';
 import { CacheUtilsService } from '../services/caching/cache-utils.service';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.service';
@@ -20,17 +15,21 @@ import { CistJsonHttpParserService } from '../services/cist/cist-json-http-parse
 import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
 import { EventsService } from '../services/google/events.service';
-import { GoogleApiCalendar } from '../services/google/google-api-calendar';
 import { GoogleApiAdminDirectory } from '../services/google/google-api-admin-directory';
+import { GoogleApiCalendar } from '../services/google/google-api-calendar';
+import { IGoogleAuth } from '../services/google/google-auth';
+import { GoogleAuthAdminDirectory } from '../services/google/google-auth-admin-directory';
+import { GoogleUtilsService } from '../services/google/google-utils.service';
 import { GroupsService } from '../services/google/groups.service';
 import { RoomsService } from '../services/google/rooms.service';
-import { GoogleUtilsService } from '../services/google/google-utils.service';
+import { logger } from '../services/logger.service';
 import {
   getQuotaLimiterFactory,
   QuotaLimiterService,
 } from '../services/quota-limiter.service';
+import { TaskStepExecutor } from '../tasks/task-step-executor';
+import { IContainer, TYPES } from './types';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
-import { IGoogleAuth } from '../services/google/google-auth';
 
 let container: Nullable<Container> = null;
 let boundTypes: Nullable<ReadonlySet<ServiceIdentifier<any>>> = null;
@@ -64,6 +63,16 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
     defaultScope,
     autoBindInjectable: true,
   });
+
+  if ((
+    allRequired
+    || types.has(TYPES.TaskStepExecutor)
+    || types.has(TaskStepExecutor)
+  ) && !skip.has(TaskStepExecutor) && !skip.has(TYPES.TaskStepExecutor)) {
+    container.bind<ITaskStepExecutor>(TYPES.TaskStepExecutor)
+      .to(TaskStepExecutor);
+    types.add(TYPES.Container);
+  }
 
   if ((
     allRequired || types.has(CachedCistJsonClientService)
@@ -213,6 +222,12 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       .to(GoogleUtilsService);
     types.add(TYPES.GoogleAuthSubject);
     types.add(TYPES.GoogleEntityIdPrefix);
+  }
+
+  if ((
+    allRequired || types.has(TYPES.Container)
+  ) && !skip.has(TYPES.Container)) {
+    container.bind<IContainer>(TYPES.Container).toConstantValue(container);
   }
 
   if ((

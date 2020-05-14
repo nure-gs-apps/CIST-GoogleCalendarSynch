@@ -1,11 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const object_1 = require("../@types/object");
-const google_auth_admin_directory_1 = require("../services/google/google-auth-admin-directory");
-const logger_service_1 = require("../services/logger.service");
-const types_1 = require("./types");
-const config_1 = require("../config");
 const inversify_1 = require("inversify");
+const object_1 = require("../@types/object");
+const config_1 = require("../config");
 const config_service_1 = require("../config/config.service");
 const cache_utils_service_1 = require("../services/caching/cache-utils.service");
 const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-json-client.service");
@@ -14,12 +11,16 @@ const cist_json_http_parser_service_1 = require("../services/cist/cist-json-http
 const buildings_service_1 = require("../services/google/buildings.service");
 const calendar_service_1 = require("../services/google/calendar.service");
 const events_service_1 = require("../services/google/events.service");
-const google_api_calendar_1 = require("../services/google/google-api-calendar");
 const google_api_admin_directory_1 = require("../services/google/google-api-admin-directory");
+const google_api_calendar_1 = require("../services/google/google-api-calendar");
+const google_auth_admin_directory_1 = require("../services/google/google-auth-admin-directory");
+const google_utils_service_1 = require("../services/google/google-utils.service");
 const groups_service_1 = require("../services/google/groups.service");
 const rooms_service_1 = require("../services/google/rooms.service");
-const google_utils_service_1 = require("../services/google/google-utils.service");
+const logger_service_1 = require("../services/logger.service");
 const quota_limiter_service_1 = require("../services/quota-limiter.service");
+const task_step_executor_1 = require("../tasks/task-step-executor");
+const types_1 = require("./types");
 let container = null;
 let boundTypes = null;
 function hasContainer() {
@@ -43,6 +44,13 @@ function createContainer(options) {
         defaultScope,
         autoBindInjectable: true,
     });
+    if ((allRequired
+        || types.has(types_1.TYPES.TaskStepExecutor)
+        || types.has(task_step_executor_1.TaskStepExecutor)) && !skip.has(task_step_executor_1.TaskStepExecutor) && !skip.has(types_1.TYPES.TaskStepExecutor)) {
+        container.bind(types_1.TYPES.TaskStepExecutor)
+            .to(task_step_executor_1.TaskStepExecutor);
+        types.add(types_1.TYPES.Container);
+    }
     if ((allRequired || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) && !skip.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
         types.add(types_1.TYPES.CacheUtils);
         types.add(types_1.TYPES.CistCacheConfig);
@@ -145,6 +153,9 @@ function createContainer(options) {
             .to(google_utils_service_1.GoogleUtilsService);
         types.add(types_1.TYPES.GoogleAuthSubject);
         types.add(types_1.TYPES.GoogleEntityIdPrefix);
+    }
+    if ((allRequired || types.has(types_1.TYPES.Container)) && !skip.has(types_1.TYPES.Container)) {
+        container.bind(types_1.TYPES.Container).toConstantValue(container);
     }
     if ((allRequired || types.has(types_1.TYPES.Logger)) && !skip.has(types_1.TYPES.Logger)) {
         container.bind(types_1.TYPES.Logger).toConstantValue(logger_service_1.logger);

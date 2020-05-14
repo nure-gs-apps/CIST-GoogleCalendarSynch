@@ -18,6 +18,8 @@ exports.TYPES = {
     // class tokens
     Config: Symbol.for('Config'),
     Logger: Symbol.for('Logger'),
+    Container: Symbol.for('Container'),
+    TaskStepExecutor: Symbol.for('TaskStepExecutor'),
     CistJsonHttpClient: Symbol.for('CistJsonHttpClient'),
     CistJsonClient: Symbol.for('CistJsonClient'),
     CistJsonHttpParser: Symbol.for('CistJsonHttpParser'),
