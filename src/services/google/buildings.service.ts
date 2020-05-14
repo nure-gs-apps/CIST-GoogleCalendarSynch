@@ -2,20 +2,35 @@ import { GaxiosPromise } from 'gaxios';
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
+import {
+  DeepReadonly,
+  DeepReadonlyArray,
+  DeepReadonlyMap, Maybe,
+  t,
+} from '../../@types';
+import { ApiBuilding, ApiRoomsResponse } from '../../@types/cist';
 import { ILogger } from '../../@types/logging';
+import { ITaskDefinition, TaskType } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
 import { getFloornamesFromBuilding } from '../../utils/cist';
 import { arrayContentEqual } from '../../utils/common';
-import {
-  ApiRoomsResponse,
-  ApiBuilding,
-} from '../../@types/cist';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
+import { FatalError } from './errors';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import { GoogleUtilsService } from './google-utils.service';
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
 import Schema$Building = admin_directory_v1.Schema$Building;
+
+export interface IEnsureBuildingsTaskContext {
+  readonly cistBuildingsMap: DeepReadonlyMap<string, ApiBuilding>;
+  readonly googleBuildingsMap: DeepReadonlyMap<string, Schema$Building>;
+}
+
+export interface IEnsureBuildingsContextWithTask {
+  readonly context: IEnsureBuildingsTaskContext;
+  readonly task: ITaskDefinition<string>;
+}
 
 @injectable()
 export class BuildingsService {
@@ -63,48 +78,72 @@ export class BuildingsService {
     ) as any;
   }
 
+  /**
+   * Doesn't handle errors properly
+   */
   async ensureBuildings(
-    cistResponse: ApiRoomsResponse,
+    cistResponse: DeepReadonly<ApiRoomsResponse>,
+    buildings?: admin_directory_v1.Schema$Building[]
   ) {
-    const buildings = await this.getAllBuildings();
+    if (!buildings) {
+      // tslint:disable-next-line:no-parameter-reassignment
+      buildings = await this.getAllBuildings();
+    }
 
     const promises = [] as GaxiosPromise[];
     for (const cistBuilding of cistResponse.university.buildings) {
       const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
-      const googleBuilding = buildings.find(
+      promises.push(this.doEnsureBuilding(cistBuilding, buildings.find(
         b => b.buildingId === googleBuildingId,
-      );
-      if (googleBuilding) {
-        const buildingPatch = cistBuildingToGoogleBuildingPatch(
-          cistBuilding,
-          googleBuilding,
-        );
-        if (buildingPatch) {
-          this._logger.info(`Patching building ${cistBuilding.short_name}`);
-          promises.push(
-            this._patch({
-              customer,
-              buildingId: googleBuildingId,
-              requestBody: buildingPatch,
-            }),
-          );
-        }
-      } else {
-        this._logger.info(`Inserting building ${cistBuilding.short_name}`);
-        promises.push(
-          this._insert({
-            customer,
-            requestBody: this.cistBuildingToInsertGoogleBuilding(
-              cistBuilding,
-              googleBuildingId,
-            ),
-          }),
-        );
-      }
+      ), googleBuildingId));
     }
-    return Promise.all(promises as any);
+    return Promise.all(promises);
   }
 
+  getEnsureBuildingsContextWithTask(
+    cistResponse: DeepReadonly<ApiRoomsResponse>,
+    allBuildings: DeepReadonlyArray<admin_directory_v1.Schema$Building>
+  ): IEnsureBuildingsContextWithTask {
+    const steps = [] as string[];
+    const cistBuildingsMap = new Map<string, DeepReadonly<ApiBuilding>>();
+    for (const cistBuilding of cistResponse.university.buildings) {
+      cistBuildingsMap.set(cistBuilding.id, cistBuilding);
+      steps.push(cistBuilding.id);
+    }
+    return {
+      context: {
+        cistBuildingsMap,
+        googleBuildingsMap: iterate(allBuildings)
+          .filter(b => typeof b.buildingId === 'string')
+          .map(b => t(b.buildingId as string, b))
+          .toMap(),
+      },
+      task: {
+        steps,
+        taskType: TaskType.EnsureBuildings,
+      },
+    };
+  }
+
+  async ensureBuilding(
+    cistBuildingId: string,
+    context: IEnsureBuildingsTaskContext,
+  ) {
+    const cistBuilding = context.cistBuildingsMap.get(cistBuildingId);
+    if (!cistBuilding) {
+      throw new FatalError(`Building ${cistBuildingId} is not found in context`);
+    }
+    const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
+    await this.doEnsureBuilding(
+      cistBuilding,
+      context.googleBuildingsMap.get(googleBuildingId),
+      googleBuildingId,
+    );
+  }
+
+  /**
+   * Doesn't handle errors properly
+   */
   async deleteAll() {
     const buildings = await this.getAllBuildings();
     const promises = [];
@@ -117,20 +156,36 @@ export class BuildingsService {
     return Promise.all(promises);
   }
 
-  async deleteIrrelevant(cistResponse: ApiRoomsResponse) {
+  /**
+   * Doesn't handle errors properly
+   */
+  async deleteIrrelevant(cistResponse: DeepReadonly<ApiRoomsResponse>) {
     const buildings = await this.getAllBuildings();
     return Promise.all(this.doDeleteByIds(
       buildings,
-      iterate(buildings).filter(building => (
-        !cistResponse.university.buildings.some(
-          b => this._utils.isSameBuildingIdentity(b, building),
-        )
-        // tslint:disable-next-line:no-non-null-assertion
-      )).map(b => b.buildingId!).toSet(),
+      this.getIrrelevantBuildingGoogleIds(buildings, cistResponse).toSet(),
     ));
   }
 
-  async deleteRelevant(cistResponse: ApiRoomsResponse) {
+  getDeleteIrrelevantTask(
+    cistResponse: DeepReadonly<ApiRoomsResponse>,
+    allBuildings: DeepReadonlyArray<admin_directory_v1.Schema$Building>,
+  ): ITaskDefinition<string> {
+    return {
+      taskType: TaskType.DeleteIrrelevantBuildings,
+      steps: this.getIrrelevantBuildingGoogleIds(allBuildings, cistResponse)
+        .toArray(),
+    };
+  }
+
+  async deleteBuildingById(buildingId: string) {
+    return this.doDeleteById(buildingId);
+  }
+
+  /**
+   * Doesn't handle errors properly
+   */
+  async deleteRelevant(cistResponse: DeepReadonly<ApiRoomsResponse>) {
     const buildings = await this.getAllBuildings();
     return Promise.all(this.doDeleteByIds(
       buildings,
@@ -138,8 +193,10 @@ export class BuildingsService {
         cistResponse.university.buildings.some(
           b => this._utils.isSameBuildingIdentity(b, building),
         )
-        // tslint:disable-next-line:no-non-null-assertion
-      )).map(b => b.buildingId!).toSet(),
+      ))
+        .filter(b => typeof b.buildingId === 'string')
+        .map(b => b.buildingId as string)
+        .toSet(),
     ));
   }
 
@@ -159,27 +216,57 @@ export class BuildingsService {
     return buildings;
   }
 
+  private doEnsureBuilding(
+    cistBuilding: DeepReadonly<ApiBuilding>,
+    googleBuilding: Maybe<DeepReadonly<Schema$Building>>,
+    googleBuildingId: string,
+  ) {
+    if (googleBuilding) {
+      const buildingPatch = cistBuildingToGoogleBuildingPatch(
+        cistBuilding,
+        googleBuilding,
+      );
+      if (buildingPatch) {
+        this._logger.info(`Patching building ${cistBuilding.short_name}`);
+        return this._patch({
+          customer,
+          buildingId: googleBuildingId,
+          requestBody: buildingPatch,
+        });
+      }
+    }
+    this._logger.info(`Inserting building ${cistBuilding.short_name}`);
+    return this._insert({
+      customer,
+      requestBody: this.cistBuildingToInsertGoogleBuilding(
+        cistBuilding,
+        googleBuildingId,
+      ),
+    });
+  }
+
   private doDeleteByIds(
-    buildings: Schema$Building[],
+    buildings: Iterable<DeepReadonly<Schema$Building>>,
     ids: Set<string>,
     promises = [] as GaxiosPromise<void>[],
   ) {
     for (const googleBuilding of buildings) {
-      // tslint:disable-next-line:no-non-null-assertion
-      if (ids.has(googleBuilding.buildingId!)) {
-        promises.push(
-          this._delete({
-            customer,
-            buildingId: googleBuilding.buildingId ?? undefined,
-          }),
-        );
+      if (googleBuilding.buildingId && ids.has(googleBuilding.buildingId)) {
+        promises.push(this.doDeleteById(googleBuilding.buildingId));
       }
     }
     return promises;
   }
 
+  private doDeleteById(buildingId: string) {
+    return this._delete({
+      customer,
+      buildingId,
+    });
+  }
+
   private cistBuildingToInsertGoogleBuilding(
-    cistBuilding: ApiBuilding,
+    cistBuilding: DeepReadonly<ApiBuilding>,
     id = this._utils.getGoogleBuildingId(cistBuilding),
   ): Schema$Building {
     return {
@@ -189,11 +276,24 @@ export class BuildingsService {
       floorNames: getFloornamesFromBuilding(cistBuilding),
     };
   }
+
+  private getIrrelevantBuildingGoogleIds(
+    googleBuildings: Iterable<DeepReadonly<Schema$Building>>,
+    cistResponse: DeepReadonly<ApiRoomsResponse>,
+  ) {
+    return iterate(googleBuildings).filter(building => (
+      !cistResponse.university.buildings.some(
+        b => this._utils.isSameBuildingIdentity(b, building),
+      )
+    ))
+      .filter(b => typeof b.buildingId === 'string')
+      .map(b => b.buildingId as string);
+  }
 }
 
 function cistBuildingToGoogleBuildingPatch(
-  cistBuilding: ApiBuilding,
-  googleBuilding: Schema$Building,
+  cistBuilding: DeepReadonly<ApiBuilding>,
+  googleBuilding: DeepReadonly<Schema$Building>,
 ) {
   let hasChanges = false;
   const buildingPatch = {} as Schema$Building;
@@ -206,8 +306,10 @@ function cistBuildingToGoogleBuildingPatch(
     hasChanges = true;
   }
   const floorNames = getFloornamesFromBuilding(cistBuilding);
-  // tslint:disable-next-line:no-non-null-assertion
-  if (!arrayContentEqual(googleBuilding.floorNames!, floorNames)) {
+  if (googleBuilding.floorNames && !arrayContentEqual(
+    googleBuilding.floorNames,
+    floorNames,
+  )) {
     buildingPatch.floorNames = floorNames;
     hasChanges = true;
   }

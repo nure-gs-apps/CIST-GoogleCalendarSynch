@@ -4,11 +4,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
+const _types_1 = require("../../@types");
+const tasks_1 = require("../../@types/tasks");
 const types_1 = require("../../di/types");
 const cist_1 = require("../../utils/cist");
 const common_1 = require("../../utils/common");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
+const errors_1 = require("./errors");
 const google_api_admin_directory_1 = require("./google-api-admin-directory");
 const google_utils_service_1 = require("./google-utils.service");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
@@ -77,33 +80,53 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         this._delete = this._quotaLimiter.limiter.wrap(this._buildings.delete.bind(this._buildings));
         this._list = this._quotaLimiter.limiter.wrap(this._buildings.list.bind(this._buildings));
     }
-    async ensureBuildings(cistResponse) {
-        const buildings = await this.getAllBuildings();
+    /**
+     * Doesn't handle errors properly
+     */
+    async ensureBuildings(cistResponse, buildings) {
+        if (!buildings) {
+            // tslint:disable-next-line:no-parameter-reassignment
+            buildings = await this.getAllBuildings();
+        }
         const promises = [];
         for (const cistBuilding of cistResponse.university.buildings) {
             const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
-            const googleBuilding = buildings.find(b => b.buildingId === googleBuildingId);
-            if (googleBuilding) {
-                const buildingPatch = cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding);
-                if (buildingPatch) {
-                    this._logger.info(`Patching building ${cistBuilding.short_name}`);
-                    promises.push(this._patch({
-                        customer: constants_1.customer,
-                        buildingId: googleBuildingId,
-                        requestBody: buildingPatch,
-                    }));
-                }
-            }
-            else {
-                this._logger.info(`Inserting building ${cistBuilding.short_name}`);
-                promises.push(this._insert({
-                    customer: constants_1.customer,
-                    requestBody: this.cistBuildingToInsertGoogleBuilding(cistBuilding, googleBuildingId),
-                }));
-            }
+            promises.push(this.doEnsureBuilding(cistBuilding, buildings.find(b => b.buildingId === googleBuildingId), googleBuildingId));
         }
         return Promise.all(promises);
     }
+    getEnsureBuildingsContextWithTask(cistResponse, allBuildings) {
+        const steps = [];
+        const cistBuildingsMap = new Map();
+        for (const cistBuilding of cistResponse.university.buildings) {
+            cistBuildingsMap.set(cistBuilding.id, cistBuilding);
+            steps.push(cistBuilding.id);
+        }
+        return {
+            context: {
+                cistBuildingsMap,
+                googleBuildingsMap: iterare_1.iterate(allBuildings)
+                    .filter(b => typeof b.buildingId === 'string')
+                    .map(b => _types_1.t(b.buildingId, b))
+                    .toMap(),
+            },
+            task: {
+                steps,
+                taskType: tasks_1.TaskType.EnsureBuildings,
+            },
+        };
+    }
+    async ensureBuilding(cistBuildingId, context) {
+        const cistBuilding = context.cistBuildingsMap.get(cistBuildingId);
+        if (!cistBuilding) {
+            throw new errors_1.FatalError(`Building ${cistBuildingId} is not found in context`);
+        }
+        const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
+        await this.doEnsureBuilding(cistBuilding, context.googleBuildingsMap.get(googleBuildingId), googleBuildingId);
+    }
+    /**
+     * Doesn't handle errors properly
+     */
     async deleteAll() {
         var _a;
         const buildings = await this.getAllBuildings();
@@ -116,17 +139,32 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         }
         return Promise.all(promises);
     }
+    /**
+     * Doesn't handle errors properly
+     */
     async deleteIrrelevant(cistResponse) {
         const buildings = await this.getAllBuildings();
-        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (!cistResponse.university.buildings.some(b => this._utils.isSameBuildingIdentity(b, building))
-        // tslint:disable-next-line:no-non-null-assertion
-        )).map(b => b.buildingId).toSet()));
+        return Promise.all(this.doDeleteByIds(buildings, this.getIrrelevantBuildingGoogleIds(buildings, cistResponse).toSet()));
     }
+    getDeleteIrrelevantTask(cistResponse, allBuildings) {
+        return {
+            taskType: tasks_1.TaskType.DeleteIrrelevantBuildings,
+            steps: this.getIrrelevantBuildingGoogleIds(allBuildings, cistResponse)
+                .toArray(),
+        };
+    }
+    async deleteBuildingById(buildingId) {
+        return this.doDeleteById(buildingId);
+    }
+    /**
+     * Doesn't handle errors properly
+     */
     async deleteRelevant(cistResponse) {
         const buildings = await this.getAllBuildings();
-        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (cistResponse.university.buildings.some(b => this._utils.isSameBuildingIdentity(b, building))
-        // tslint:disable-next-line:no-non-null-assertion
-        )).map(b => b.buildingId).toSet()));
+        return Promise.all(this.doDeleteByIds(buildings, iterare_1.iterate(buildings).filter(building => (cistResponse.university.buildings.some(b => this._utils.isSameBuildingIdentity(b, building))))
+            .filter(b => typeof b.buildingId === 'string')
+            .map(b => b.buildingId)
+            .toSet()));
     }
     async getAllBuildings() {
         let buildings = [];
@@ -143,18 +181,37 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         } while (buildingsPage.data.nextPageToken);
         return buildings;
     }
-    doDeleteByIds(buildings, ids, promises = []) {
-        var _a;
-        for (const googleBuilding of buildings) {
-            // tslint:disable-next-line:no-non-null-assertion
-            if (ids.has(googleBuilding.buildingId)) {
-                promises.push(this._delete({
+    doEnsureBuilding(cistBuilding, googleBuilding, googleBuildingId) {
+        if (googleBuilding) {
+            const buildingPatch = cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding);
+            if (buildingPatch) {
+                this._logger.info(`Patching building ${cistBuilding.short_name}`);
+                return this._patch({
                     customer: constants_1.customer,
-                    buildingId: (_a = googleBuilding.buildingId) !== null && _a !== void 0 ? _a : undefined,
-                }));
+                    buildingId: googleBuildingId,
+                    requestBody: buildingPatch,
+                });
+            }
+        }
+        this._logger.info(`Inserting building ${cistBuilding.short_name}`);
+        return this._insert({
+            customer: constants_1.customer,
+            requestBody: this.cistBuildingToInsertGoogleBuilding(cistBuilding, googleBuildingId),
+        });
+    }
+    doDeleteByIds(buildings, ids, promises = []) {
+        for (const googleBuilding of buildings) {
+            if (googleBuilding.buildingId && ids.has(googleBuilding.buildingId)) {
+                promises.push(this.doDeleteById(googleBuilding.buildingId));
             }
         }
         return promises;
+    }
+    doDeleteById(buildingId) {
+        return this._delete({
+            customer: constants_1.customer,
+            buildingId,
+        });
     }
     cistBuildingToInsertGoogleBuilding(cistBuilding, id = this._utils.getGoogleBuildingId(cistBuilding)) {
         return {
@@ -163,6 +220,11 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
             description: cistBuilding.full_name,
             floorNames: cist_1.getFloornamesFromBuilding(cistBuilding),
         };
+    }
+    getIrrelevantBuildingGoogleIds(googleBuildings, cistResponse) {
+        return iterare_1.iterate(googleBuildings).filter(building => (!cistResponse.university.buildings.some(b => this._utils.isSameBuildingIdentity(b, building))))
+            .filter(b => typeof b.buildingId === 'string')
+            .map(b => b.buildingId);
     }
 };
 Object.defineProperty(BuildingsService, "BUILDING_PAGE_SIZE", {
@@ -194,8 +256,7 @@ function cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding) {
         hasChanges = true;
     }
     const floorNames = cist_1.getFloornamesFromBuilding(cistBuilding);
-    // tslint:disable-next-line:no-non-null-assertion
-    if (!common_1.arrayContentEqual(googleBuilding.floorNames, floorNames)) {
+    if (googleBuilding.floorNames && !common_1.arrayContentEqual(googleBuilding.floorNames, floorNames)) {
         buildingPatch.floorNames = floorNames;
         hasChanges = true;
     }

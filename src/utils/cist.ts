@@ -4,7 +4,7 @@ import { CacheType, CistCacheConfig } from '../config/types';
 import { ApiBuilding } from '../@types/cist';
 import { transformFloorName } from '../services/google/google-utils.service';
 
-export function getFloornamesFromBuilding(building: ApiBuilding) {
+export function getFloornamesFromBuilding(building: DeepReadonly<ApiBuilding>) {
   return Array.from(iterate(building.auditories)
     .map(r => transformFloorName(r.floor))
     .toSet()

@@ -1,6 +1,6 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
-import { Nullable, Optional } from '../../@types';
+import { DeepReadonly, Nullable, Optional } from '../../@types';
 import { TYPES } from '../../di/types';
 import { toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
@@ -38,8 +38,8 @@ export class GoogleUtilsService {
   }
 
   isSameBuildingIdentity(
-    cistBuilding: ApiBuilding,
-    googleBuilding: Schema$Building,
+    cistBuilding: DeepReadonly<ApiBuilding>,
+    googleBuilding: DeepReadonly<Schema$Building>,
   ) {
     return googleBuilding.buildingId === this.getGoogleBuildingId(cistBuilding);
   }
@@ -52,7 +52,7 @@ export class GoogleUtilsService {
     return googleRoom.resourceId === this.getRoomId(cistRoom, building);
   }
 
-  getGoogleBuildingId(cistBuilding: ApiBuilding) {
+  getGoogleBuildingId(cistBuilding: DeepReadonly<ApiBuilding>) {
     return this.prependIdPrefix(`${buildingIdPrefix}.${toBase64(cistBuilding.id)}`);
   }
 
