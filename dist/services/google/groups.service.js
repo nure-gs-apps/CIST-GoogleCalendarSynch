@@ -61,7 +61,7 @@ let GroupsService = class GroupsService {
         });
         this._utils = utils;
         this._directory = googleApiAdminDirectory;
-        this._groups = this._directory.googleDirectory.groups;
+        this._groups = this._directory.googleAdminDirectory.groups;
         this._quotaLimiter = quotaLimiter;
         this._insert = this._quotaLimiter.limiter.wrap(this._groups.insert.bind(this._groups));
         this._patch = this._quotaLimiter.limiter.wrap(this._groups.patch.bind(this._groups));
@@ -115,13 +115,13 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
+                        const isRelevant = direction.groups.some(cistGroup => google_utils_service_1.isSameGroupIdentity(cistGroup, g));
                         if (isRelevant) {
                             return true;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
+                        const isRelevant = speciality.groups.some(cistGroup => google_utils_service_1.isSameGroupIdentity(cistGroup, g));
                         if (isRelevant) {
                             return true;
                         }
@@ -138,13 +138,13 @@ let GroupsService = class GroupsService {
             for (const faculty of cistResponse.university.faculties) {
                 for (const direction of faculty.directions) {
                     if (direction.groups) {
-                        const isRelevant = direction.groups.some(cistGroup => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
+                        const isRelevant = direction.groups.some(cistGroup => google_utils_service_1.isSameGroupIdentity(cistGroup, g));
                         if (isRelevant) {
                             return false;
                         }
                     }
                     for (const speciality of direction.specialities) {
-                        const isRelevant = speciality.groups.some(cistGroup => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
+                        const isRelevant = speciality.groups.some(cistGroup => google_utils_service_1.isSameGroupIdentity(cistGroup, g));
                         if (isRelevant) {
                             return false;
                         }
@@ -172,7 +172,7 @@ let GroupsService = class GroupsService {
     }
     ensureGroup(groups, cistGroup, insertedGroups, newToOldNames) {
         const googleGroupEmail = this._utils.getGroupEmail(cistGroup);
-        const googleGroup = groups.find(g => google_utils_service_1.isSameGroupIdenity(cistGroup, g));
+        const googleGroup = groups.find(g => google_utils_service_1.isSameGroupIdentity(cistGroup, g));
         if (googleGroup) {
             insertedGroups.add(googleGroupEmail);
             const groupPatch = this.cistGroupToGoogleGroupPatch(cistGroup, googleGroup);

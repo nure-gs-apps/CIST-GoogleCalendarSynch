@@ -2,11 +2,11 @@ import { iterate } from 'iterare';
 import { DeepReadonly } from '../@types';
 import { CacheType, CistCacheConfig } from '../config/types';
 import { ApiBuilding } from '../@types/cist';
-import { transformFloorname } from '../services/google/google-utils.service';
+import { transformFloorName } from '../services/google/google-utils.service';
 
 export function getFloornamesFromBuilding(building: ApiBuilding) {
   return Array.from(iterate(building.auditories)
-    .map(r => transformFloorname(r.floor))
+    .map(r => transformFloorName(r.floor))
     .toSet()
     .values());
 }

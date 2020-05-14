@@ -1,7 +1,6 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
-import { Optional } from '../../@types';
-import { ConfigService } from '../../config/config.service';
+import { Nullable, Optional } from '../../@types';
 import { TYPES } from '../../di/types';
 import { toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
@@ -24,12 +23,12 @@ export class GoogleUtilsService {
   public readonly domainName: string;
   public readonly prependIdPrefix: (id: string) => string;
 
-  constructor(@inject(TYPES.Config) config: ConfigService) {
-    this.domainName = config.config
-      .google
-      .auth
-      .subjectEmail.split('@')[1].toLowerCase();
-    const idPrefix = config.config.google.idPrefix;
+  constructor(
+    @inject(TYPES.GoogleAuthSubject) subject: string,
+    @inject(TYPES.GoogleEntityIdPrefix) idPrefix: Nullable<string>,
+  ) {
+    this.domainName = subject.slice(subject.indexOf('@'), subject.length)
+      .toLowerCase();
     if (!idPrefix) {
       this.prependIdPrefix = id => id;
     } else {
@@ -82,11 +81,11 @@ export class GoogleUtilsService {
 }
 
 const emptyFloorName = /^\s*$/;
-export function transformFloorname(floorName: string) {
+export function transformFloorName(floorName: string) {
   return !emptyFloorName.test(floorName) ? floorName : '_';
 }
 
-export function isSameGroupIdenity(
+export function isSameGroupIdentity(
   cistGroup: ApiGroup,
   googleGroup: Schema$Group,
 ) {

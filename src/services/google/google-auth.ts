@@ -1,40 +1,9 @@
+import * as appRootPath from 'app-root-path';
 import { Compute, JWT, JWTInput, UserRefreshClient } from 'google-auth-library';
-import { inject, injectable } from 'inversify';
 import { google } from 'googleapis';
 import { noop } from 'lodash';
 import * as path from 'path';
-import { Nullable } from '../../@types';
-import { ASYNC_INIT, IAsyncInitializable } from '../../@types/object';
-import { TYPES } from '../../di/types';
-import { IGoogleAuth } from './types';
-import * as appRootPath from 'app-root-path';
-
-@injectable()
-export class GoogleAuth implements IGoogleAuth, IAsyncInitializable {
-  readonly [ASYNC_INIT]: Promise<any>;
-  private _authClient: Nullable<any>;
-
-  get authClient() {
-    return this._authClient;
-  }
-
-  constructor(
-    @inject(TYPES.GoogleAuthSubject) subject: string,
-    @inject(TYPES.GoogleAuthKeyFilepath) keyFilepath: string,
-    @inject(TYPES.GoogleAuthScopes) scopes: ReadonlyArray<string>,
-  ) {
-    this[ASYNC_INIT] = google.auth.getClient({
-      scopes: scopes.slice(),
-      keyFilename: keyFilepath,
-      clientOptions: {
-        subject,
-      },
-    }) as Promise<any>;
-    this._authClient = null;
-    this[ASYNC_INIT]
-      .then(authClient => this._authClient = authClient);
-  }
-}
+import { GoogleAuthKey } from '../../@types/google';
 
 export interface IGoogleAuth {
   readonly authClient: AnyGoogleAuthClient;
@@ -51,14 +20,8 @@ export function addDefaultScopes(newScopes: ReadonlyArray<string>) {
   defaultScopes = defaultScopes.concat(newScopes);
 }
 
-export function createAuthWithFallback(
-  key: JWTInput, scopes: string | string[], onError?: OnError
-): Promise<AnyGoogleAuthClient>;
-export function createAuthWithFallback(
-  keyFilePath: string, scopes: string | string[], onError?: OnError
-): Promise<AnyGoogleAuthClient>;
 export async function createAuthWithFallback(
-  key: JWTInput | string, scopes: string | string[], onError = noop
+  key: GoogleAuthKey, scopes: string | string[], onError: OnError = noop
 ): Promise<AnyGoogleAuthClient> {
   if (typeof key === 'string' && !path.isAbsolute(key)) {
     let filePath = path.resolve(key);
@@ -75,7 +38,7 @@ export async function createAuthWithFallback(
     }
   }
   try {
-    return await createAuth(key as any, scopes);
+    return await createAuth(key, scopes);
   } catch (error) {
     onError(error);
     return createAuth();
@@ -83,10 +46,7 @@ export async function createAuthWithFallback(
 }
 
 export function createAuth(
-  key: JWTInput, scopes: string | string[]
-): Promise<AnyGoogleAuthClient>;
-export function createAuth(
-  keyFilePath: string, scopes: string | string[]
+  key: GoogleAuthKey, scopes: string | string[]
 ): Promise<AnyGoogleAuthClient>;
 export function createAuth(): Promise<AnyGoogleAuthClient>;
 export function createAuth(

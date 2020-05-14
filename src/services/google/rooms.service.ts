@@ -12,7 +12,7 @@ import { customer } from './constants';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise } from 'gaxios';
-import { transformFloorname, GoogleUtilsService } from './google-utils.service';
+import { transformFloorName, GoogleUtilsService } from './google-utils.service';
 
 @injectable()
 export class RoomsService {
@@ -41,7 +41,7 @@ export class RoomsService {
     this._utils = utils;
 
     this._directory = googleApiAdminDirectory;
-    this._rooms = this._directory.googleDirectory.resources.calendars;
+    this._rooms = this._directory.googleAdminDirectory.resources.calendars;
     this._quotaLimiter = quotaLimiter;
 
     this._insert = this._quotaLimiter.limiter.wrap(
@@ -216,7 +216,7 @@ function cistRoomToInsertGoogleRoom(
     capacity: 999, // unlimited
     resourceDescription: cistRoom.short_name, // FIXME: whether add info about buildings or not
     userVisibleDescription: cistRoom.short_name,
-    floorName: transformFloorname(cistRoom.floor),
+    floorName: transformFloorName(cistRoom.floor),
     resourceCategory: 'CONFERENCE_ROOM',
   };
   return room;
@@ -245,7 +245,7 @@ function cistRoomToGoogleRoomPatch(
     roomPatch.userVisibleDescription = cistRoom.short_name;
     hasChanges = true;
   }
-  const floorName = transformFloorname(cistRoom.floor);
+  const floorName = transformFloorName(cistRoom.floor);
   if (floorName !== googleRoom.floorName) {
     roomPatch.floorName = floorName;
     hasChanges = true;

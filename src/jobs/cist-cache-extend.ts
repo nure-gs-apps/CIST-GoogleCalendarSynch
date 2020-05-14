@@ -4,7 +4,7 @@ import { IMaxCacheExpiration } from '../@types/caching';
 import { TimetableType } from '../@types/cist';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IFullAppConfig } from '../config/types';
-import { createContainer } from '../di/container';
+import { createContainer, getContainerAsyncInitializer } from '../di/container';
 import { TYPES } from '../di/types';
 import { CacheUtilsService } from '../services/caching/cache-utils.service';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
@@ -37,6 +37,10 @@ export async function handleCistCacheExtend(
     );
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
     .to(CachedCistJsonClientService);
+  await getContainerAsyncInitializer([
+    CachedCistJsonClientService,
+    CacheUtilsService,
+  ]);
 
   const cistClient = container
     .get<CachedCistJsonClientService>(TYPES.CistJsonClient);

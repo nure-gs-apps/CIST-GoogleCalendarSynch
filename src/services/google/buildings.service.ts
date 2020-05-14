@@ -43,7 +43,7 @@ export class BuildingsService {
     this._utils = utils;
 
     this._directory = googleApiAdminDirectory;
-    this._buildings = this._directory.googleDirectory.resources.buildings;
+    this._buildings = this._directory.googleAdminDirectory.resources.buildings;
     this._quotaLimiter = quotaLimiter;
 
     this._insert = this._quotaLimiter.limiter.wrap(
@@ -65,7 +65,7 @@ export class BuildingsService {
   ) {
     const buildings = await this.getAllBuildings();
 
-    const promises = [] as GaxiosPromise<any>[];
+    const promises = [] as GaxiosPromise[];
     for (const cistBuilding of cistResponse.university.buildings) {
       const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
       const googleBuilding = buildings.find(

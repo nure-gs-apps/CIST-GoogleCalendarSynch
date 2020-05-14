@@ -3,13 +3,16 @@ import { interfaces } from 'inversify';
 import { IDisposable } from '../@types/object';
 import { IApiQuota } from '../@types/services';
 import { bindOnExitHandler } from './exit-handler.service';
+import ServiceIdentifier = interfaces.ServiceIdentifier;
 
 export function getQuotaLimiterFactory(
-  config: IApiQuota,
+  configId: ServiceIdentifier<any>,
   isSingleton: boolean,
 ) {
   return (context: interfaces.Context) => {
-    const limiter = new QuotaLimiterService(config);
+    const limiter = new QuotaLimiterService(
+      context.container.get<IApiQuota>(configId)
+    );
     if (isSingleton) {
       bindOnExitHandler(() => limiter.dispose());
     }

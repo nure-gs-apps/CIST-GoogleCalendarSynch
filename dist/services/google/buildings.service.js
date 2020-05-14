@@ -64,7 +64,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         });
         this._utils = utils;
         this._directory = googleApiAdminDirectory;
-        this._buildings = this._directory.googleDirectory.resources.buildings;
+        this._buildings = this._directory.googleAdminDirectory.resources.buildings;
         this._quotaLimiter = quotaLimiter;
         this._insert = this._quotaLimiter.limiter.wrap(this._buildings.insert.bind(this._buildings));
         this._patch = this._quotaLimiter.limiter.wrap(this._buildings.patch.bind(this._buildings));

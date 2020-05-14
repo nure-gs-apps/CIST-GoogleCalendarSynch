@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
-const config_service_1 = require("../../config/config.service");
 const types_1 = require("../../di/types");
 const common_1 = require("../../utils/common");
 const translit_1 = require("../../utils/translit");
@@ -10,7 +9,7 @@ exports.buildingIdPrefix = 'b';
 exports.roomIdPrefix = 'r';
 exports.groupEmailPrefix = 'g';
 let GoogleUtilsService = class GoogleUtilsService {
-    constructor(config) {
+    constructor(subject, idPrefix) {
         Object.defineProperty(this, "_idPrefix", {
             enumerable: true,
             configurable: true,
@@ -29,11 +28,8 @@ let GoogleUtilsService = class GoogleUtilsService {
             writable: true,
             value: void 0
         });
-        this.domainName = config.config
-            .google
-            .auth
-            .subjectEmail.split('@')[1].toLowerCase();
-        const idPrefix = config.config.google.idPrefix;
+        this.domainName = subject.slice(subject.indexOf('@'), subject.length)
+            .toLowerCase();
         if (!idPrefix) {
             this.prependIdPrefix = id => id;
         }
@@ -66,20 +62,21 @@ let GoogleUtilsService = class GoogleUtilsService {
 };
 GoogleUtilsService = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.Config)),
-    tslib_1.__metadata("design:paramtypes", [config_service_1.ConfigService])
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuthSubject)),
+    tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleEntityIdPrefix)),
+    tslib_1.__metadata("design:paramtypes", [String, Object])
 ], GoogleUtilsService);
 exports.GoogleUtilsService = GoogleUtilsService;
 const emptyFloorName = /^\s*$/;
-function transformFloorname(floorName) {
+function transformFloorName(floorName) {
     return !emptyFloorName.test(floorName) ? floorName : '_';
 }
-exports.transformFloorname = transformFloorname;
-function isSameGroupIdenity(cistGroup, googleGroup) {
+exports.transformFloorName = transformFloorName;
+function isSameGroupIdentity(cistGroup, googleGroup) {
     // tslint:disable-next-line:no-non-null-assertion
     const emailParts = googleGroup.email.split('@');
     const parts = emailParts[emailParts.length - 2].split('.');
     return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
 }
-exports.isSameGroupIdenity = isSameGroupIdenity;
+exports.isSameGroupIdentity = isSameGroupIdentity;
 //# sourceMappingURL=google-utils.service.js.map

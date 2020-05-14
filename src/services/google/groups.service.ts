@@ -11,7 +11,7 @@ import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 import Resource$Groups = admin_directory_v1.Resource$Groups;
 import { GaxiosPromise } from 'gaxios';
-import { isSameGroupIdenity, GoogleUtilsService } from './google-utils.service';
+import { isSameGroupIdentity, GoogleUtilsService } from './google-utils.service';
 
 @injectable()
 export class GroupsService {
@@ -39,7 +39,7 @@ export class GroupsService {
     this._utils = utils;
 
     this._directory = googleApiAdminDirectory;
-    this._groups = this._directory.googleDirectory.groups;
+    this._groups = this._directory.googleAdminDirectory.groups;
     this._quotaLimiter = quotaLimiter;
 
     this._insert = this._quotaLimiter.limiter.wrap(
@@ -121,7 +121,7 @@ export class GroupsService {
           for (const direction of faculty.directions) {
             if (direction.groups) {
               const isRelevant = direction.groups.some(
-                cistGroup =>   isSameGroupIdenity(cistGroup, g),
+                cistGroup =>   isSameGroupIdentity(cistGroup, g),
               );
               if (isRelevant) {
                 return true;
@@ -129,7 +129,7 @@ export class GroupsService {
             }
             for (const speciality of direction.specialities) {
               const isRelevant = speciality.groups.some(
-                cistGroup => isSameGroupIdenity(cistGroup, g),
+                cistGroup => isSameGroupIdentity(cistGroup, g),
               );
               if (isRelevant) {
                 return true;
@@ -152,7 +152,7 @@ export class GroupsService {
           for (const direction of faculty.directions) {
             if (direction.groups) {
               const isRelevant = direction.groups.some(
-                cistGroup => isSameGroupIdenity(cistGroup, g),
+                cistGroup => isSameGroupIdentity(cistGroup, g),
               );
               if (isRelevant) {
                 return false;
@@ -160,7 +160,7 @@ export class GroupsService {
             }
             for (const speciality of direction.specialities) {
               const isRelevant = speciality.groups.some(
-                cistGroup => isSameGroupIdenity(cistGroup, g),
+                cistGroup => isSameGroupIdentity(cistGroup, g),
               );
               if (isRelevant) {
                 return false;
@@ -198,7 +198,7 @@ export class GroupsService {
   ) {
     const googleGroupEmail = this._utils.getGroupEmail(cistGroup);
     const googleGroup = groups.find(
-      g => isSameGroupIdenity(cistGroup, g),
+      g => isSameGroupIdentity(cistGroup, g),
     );
     if (googleGroup) {
       insertedGroups.add(googleGroupEmail);

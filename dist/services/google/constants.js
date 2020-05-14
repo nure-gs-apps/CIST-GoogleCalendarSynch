@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.customer = 'my_customer';
-exports.directoryAuthScopes = [
+exports.adminDirectoryAuthScopes = [
     'https://www.googleapis.com/auth/admin.directory.resource.calendar',
     'https://www.googleapis.com/auth/admin.directory.group',
 ];

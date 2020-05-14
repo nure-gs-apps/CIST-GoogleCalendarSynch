@@ -33,7 +33,7 @@ export async function handleCistAssert(
   });
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
     .to(CachedCistJsonClientService);
-  await getContainerAsyncInitializer();
+  await getContainerAsyncInitializer([CachedCistJsonClientService]);
 
   const cistClient = container
     .get<CachedCistJsonClientService>(TYPES.CistJsonClient);

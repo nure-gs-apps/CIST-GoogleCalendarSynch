@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const bottleneck_1 = require("bottleneck");
 const exit_handler_service_1 = require("./exit-handler.service");
-function getQuotaLimiterFactory(config, isSingleton) {
+function getQuotaLimiterFactory(configId, isSingleton) {
     return (context) => {
-        const limiter = new QuotaLimiterService(config);
+        const limiter = new QuotaLimiterService(context.container.get(configId));
         if (isSingleton) {
             exit_handler_service_1.bindOnExitHandler(() => limiter.dispose());
         }
@@ -64,12 +64,12 @@ class QuotaLimiterService {
         this.limiter.chain(this.dailyLimiter);
         this._disposed = false;
     }
-    get disposed() {
+    get isDisposed() {
         return this._disposed;
     }
     dispose() {
         if (this._disposed) {
-            return;
+            return Promise.resolve();
         }
         this.limiter.chain(undefined);
         this._disposed = true;

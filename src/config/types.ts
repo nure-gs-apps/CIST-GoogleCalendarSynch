@@ -2,6 +2,7 @@
 import * as yargs from 'yargs';
 import { JWTInput } from 'google-auth-library';
 import { DeepPartial, Nullable } from '../@types';
+import { GoogleAuthKey } from '../@types/google';
 import {
   IApiQuota,
   ICalendarConfig,
@@ -62,6 +63,8 @@ export interface IFullAppConfig {
 }
 
 export type AppConfig = IFullAppConfig['ncgc'];
+
+export type GoogleAuthConfigKey = Nullable<GoogleAuthKey>;
 
 export type CistCacheConfig = AppConfig['caching']['cist'];
 

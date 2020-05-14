@@ -16,7 +16,7 @@ async function handleCistAssert(args, config, logger) {
     });
     container.bind(types_1.TYPES.CistJsonClient)
         .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
-    await container_1.getContainerAsyncInitializer();
+    await container_1.getContainerAsyncInitializer([cached_cist_json_client_service_1.CachedCistJsonClientService]);
     const cistClient = container
         .get(types_1.TYPES.CistJsonClient);
     const dispose = async () => {

@@ -2,12 +2,12 @@ import { inject, injectable } from 'inversify';
 import { Nullable } from '../../@types';
 import { ILogger } from '../../@types/logging';
 import { ASYNC_INIT, IAsyncInitializable } from '../../@types/object';
-import { AppConfig } from '../../config/types';
+import { GoogleAuthConfigKey } from '../../config/types';
 import { TYPES } from '../../di/types';
 import { adminDirectoryAuthScopes } from './constants';
 import {
   addDefaultScopes,
-  AnyGoogleAuthClient,
+  AnyGoogleAuthClient, createAuth,
   createAuthWithFallback,
   IGoogleAuth,
 } from './google-auth';
@@ -29,11 +29,11 @@ export class GoogleAuthAdminDirectory implements IAsyncInitializable, IGoogleAut
     @inject(TYPES.Logger) logger: ILogger,
     @inject(
       TYPES.GoogleAuthAdminDirectoryKey
-    ) key: AppConfig['google']['auth']['adminDirectoryKey'],
+    ) key: GoogleAuthConfigKey,
   ) {
     this._authClient = null;
-    this[ASYNC_INIT] = createAuthWithFallback(
-      key as any,
+    this[ASYNC_INIT] = (key ? createAuthWithFallback(
+      key,
       adminDirectoryAuthScopes.slice(),
       (error, keyPath) => {
         if (keyPath) {
@@ -42,7 +42,7 @@ export class GoogleAuthAdminDirectory implements IAsyncInitializable, IGoogleAut
           logger.warn(l('Error while loading key due to error:'), error);
         }
       }
-    ).then(c => this._authClient = c);
+    ) : createAuth()).then(c => this._authClient = c);
   }
 }
 

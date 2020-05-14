@@ -62,7 +62,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
         });
         this._utils = utils;
         this._directory = googleApiAdminDirectory;
-        this._rooms = this._directory.googleDirectory.resources.calendars;
+        this._rooms = this._directory.googleAdminDirectory.resources.calendars;
         this._quotaLimiter = quotaLimiter;
         this._insert = this._quotaLimiter.limiter.wrap(this._rooms.insert.bind(this._rooms));
         this._patch = this._quotaLimiter.limiter.wrap(this._rooms.patch.bind(this._rooms));
@@ -205,7 +205,7 @@ function cistRoomToInsertGoogleRoom(cistRoom, googleBuildingId, roomId) {
         capacity: 999,
         resourceDescription: cistRoom.short_name,
         userVisibleDescription: cistRoom.short_name,
-        floorName: google_utils_service_1.transformFloorname(cistRoom.floor),
+        floorName: google_utils_service_1.transformFloorName(cistRoom.floor),
         resourceCategory: 'CONFERENCE_ROOM',
     };
     return room;
@@ -229,7 +229,7 @@ function cistRoomToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
         roomPatch.userVisibleDescription = cistRoom.short_name;
         hasChanges = true;
     }
-    const floorName = google_utils_service_1.transformFloorname(cistRoom.floor);
+    const floorName = google_utils_service_1.transformFloorName(cistRoom.floor);
     if (floorName !== googleRoom.floorName) {
         roomPatch.floorName = floorName;
         hasChanges = true;

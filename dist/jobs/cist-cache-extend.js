@@ -21,6 +21,10 @@ async function handleCistCacheExtend(args, newExpiration, config) {
     container.get(types_1.TYPES.CacheMaxExpiration), newExpiration));
     container.bind(types_1.TYPES.CistJsonClient)
         .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
+    await container_1.getContainerAsyncInitializer([
+        cached_cist_json_client_service_1.CachedCistJsonClientService,
+        cache_utils_service_1.CacheUtilsService,
+    ]);
     const cistClient = container
         .get(types_1.TYPES.CistJsonClient);
     const dispose = async () => {
