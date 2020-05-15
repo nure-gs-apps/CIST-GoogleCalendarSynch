@@ -72,6 +72,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
     container.bind<ITaskStepExecutor>(TYPES.TaskStepExecutor)
       .to(TaskStepExecutor);
     types.add(TYPES.Container);
+    types.add(TYPES.Logger);
   }
 
   if ((

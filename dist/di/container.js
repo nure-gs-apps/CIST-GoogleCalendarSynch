@@ -50,6 +50,7 @@ function createContainer(options) {
         container.bind(types_1.TYPES.TaskStepExecutor)
             .to(task_step_executor_1.TaskStepExecutor);
         types.add(types_1.TYPES.Container);
+        types.add(types_1.TYPES.Logger);
     }
     if ((allRequired || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) && !skip.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
         types.add(types_1.TYPES.CacheUtils);

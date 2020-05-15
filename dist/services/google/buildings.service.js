@@ -83,11 +83,8 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
     /**
      * Doesn't handle errors properly
      */
-    async ensureBuildings(cistResponse, buildings) {
-        if (!buildings) {
-            // tslint:disable-next-line:no-parameter-reassignment
-            buildings = await this.getAllBuildings();
-        }
+    async ensureBuildings(cistResponse) {
+        const buildings = await this.getAllBuildings();
         const promises = [];
         for (const cistBuilding of cistResponse.university.buildings) {
             const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
@@ -95,25 +92,21 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         }
         return Promise.all(promises);
     }
-    getEnsureBuildingsContextWithTask(cistResponse, allBuildings) {
-        const steps = [];
-        const cistBuildingsMap = new Map();
-        for (const cistBuilding of cistResponse.university.buildings) {
-            cistBuildingsMap.set(cistBuilding.id, cistBuilding);
-            steps.push(cistBuilding.id);
-        }
+    async createBuildingsContext(cistResponse) {
         return {
-            context: {
-                cistBuildingsMap,
-                googleBuildingsMap: iterare_1.iterate(allBuildings)
-                    .filter(b => typeof b.buildingId === 'string')
-                    .map(b => _types_1.t(b.buildingId, b))
-                    .toMap(),
-            },
-            task: {
-                steps,
-                taskType: tasks_1.TaskType.EnsureBuildings,
-            },
+            cistBuildingsMap: iterare_1.iterate(cistResponse.university.buildings)
+                .map(b => _types_1.t(b.id, b))
+                .toMap(),
+            googleBuildingsMap: iterare_1.iterate(await this.getAllBuildings())
+                .filter(b => typeof b.buildingId === 'string')
+                .map(b => _types_1.t(b.buildingId, b))
+                .toMap(),
+        };
+    }
+    createEnsureBuildingsTask(cistResponse) {
+        return {
+            taskType: tasks_1.TaskType.EnsureBuildings,
+            steps: cistResponse.university.buildings.map(b => b.id),
         };
     }
     async ensureBuilding(cistBuildingId, context) {
@@ -146,10 +139,12 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         const buildings = await this.getAllBuildings();
         return Promise.all(this.doDeleteByIds(buildings, this.getIrrelevantBuildingGoogleIds(buildings, cistResponse).toSet()));
     }
-    getDeleteIrrelevantTask(cistResponse, allBuildings) {
+    createDeleteIrrelevantTask(context) {
         return {
             taskType: tasks_1.TaskType.DeleteIrrelevantBuildings,
-            steps: this.getIrrelevantBuildingGoogleIds(allBuildings, cistResponse)
+            steps: iterare_1.iterate(context.cistBuildingsMap.values())
+                .map(cistBuilding => this._utils.getGoogleBuildingId(cistBuilding))
+                .filter(googleBuildingId => context.googleBuildingsMap.has(googleBuildingId))
                 .toArray(),
         };
     }

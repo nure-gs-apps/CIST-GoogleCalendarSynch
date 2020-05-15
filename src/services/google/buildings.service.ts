@@ -4,8 +4,8 @@ import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import {
   DeepReadonly,
-  DeepReadonlyArray,
-  DeepReadonlyMap, Maybe,
+  DeepReadonlyMap,
+  Maybe,
   t,
 } from '../../@types';
 import { ApiBuilding, ApiRoomsResponse } from '../../@types/cist';
@@ -22,14 +22,9 @@ import { GoogleUtilsService } from './google-utils.service';
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
 import Schema$Building = admin_directory_v1.Schema$Building;
 
-export interface IEnsureBuildingsTaskContext {
+export interface IBuildingsTaskContext {
   readonly cistBuildingsMap: DeepReadonlyMap<string, ApiBuilding>;
   readonly googleBuildingsMap: DeepReadonlyMap<string, Schema$Building>;
-}
-
-export interface IEnsureBuildingsContextWithTask {
-  readonly context: IEnsureBuildingsTaskContext;
-  readonly task: ITaskDefinition<string>;
 }
 
 @injectable()
@@ -81,14 +76,8 @@ export class BuildingsService {
   /**
    * Doesn't handle errors properly
    */
-  async ensureBuildings(
-    cistResponse: DeepReadonly<ApiRoomsResponse>,
-    buildings?: admin_directory_v1.Schema$Building[]
-  ) {
-    if (!buildings) {
-      // tslint:disable-next-line:no-parameter-reassignment
-      buildings = await this.getAllBuildings();
-    }
+  async ensureBuildings(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+    const buildings = await this.getAllBuildings();
 
     const promises = [] as GaxiosPromise[];
     for (const cistBuilding of cistResponse.university.buildings) {
@@ -100,34 +89,32 @@ export class BuildingsService {
     return Promise.all(promises);
   }
 
-  getEnsureBuildingsContextWithTask(
-    cistResponse: DeepReadonly<ApiRoomsResponse>,
-    allBuildings: DeepReadonlyArray<admin_directory_v1.Schema$Building>
-  ): IEnsureBuildingsContextWithTask {
-    const steps = [] as string[];
-    const cistBuildingsMap = new Map<string, DeepReadonly<ApiBuilding>>();
-    for (const cistBuilding of cistResponse.university.buildings) {
-      cistBuildingsMap.set(cistBuilding.id, cistBuilding);
-      steps.push(cistBuilding.id);
-    }
+  async createBuildingsContext(
+    cistResponse: DeepReadonly<ApiRoomsResponse>
+  ): Promise<IBuildingsTaskContext> {
     return {
-      context: {
-        cistBuildingsMap,
-        googleBuildingsMap: iterate(allBuildings)
-          .filter(b => typeof b.buildingId === 'string')
-          .map(b => t(b.buildingId as string, b))
-          .toMap(),
-      },
-      task: {
-        steps,
-        taskType: TaskType.EnsureBuildings,
-      },
+      cistBuildingsMap: iterate(cistResponse.university.buildings)
+        .map(b => t(b.id, b))
+        .toMap(),
+      googleBuildingsMap: iterate(await this.getAllBuildings())
+        .filter(b => typeof b.buildingId === 'string')
+        .map(b => t(b.buildingId as string, b))
+        .toMap(),
+    };
+  }
+
+  createEnsureBuildingsTask(
+    cistResponse: DeepReadonly<ApiRoomsResponse>
+  ): ITaskDefinition<string> {
+    return {
+      taskType: TaskType.EnsureBuildings,
+      steps: cistResponse.university.buildings.map(b => b.id),
     };
   }
 
   async ensureBuilding(
     cistBuildingId: string,
-    context: IEnsureBuildingsTaskContext,
+    context: IBuildingsTaskContext,
   ) {
     const cistBuilding = context.cistBuildingsMap.get(cistBuildingId);
     if (!cistBuilding) {
@@ -167,13 +154,16 @@ export class BuildingsService {
     ));
   }
 
-  getDeleteIrrelevantTask(
-    cistResponse: DeepReadonly<ApiRoomsResponse>,
-    allBuildings: DeepReadonlyArray<admin_directory_v1.Schema$Building>,
+  createDeleteIrrelevantTask(
+    context: IBuildingsTaskContext
   ): ITaskDefinition<string> {
     return {
       taskType: TaskType.DeleteIrrelevantBuildings,
-      steps: this.getIrrelevantBuildingGoogleIds(allBuildings, cistResponse)
+      steps: iterate(context.cistBuildingsMap.values())
+        .map(cistBuilding => this._utils.getGoogleBuildingId(cistBuilding))
+        .filter(
+          googleBuildingId => context.googleBuildingsMap.has(googleBuildingId)
+        )
         .toArray(),
     };
   }

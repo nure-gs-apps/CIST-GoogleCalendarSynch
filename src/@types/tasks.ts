@@ -1,6 +1,14 @@
 import { isObjectLike } from '../utils/common';
 
 export enum TaskType {
+  DeferredEnsureBuildings= 'deferredEnsureBuildings',
+  DeferredEnsureRooms = 'deferredEnsureRooms',
+  DeferredEnsureGroups = 'deferredEnsureGroups',
+
+  DeferredDeleteIrrelevantBuildings = 'deferredDeleteIrrelevantBuildings',
+  DeferredDeleteIrrelevantRooms = 'deferredDeleteIrrelevantRooms',
+  DeferredDeleteIrrelevantGroups = 'deferredDeleteIrrelevantGroups',
+
   EnsureBuildings= 'ensureBuildings',
   EnsureRooms = 'ensureRooms',
   EnsureGroups = 'ensureGroups',

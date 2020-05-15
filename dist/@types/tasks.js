@@ -3,6 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("../utils/common");
 var TaskType;
 (function (TaskType) {
+    TaskType["DeferredEnsureBuildings"] = "deferredEnsureBuildings";
+    TaskType["DeferredEnsureRooms"] = "deferredEnsureRooms";
+    TaskType["DeferredEnsureGroups"] = "deferredEnsureGroups";
+    TaskType["DeferredDeleteIrrelevantBuildings"] = "deferredDeleteIrrelevantBuildings";
+    TaskType["DeferredDeleteIrrelevantRooms"] = "deferredDeleteIrrelevantRooms";
+    TaskType["DeferredDeleteIrrelevantGroups"] = "deferredDeleteIrrelevantGroups";
     TaskType["EnsureBuildings"] = "ensureBuildings";
     TaskType["EnsureRooms"] = "ensureRooms";
     TaskType["EnsureGroups"] = "ensureGroups";
