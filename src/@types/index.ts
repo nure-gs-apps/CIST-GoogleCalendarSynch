@@ -1,4 +1,5 @@
 import { ReadonlyDate } from 'readonly-date';
+import { extends } from 'tslint/lib/configs/latest';
 
 export type primitive =
   number
@@ -77,3 +78,40 @@ export function t<A, B, C>(...args: [A, B, C]): [A, B, C];
 export function t(...args: any[]): any[] {
   return args;
 }
+
+export interface IReadonlyGuardedMap<K, V> extends ReadonlyMap<K, NonOptional<V>> {
+  get<K>(key: K): NonOptional<V>;
+  forEach(
+    callbackfn: (value: NonOptional<V>, key: K, map: GuardedMap<K, V>) => void,
+    thisArg?: any,
+  ): void;
+}
+
+export interface IGuardedMap<K, V> extends IReadonlyGuardedMap<K, V>{
+  set<K>(key: K, value: NonOptional<V>): any;
+}
+
+export class GuardedMap<K, V> extends Map<any, any> implements IReadonlyGuardedMap<K, V>, Map<K, NonOptional<V>>, IGuardedMap<K, V> {
+  get<K>(key: K): NonOptional<V> {
+    const value = super.get(key);
+    if (value === undefined) {
+      throw new TypeError(`key ${key} is not found in the map`);
+    }
+    return value;
+  }
+
+  set<K>(key: K, value: NonOptional<V>) {
+    if (value === undefined) {
+      throw new TypeError(`value ${value} for key ${key} is undefined`);
+    }
+    return super.set(key, value);
+  }
+
+  forEach(
+    callbackfn: (value: NonOptional<V>, key: K, map: GuardedMap<K, V>) => void,
+    thisArg?: any,
+  ) {
+    return super.forEach(callbackfn, thisArg);
+  }
+}
+
