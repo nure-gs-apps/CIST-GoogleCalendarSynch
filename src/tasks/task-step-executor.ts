@@ -65,9 +65,23 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor 
   rerunFailed<T>(
     taskType: string,
     errorOrStep: any | T,
-    error?: any,
+    errorParam?: any,
   ): Promise<any> {
-    return Promise.resolve(undefined);
+    let step: Optional<T>;
+    let error: any;
+    if (error !== undefined) {
+      step = errorOrStep as T;
+      error = errorParam;
+    } else {
+      step = undefined;
+      error = errorOrStep;
+    }
+    if (step !== undefined) {
+      this._logger.error(l(`rerunning failed task "${taskType}", step ${JSON.stringify(step)}, with error`), error);
+    } else {
+      this._logger.error(l(`rerunning failed task "${taskType}", with error`), error);
+    }
+    return this.run(taskType, step);
   }
 
   run<T>(taskType: string): Promise<any>;

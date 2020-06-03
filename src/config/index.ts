@@ -13,7 +13,6 @@ import IFormat = nconf.IFormat;
 
 let config: Nullable<IFullAppConfig> = null;
 
-// tslint:disable-next-line:no-non-null-assertion
 export const appConfigPrefix = nameof<IFullAppConfig>(c => c.ncgc);
 export const environmentVariableDepthSeparator = '__';
 const lowerCaseEnvVariableStart = `${appConfigPrefix}${environmentVariableDepthSeparator}`.toLowerCase();
