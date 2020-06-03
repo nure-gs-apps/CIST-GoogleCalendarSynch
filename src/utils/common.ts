@@ -150,3 +150,8 @@ export function toGroupIds(groupsResponse: ApiGroupsResponse) {
     .flatten()
     .map(g => g.id);
 }
+
+export function isIterable(value: any): value is Iterable<any> {
+  return isObjectLike<Iterable<any>>(value)
+    && typeof value[Symbol.iterator] === 'function';
+}

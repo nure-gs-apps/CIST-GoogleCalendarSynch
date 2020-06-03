@@ -5,6 +5,7 @@ const tslib_1 = require("tslib");
 const fs_1 = require("fs");
 const inversify_1 = require("inversify");
 const path = require("path");
+const _types_1 = require("../../@types");
 const object_1 = require("../../@types/object");
 const types_1 = require("../../config/types");
 const types_2 = require("../../di/types");
@@ -81,7 +82,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         });
         this._cacheConfig = cacheConfig;
         this._cacheUtils = cacheUtils;
-        this._eventsCachedValues = new Map();
+        this._eventsCachedValues = new _types_1.GuardedMap();
         this._groupsCachedValue = null;
         this._roomsCachedValue = null;
         this._isDisposed = false;

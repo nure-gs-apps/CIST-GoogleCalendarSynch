@@ -1,6 +1,7 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
+import { GuardedMap } from '../../@types';
 import { ILogger } from '../../@types/logging';
 import { TYPES } from '../../di/types';
 import {
@@ -68,7 +69,7 @@ export class RoomsService {
     const rooms = await this.getAllRooms();
 
     const promises = [] as GaxiosPromise<any>[];
-    const newToOldNames = new Map<string, string>();
+    const newToOldNames = new GuardedMap<string, string>();
     for (const cistBuilding of cistResponse.university.buildings) {
       const buildingId = this._utils.getGoogleBuildingId(cistBuilding);
       for (const cistRoom of cistBuilding.auditories) {

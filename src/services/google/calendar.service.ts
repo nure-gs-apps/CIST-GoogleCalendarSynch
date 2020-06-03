@@ -1,6 +1,6 @@
 import { calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
-import { Nullable } from '../../@types';
+import { GuardedMap, IReadonlyGuardedMap, Nullable } from '../../@types';
 import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
 import {
@@ -73,12 +73,12 @@ export class CalendarService {
   async getEnsuredCalendars(
     groupsResponse: ApiGroupsResponse,
     roomsResponse: ApiRoomsResponse,
-    newToOldGroupNames: Nullable<ReadonlyMap<string, string>>,
-    newToOldRoomNames: Nullable<ReadonlyMap<string, string>>,
+    newToOldGroupNames: Nullable<IReadonlyGuardedMap<string, string>>,
+    newToOldRoomNames: Nullable<IReadonlyGuardedMap<string, string>>,
   ) {
     const c: ICalendars = {
-      groupCalendars: new Map(),
-      roomCalendars: new Map(),
+      groupCalendars: new GuardedMap(),
+      roomCalendars: new GuardedMap(),
     };
     const promises = [] as Promise<any>[];
     const calendars = await this.getAllCalendars();
@@ -174,18 +174,16 @@ export class CalendarService {
     calendars: ReadonlyArray<Schema$Calendar | Schema$CalendarListEntry>,
     cistGroup: ApiGroup,
     calendarMap: Map<string, Schema$Calendar | Schema$CalendarListEntry>,
-    newToOldGroupNames: Nullable<ReadonlyMap<string, string>>,
+    newToOldGroupNames: Nullable<IReadonlyGuardedMap<string, string>>,
   ) {
     let groupName = cistGroup.name;
     let changeName = false;
     if (newToOldGroupNames && newToOldGroupNames.has(groupName)) {
-      // tslint:disable-next-line:no-non-null-assertion
-      groupName = newToOldGroupNames.get(groupName)!;
+      groupName = newToOldGroupNames.get(groupName);
       changeName = true;
     }
     if (calendarMap.has(groupName)) {
-      // tslint:disable-next-line:no-non-null-assertion
-      return calendarMap.get(groupName)!;
+      return calendarMap.get(groupName);
     }
     const groupNameWithPrefix = prependPrefix(groupName);
     let calendar = calendars.find(
@@ -216,13 +214,12 @@ export class CalendarService {
     calendars: ReadonlyArray<Schema$Calendar | Schema$CalendarListEntry>,
     cistRoom: ApiRoom,
     calendarMap: Map<string, Schema$Calendar | Schema$CalendarListEntry>,
-    newToOldRoomNames: Nullable<ReadonlyMap<string, string>>,
+    newToOldRoomNames: Nullable<IReadonlyGuardedMap<string, string>>,
   ) {
     let roomName = cistRoom.short_name;
     let changeName = false;
     if (newToOldRoomNames && newToOldRoomNames.has(roomName)) {
-      // tslint:disable-next-line:no-non-null-assertion
-      roomName = newToOldRoomNames.get(roomName)!;
+      roomName = newToOldRoomNames.get(roomName);
       changeName = true;
     }
     const roomNameWithPrefix = prependPrefix(roomName);

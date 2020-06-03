@@ -1,3 +1,5 @@
+import { GuardedMap, IReadonlyGuardedMap } from '../@types';
+
 const dict: [string, string][] = [
   ['А', 'A'], ['а', 'a'],
   ['Б', 'B'], ['б', 'b'],
@@ -36,7 +38,9 @@ const dict: [string, string][] = [
   ['Ь', ''], ['ь', ''],
   ['\'', ''], ['"', ''], ['`', ''],
 ];
-const cyrillicToEnglish: ReadonlyMap<string, string> = new Map(dict);
+const cyrillicToEnglish: IReadonlyGuardedMap<string, string> = new GuardedMap(
+  dict
+);
 
 export function toTranslit(
   value: string,
@@ -46,8 +50,7 @@ export function toTranslit(
   const newValue = [];
   for (const c of value) {
     const transliterated = cyrillicToEnglish.has(c)
-      // tslint:disable-next-line:no-non-null-assertion
-      ? cyrillicToEnglish.get(c)!
+      ? cyrillicToEnglish.get(c)
       : c;
     newValue.push(transliterated);
     newValueLength += transliterated.length;

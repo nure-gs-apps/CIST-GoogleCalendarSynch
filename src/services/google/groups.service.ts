@@ -1,7 +1,7 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
-import { Nullable } from '../../@types';
+import { GuardedMap, Nullable } from '../../@types';
 import { ILogger } from '../../@types/logging';
 import { TYPES } from '../../di/types';
 import { ApiGroup, ApiGroupsResponse } from '../../@types/cist';
@@ -66,7 +66,7 @@ export class GroupsService {
     const groups = await this.getAllGroups();
 
     const newToOldNames = preserveEmailChanges
-      ? new Map<string, string>()
+      ? new GuardedMap<string, string>()
       : null;
     const promises = [] as GaxiosPromise<any>[];
     const insertedGroups = new Set<string>();

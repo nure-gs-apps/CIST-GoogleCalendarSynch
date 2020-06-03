@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const _types_1 = require("../@types");
 const dict = [
     ['А', 'A'], ['а', 'a'],
     ['Б', 'B'], ['б', 'b'],
@@ -38,13 +39,12 @@ const dict = [
     ['Ь', ''], ['ь', ''],
     ['\'', ''], ['"', ''], ['`', ''],
 ];
-const cyrillicToEnglish = new Map(dict);
+const cyrillicToEnglish = new _types_1.GuardedMap(dict);
 function toTranslit(value, lengthLimit = Number.MAX_SAFE_INTEGER) {
     let newValueLength = 0;
     const newValue = [];
     for (const c of value) {
         const transliterated = cyrillicToEnglish.has(c)
-            // tslint:disable-next-line:no-non-null-assertion
             ? cyrillicToEnglish.get(c)
             : c;
         newValue.push(transliterated);

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
+const _types_1 = require("../../@types");
 const types_1 = require("../../di/types");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
@@ -77,7 +78,7 @@ let GroupsService = class GroupsService {
     async ensureGroups(cistResponse, preserveEmailChanges = false) {
         const groups = await this.getAllGroups();
         const newToOldNames = preserveEmailChanges
-            ? new Map()
+            ? new _types_1.GuardedMap()
             : null;
         const promises = [];
         const insertedGroups = new Set();

@@ -3,6 +3,7 @@ var CalendarService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
+const _types_1 = require("../../@types");
 const types_1 = require("../../di/types");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const google_api_calendar_1 = require("./google-api-calendar");
@@ -69,8 +70,8 @@ let CalendarService = CalendarService_1 = class CalendarService {
     }
     async getEnsuredCalendars(groupsResponse, roomsResponse, newToOldGroupNames, newToOldRoomNames) {
         const c = {
-            groupCalendars: new Map(),
-            roomCalendars: new Map(),
+            groupCalendars: new _types_1.GuardedMap(),
+            roomCalendars: new _types_1.GuardedMap(),
         };
         const promises = [];
         const calendars = await this.getAllCalendars();
@@ -145,12 +146,10 @@ let CalendarService = CalendarService_1 = class CalendarService {
         let groupName = cistGroup.name;
         let changeName = false;
         if (newToOldGroupNames && newToOldGroupNames.has(groupName)) {
-            // tslint:disable-next-line:no-non-null-assertion
             groupName = newToOldGroupNames.get(groupName);
             changeName = true;
         }
         if (calendarMap.has(groupName)) {
-            // tslint:disable-next-line:no-non-null-assertion
             return calendarMap.get(groupName);
         }
         const groupNameWithPrefix = prependPrefix(groupName);
@@ -177,7 +176,6 @@ let CalendarService = CalendarService_1 = class CalendarService {
         let roomName = cistRoom.short_name;
         let changeName = false;
         if (newToOldRoomNames && newToOldRoomNames.has(roomName)) {
-            // tslint:disable-next-line:no-non-null-assertion
             roomName = newToOldRoomNames.get(roomName);
             changeName = true;
         }

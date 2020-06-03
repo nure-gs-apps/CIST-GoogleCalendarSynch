@@ -135,4 +135,9 @@ function toGroupIds(groupsResponse) {
         .map(g => g.id);
 }
 exports.toGroupIds = toGroupIds;
+function isIterable(value) {
+    return isObjectLike(value)
+        && typeof value[Symbol.iterator] === 'function';
+}
+exports.isIterable = isIterable;
 //# sourceMappingURL=common.js.map

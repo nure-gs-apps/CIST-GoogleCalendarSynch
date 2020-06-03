@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const iterare_1 = require("iterare");
+const _types_1 = require("../@types");
 const container_1 = require("../di/container");
 const types_1 = require("../di/types");
 const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-json-client.service");
@@ -23,7 +24,7 @@ async function handleCistAssert(args, config, logger) {
         await cistClient.dispose();
     };
     exit_handler_service_1.bindOnExitHandler(dispose);
-    const failures = new Map();
+    const failures = new _types_1.GuardedMap();
     if (args.auditories) {
         failures.set(cist_1.EntityType.Rooms, assert_responses_1.assertRoomsResponse(await cistClient.getRoomsResponse(), logger)
             ? []

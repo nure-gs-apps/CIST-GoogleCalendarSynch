@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import { inject, injectable, optional } from 'inversify';
 import * as path from 'path';
 import { ReadonlyDate } from 'readonly-date';
-import { DeepReadonly, Nullable, Optional } from '../../@types';
+import { DeepReadonly, GuardedMap, Nullable, Optional } from '../../@types';
 import {
   ASYNC_INIT,
   IAsyncInitializable,
@@ -64,7 +64,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   ) {
     this._cacheConfig = cacheConfig;
     this._cacheUtils = cacheUtils;
-    this._eventsCachedValues = new Map();
+    this._eventsCachedValues = new GuardedMap();
     this._groupsCachedValue = null;
     this._roomsCachedValue = null;
     this._isDisposed = false;

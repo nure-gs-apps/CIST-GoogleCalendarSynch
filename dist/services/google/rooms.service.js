@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
+const _types_1 = require("../../@types");
 const types_1 = require("../../di/types");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
@@ -78,7 +79,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
     async ensureRooms(cistResponse, preserveNameChanges = false) {
         const rooms = await this.getAllRooms();
         const promises = [];
-        const newToOldNames = new Map();
+        const newToOldNames = new _types_1.GuardedMap();
         for (const cistBuilding of cistResponse.university.buildings) {
             const buildingId = this._utils.getGoogleBuildingId(cistBuilding);
             for (const cistRoom of cistBuilding.auditories) {
