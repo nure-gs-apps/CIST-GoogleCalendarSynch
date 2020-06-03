@@ -4,6 +4,9 @@ import 'reflect-metadata';
 
 export const TYPES = {
   // constants tokens
+  TaskProgressFileBackendFileName: Symbol.for('TaskProgressFileBackendFileName'),
+  TaskProgressFileBackendType: Symbol.for('TaskProgressFileBackendType'),
+
   CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
   CistApiKey: Symbol.for('CistApiKey'),
   GoogleAuthAdminDirectoryKey: Symbol.for('GoogleAuthAdminDirectoryKey'),
@@ -23,6 +26,9 @@ export const TYPES = {
   Container: Symbol.for('Container'),
 
   TaskStepExecutor: Symbol.for('TaskStepExecutor'),
+
+  TaskProgressBackend: Symbol.for('TaskProgressBackend'),
+  TaskProgressFileBackend: Symbol.for('TaskProgressFileBackend'),
 
   CistJsonHttpClient: Symbol.for('CistJsonHttpClient'),
   CistJsonClient: Symbol.for('CistJsonClient'),

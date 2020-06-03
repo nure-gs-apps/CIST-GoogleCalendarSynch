@@ -1,4 +1,5 @@
 import { isObjectLike } from '../utils/common';
+import { DeepReadonlyArray } from './index';
 
 export enum TaskType {
   DeferredEnsureBuildings= 'deferredEnsureBuildings',
@@ -72,3 +73,18 @@ export interface ITaskStepExecutor {
   rerunFailed<T>(taskType: string, error: any): Promise<any>;
   rerunFailed<T>(taskType: string, step: T, error: any): Promise<any>;
 }
+
+export interface ITaskProgressBackend {
+  save(tasks: DeepReadonlyArray<ITaskDefinition<any>>): Promise<void>;
+  load(): Promise<ITaskDefinition<any>[]>;
+}
+
+export enum TaskProgressBackend {
+  File = 'file',
+}
+
+export const taskProgressBackendValues = Object.values(
+  TaskProgressBackend
+) as ReadonlyArray<TaskProgressBackend>;
+
+export const defaultTaskProgressBackend = TaskProgressBackend.File;

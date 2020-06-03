@@ -320,6 +320,10 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
         return;
       }
       await this._backgroundTask;
+      if (this._clearTimeout) {
+        clearTimeout(this._clearTimeout);
+        this._clearTimeout = null;
+      }
       await this.doDispose();
       this._isInitialized = false;
     } finally {

@@ -3,6 +3,7 @@ import iterate from 'iterare';
 import { isObjectLike as _isObjectLike } from 'lodash';
 import { ReadonlyDate } from 'readonly-date';
 import { ApiGroup, ApiGroupsResponse } from '../@types/cist';
+import { ICrossPlatformFilePath } from '../@types/utils';
 
 export function arrayContentEqual<T>(
   first: ReadonlyArray<T>,
@@ -103,6 +104,10 @@ export function isWindows() {
 }
 
 export namespace PathUtils {
+  export function getPath(path: ICrossPlatformFilePath) {
+    return isWindows() ? path.win : path.unix;
+  }
+
   export const expandVars = isWindows()
     ? function expandVars(path: string) {
       return path.replace(/\^?%[\w\d]+\^?%/g, matched => {

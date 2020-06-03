@@ -4,10 +4,18 @@ import { IMaxCacheExpiration } from '../@types/caching';
 import { ILogger } from '../@types/logging';
 import { ASYNC_INIT } from '../@types/object';
 import { IApiQuota, ICalendarConfig } from '../@types/services';
-import { ITaskStepExecutor } from '../@types/tasks';
+import {
+  ITaskProgressBackend,
+  ITaskStepExecutor,
+  TaskProgressBackend,
+} from '../@types/tasks';
 import { getConfig } from '../config';
 import { ConfigService } from '../config/config.service';
-import { CistCacheConfig, GoogleAuthConfigKey } from '../config/types';
+import {
+  CistCacheConfig,
+  GoogleAuthConfigKey,
+
+} from '../config/types';
 import { CacheUtilsService } from '../services/caching/cache-utils.service';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.service';
@@ -27,7 +35,10 @@ import {
   getQuotaLimiterFactory,
   QuotaLimiterService,
 } from '../services/quota-limiter.service';
+import { getTaskProgressBackend } from '../tasks/progress/di';
+import { TaskProgressFileBackend } from '../tasks/progress/file';
 import { TaskStepExecutor } from '../tasks/task-step-executor';
+import { PathUtils } from '../utils/common';
 import { IContainer, TYPES } from './types';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
 
@@ -73,6 +84,35 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       .to(TaskStepExecutor);
     types.add(TYPES.Container);
     types.add(TYPES.Logger);
+  }
+
+  if ((
+    allRequired
+    || types.has(TYPES.TaskProgressBackend)
+  ) && !skip.has(TYPES.TaskProgressBackend)) {
+    container.bind<ITaskProgressBackend>(TYPES.TaskProgressBackend)
+      .toDynamicValue(getTaskProgressBackend);
+    types.add(TYPES.TaskProgressFileBackend);
+    types.add(TYPES.TaskProgressFileBackendType);
+  }
+
+  if ((
+    allRequired
+    || types.has(TYPES.TaskProgressFileBackend)
+  ) && !skip.has(TYPES.TaskProgressFileBackend)) {
+    container.bind<ITaskProgressBackend>(TYPES.TaskProgressFileBackend)
+      .to(TaskProgressFileBackend);
+    types.add(TYPES.TaskProgressFileBackendFileName);
+  }
+
+  if ((
+    allRequired
+    || types.has(TYPES.TaskProgressFileBackendFileName)
+  ) && !skip.has(TYPES.TaskProgressFileBackendFileName)) {
+    container.bind<string>(TYPES.TaskProgressFileBackendFileName)
+      .toConstantValue(PathUtils.getPath(
+        getConfig().taskProgress.backendConfigs[TaskProgressBackend.File]
+      ));
   }
 
   if ((
@@ -238,6 +278,24 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   }
 
   // Constants
+
+  if ((
+    allRequired
+    || types.has(TYPES.TaskProgressFileBackendFileName)
+  ) && !skip.has(TYPES.TaskProgressFileBackendFileName)) {
+    container.bind<string>(TYPES.TaskProgressFileBackendFileName)
+      .toConstantValue(PathUtils.getPath(
+        getConfig().taskProgress.backendConfigs[TaskProgressBackend.File]
+      ));
+  }
+
+  if ((
+    allRequired
+    || types.has(TYPES.TaskProgressFileBackendType)
+  ) && !skip.has(TYPES.TaskProgressFileBackendType)) {
+    container.bind<string>(TYPES.TaskProgressFileBackendType)
+      .toConstantValue(getConfig().taskProgress.backend);
+  }
 
   if ((
     allRequired || types.has(TYPES.CistCacheConfig)

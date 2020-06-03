@@ -1,17 +1,14 @@
 /* tslint:disable:ter-indent */
-import * as yargs from 'yargs';
-import { JWTInput } from 'google-auth-library';
-import { DeepPartial, Nullable } from '../@types';
-import { GoogleAuthKey } from '../@types/google';
-import {
-  IApiQuota,
-  ICalendarConfig,
-
-
-} from '../@types/services';
-import { IMaxCacheExpiration } from '../@types/caching';
-import { getDefaultConfigDirectory } from './constants';
 import { paramCase } from 'change-case';
+import { JWTInput } from 'google-auth-library';
+import * as yargs from 'yargs';
+import { DeepPartial, Nullable } from '../@types';
+import { IMaxCacheExpiration } from '../@types/caching';
+import { GoogleAuthKey } from '../@types/google';
+import { IApiQuota, ICalendarConfig } from '../@types/services';
+import { TaskProgressBackend } from '../@types/tasks';
+import { ICrossPlatformFilePath } from '../@types/utils';
+import { getDefaultConfigDirectory } from './constants';
 import { getConfig } from './index';
 
 export enum CacheType {
@@ -23,6 +20,12 @@ export interface IFullAppConfig {
   // Keep the key in common camel case or environment config will break
   ncgc: {
     configDir: string;
+    taskProgress: {
+      backend: TaskProgressBackend;
+      backendConfigs: {
+        [TaskProgressBackend.File]: ICrossPlatformFilePath;
+      }
+    };
     caching: {
       maxExpiration: IMaxCacheExpiration;
       cist: {
@@ -33,10 +36,7 @@ export interface IFullAppConfig {
         };
         configs: {
           [CacheType.File]: {
-            directory: {
-              unix: string;
-              win: string;
-            };
+            directory: ICrossPlatformFilePath;
           };
         };
       };

@@ -18,7 +18,7 @@ import {
 } from '../../utils/caching';
 import { includesCache } from '../../utils/cist';
 import {
-  dateToSeconds, isWindows,
+  dateToSeconds,
   PathUtils,
 } from '../../utils/common';
 import { CacheUtilsService } from '../caching/cache-utils.service';
@@ -73,10 +73,9 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
 
     // File cache
     if (this.includesCache(CacheType.File)) {
-      this._baseDirectory = path.resolve(PathUtils.expandVars(isWindows()
-        ? this._cacheConfig.configs[CacheType.File].directory.win
-        : this._cacheConfig.configs[CacheType.File].directory.unix),
-      );
+      this._baseDirectory = path.resolve(PathUtils.expandVars(
+        PathUtils.getPath(this._cacheConfig.configs[CacheType.File].directory)
+      ));
       this[ASYNC_INIT] = this[ASYNC_INIT]
         .then(() => fs.mkdir(this._baseDirectory, { recursive: true }));
     } else {
