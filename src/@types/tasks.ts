@@ -76,7 +76,7 @@ export interface ITaskStepExecutor {
 
 export interface ITaskProgressBackend {
   save(tasks: DeepReadonlyArray<ITaskDefinition<any>>): Promise<void>;
-  load(): Promise<ITaskDefinition<any>[]>;
+  loadAndClear(): Promise<ITaskDefinition<any>[]>;
 }
 
 export enum TaskProgressBackend {

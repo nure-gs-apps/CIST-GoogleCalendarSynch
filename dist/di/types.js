@@ -5,6 +5,8 @@ const inversify_1 = require("inversify");
 require("reflect-metadata");
 exports.TYPES = {
     // constants tokens
+    TaskProgressFileBackendFileName: Symbol.for('TaskProgressFileBackendFileName'),
+    TaskProgressFileBackendType: Symbol.for('TaskProgressFileBackendType'),
     CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
     CistApiKey: Symbol.for('CistApiKey'),
     GoogleAuthAdminDirectoryKey: Symbol.for('GoogleAuthAdminDirectoryKey'),
@@ -20,6 +22,8 @@ exports.TYPES = {
     Logger: Symbol.for('Logger'),
     Container: Symbol.for('Container'),
     TaskStepExecutor: Symbol.for('TaskStepExecutor'),
+    TaskProgressBackend: Symbol.for('TaskProgressBackend'),
+    TaskProgressFileBackend: Symbol.for('TaskProgressFileBackend'),
     CistJsonHttpClient: Symbol.for('CistJsonHttpClient'),
     CistJsonClient: Symbol.for('CistJsonClient'),
     CistJsonHttpParser: Symbol.for('CistJsonHttpParser'),

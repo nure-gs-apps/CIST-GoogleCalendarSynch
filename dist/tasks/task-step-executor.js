@@ -62,8 +62,24 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
                 return true;
         }
     }
-    rerunFailed(taskType, errorOrStep, error) {
-        return Promise.resolve(undefined);
+    rerunFailed(taskType, errorOrStep, errorParam) {
+        let step;
+        let error;
+        if (error !== undefined) {
+            step = errorOrStep;
+            error = errorParam;
+        }
+        else {
+            step = undefined;
+            error = errorOrStep;
+        }
+        if (step !== undefined) {
+            this._logger.error(l(`rerunning failed task "${taskType}", step ${JSON.stringify(step)}, with error`), error);
+        }
+        else {
+            this._logger.error(l(`rerunning failed task "${taskType}", with error`), error);
+        }
+        return this.run(taskType, step);
     }
     async run(taskType, step) {
         var _a, _b;

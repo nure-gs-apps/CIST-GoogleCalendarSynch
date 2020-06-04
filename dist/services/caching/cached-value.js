@@ -317,6 +317,10 @@ class CachedValue extends events_1.EventEmitter {
                 return;
             }
             await this._backgroundTask;
+            if (this._clearTimeout) {
+                clearTimeout(this._clearTimeout);
+                this._clearTimeout = null;
+            }
             await this.doDispose();
             this._isInitialized = false;
         }

@@ -16,3 +16,4 @@ client id from enabled delegation in service account
 TODO:
 - process errors: https://developers.google.com/admin-sdk/directory/v1/limits
 - handle backendError
+- add path transformer https://www.npmjs.com/package/@zerollup/ts-transform-paths

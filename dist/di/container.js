@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const inversify_1 = require("inversify");
 const object_1 = require("../@types/object");
+const tasks_1 = require("../@types/tasks");
 const config_1 = require("../config");
 const config_service_1 = require("../config/config.service");
 const cache_utils_service_1 = require("../services/caching/cache-utils.service");
@@ -19,7 +20,10 @@ const groups_service_1 = require("../services/google/groups.service");
 const rooms_service_1 = require("../services/google/rooms.service");
 const logger_service_1 = require("../services/logger.service");
 const quota_limiter_service_1 = require("../services/quota-limiter.service");
+const di_1 = require("../tasks/progress/di");
+const file_1 = require("../tasks/progress/file");
 const task_step_executor_1 = require("../tasks/task-step-executor");
+const common_1 = require("../utils/common");
 const types_1 = require("./types");
 let container = null;
 let boundTypes = null;
@@ -51,6 +55,24 @@ function createContainer(options) {
             .to(task_step_executor_1.TaskStepExecutor);
         types.add(types_1.TYPES.Container);
         types.add(types_1.TYPES.Logger);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.TaskProgressBackend)) && !skip.has(types_1.TYPES.TaskProgressBackend)) {
+        container.bind(types_1.TYPES.TaskProgressBackend)
+            .toDynamicValue(di_1.getTaskProgressBackend);
+        types.add(types_1.TYPES.TaskProgressFileBackend);
+        types.add(types_1.TYPES.TaskProgressFileBackendType);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.TaskProgressFileBackend)) && !skip.has(types_1.TYPES.TaskProgressFileBackend)) {
+        container.bind(types_1.TYPES.TaskProgressFileBackend)
+            .to(file_1.TaskProgressFileBackend);
+        types.add(types_1.TYPES.TaskProgressFileBackendFileName);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.TaskProgressFileBackendFileName)) && !skip.has(types_1.TYPES.TaskProgressFileBackendFileName)) {
+        container.bind(types_1.TYPES.TaskProgressFileBackendFileName)
+            .toConstantValue(common_1.PathUtils.getPath(config_1.getConfig().taskProgress.backendConfigs[tasks_1.TaskProgressBackend.File]));
     }
     if ((allRequired || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) && !skip.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
         types.add(types_1.TYPES.CacheUtils);
@@ -162,6 +184,16 @@ function createContainer(options) {
         container.bind(types_1.TYPES.Logger).toConstantValue(logger_service_1.logger);
     }
     // Constants
+    if ((allRequired
+        || types.has(types_1.TYPES.TaskProgressFileBackendFileName)) && !skip.has(types_1.TYPES.TaskProgressFileBackendFileName)) {
+        container.bind(types_1.TYPES.TaskProgressFileBackendFileName)
+            .toConstantValue(common_1.PathUtils.getPath(config_1.getConfig().taskProgress.backendConfigs[tasks_1.TaskProgressBackend.File]));
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.TaskProgressFileBackendType)) && !skip.has(types_1.TYPES.TaskProgressFileBackendType)) {
+        container.bind(types_1.TYPES.TaskProgressFileBackendType)
+            .toConstantValue(config_1.getConfig().taskProgress.backend);
+    }
     if ((allRequired || types.has(types_1.TYPES.CistCacheConfig)) && !skip.has(types_1.TYPES.CistCacheConfig)) {
         container.bind(types_1.TYPES.CistCacheConfig)
             .toConstantValue(config_1.getConfig().caching.cist);

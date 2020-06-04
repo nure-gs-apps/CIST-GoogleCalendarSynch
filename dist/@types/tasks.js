@@ -28,4 +28,10 @@ TGuard = () => true) {
                 && 'error' in s && (!('value' in s) || TGuard(s.value))));
 }
 exports.isTaskDefinition = isTaskDefinition;
+var TaskProgressBackend;
+(function (TaskProgressBackend) {
+    TaskProgressBackend["File"] = "file";
+})(TaskProgressBackend = exports.TaskProgressBackend || (exports.TaskProgressBackend = {}));
+exports.taskProgressBackendValues = Object.values(TaskProgressBackend);
+exports.defaultTaskProgressBackend = TaskProgressBackend.File;
 //# sourceMappingURL=tasks.js.map

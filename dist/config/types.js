@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /* tslint:disable:ter-indent */
-const yargs = require("yargs");
-const constants_1 = require("./constants");
 const change_case_1 = require("change-case");
+const yargs = require("yargs");
+const tasks_1 = require("../@types/tasks");
+const constants_1 = require("./constants");
 const index_1 = require("./index");
 var CacheType;
 (function (CacheType) {

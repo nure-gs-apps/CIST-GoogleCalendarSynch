@@ -89,9 +89,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         this[object_1.ASYNC_INIT] = Promise.resolve();
         // File cache
         if (this.includesCache(types_1.CacheType.File)) {
-            this._baseDirectory = path.resolve(common_1.PathUtils.expandVars(common_1.isWindows()
-                ? this._cacheConfig.configs[types_1.CacheType.File].directory.win
-                : this._cacheConfig.configs[types_1.CacheType.File].directory.unix));
+            this._baseDirectory = path.resolve(common_1.PathUtils.expandVars(common_1.PathUtils.getPath(this._cacheConfig.configs[types_1.CacheType.File].directory)));
             this[object_1.ASYNC_INIT] = this[object_1.ASYNC_INIT]
                 .then(() => fs_1.promises.mkdir(this._baseDirectory, { recursive: true }));
         }

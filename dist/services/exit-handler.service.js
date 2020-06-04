@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const logging_1 = require("../@types/logging");
+const exitTimeout = 3000;
 let logger = logging_1.nullLogger;
 function setExitLogger(newLogger) {
     logger = newLogger;
@@ -142,6 +143,22 @@ function exitGracefully(exitCode) {
     }
 }
 exports.exitGracefully = exitGracefully;
+function enableExitTimeout() {
+    if (!timeoutEnabled) {
+        logger.info(`${exitTimeout} before exiting...`);
+        setExitTimeout();
+        timeoutEnabled = true;
+    }
+}
+exports.enableExitTimeout = enableExitTimeout;
+function disableExitTimeout() {
+    if (timeoutEnabled) {
+        logger.info('The process can take a minute to exit. Please, stand by.');
+        resetExitTimeout();
+        timeoutEnabled = false;
+    }
+}
+exports.disableExitTimeout = disableExitTimeout;
 function initListeners() {
     onSignalHandler = (signal, exitCode = 0) => {
         execHandlers().catch((err) => {
@@ -167,22 +184,35 @@ function removeListeners() {
     }
     onSignalHandler = null;
 }
+let timeoutEnabled = true;
+let timeout = null;
 async function execHandlers() {
     if (handled) {
         logger.info('Process exit handlers are being executed. Waiting...');
         return;
     }
-    handled = list.length > 0;
     if (list.length > 0) {
         logger.info('The process is running exit handlers...');
-        const timeout = setTimeout(() => {
-            logger.error('The process exited due to too long wait for exit handlers!');
-            process.exit(1);
-        }, 3000);
+        if (timeoutEnabled) {
+            setExitTimeout();
+        }
         for (const handler of list) {
             await handler();
         }
+        resetExitTimeout();
+    }
+    handled = true;
+}
+function setExitTimeout() {
+    timeout = setTimeout(() => {
+        logger.error('The process exited due to too long wait for exit handlers!');
+        process.exit(1);
+    }, exitTimeout);
+}
+function resetExitTimeout() {
+    if (timeout) {
         clearTimeout(timeout);
+        timeout = null;
     }
 }
 //# sourceMappingURL=exit-handler.service.js.map

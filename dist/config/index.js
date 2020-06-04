@@ -12,7 +12,6 @@ const common_1 = require("../utils/common");
 const YAML = require("yaml");
 const TOML = require("@iarna/toml");
 let config = null;
-// tslint:disable-next-line:no-non-null-assertion
 exports.appConfigPrefix = "ncgc";
 exports.environmentVariableDepthSeparator = '__';
 const lowerCaseEnvVariableStart = `${exports.appConfigPrefix}${exports.environmentVariableDepthSeparator}`.toLowerCase();

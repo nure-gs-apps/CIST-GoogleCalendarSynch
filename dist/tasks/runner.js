@@ -29,6 +29,12 @@ class TaskRunner {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "_runningPromise", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "_maxConcurrentSteps", {
             enumerable: true,
             configurable: true,
@@ -41,6 +47,7 @@ class TaskRunner {
         this._tasks = [];
         this._failedTasks = [];
         this._runningTask = null;
+        this._runningPromise = null;
     }
     get maxConcurrentSteps() {
         return this._maxConcurrentSteps;
@@ -51,8 +58,9 @@ class TaskRunner {
         }
         this._maxConcurrentSteps = Math.trunc(value);
     }
-    get isRunning() {
-        return !!this._runningTask;
+    get runningPromise() {
+        var _a;
+        return (_a = this._runningPromise) !== null && _a !== void 0 ? _a : Promise.resolve([]);
     }
     enqueueTask(task, clone = true) {
         if (!task.steps || task.steps.length === 0) {
@@ -83,7 +91,7 @@ class TaskRunner {
         return this.doRemoveTask(task);
     }
     clearTasks() {
-        if (this.isRunning) {
+        if (this._runningPromise) {
             throw new TypeError(l('Cannot clear tasks while running'));
         }
         this._tasks.length = 0;
@@ -151,14 +159,19 @@ class TaskRunner {
             ];
         }
         this._runningTask = task;
-        return this._runningTask
-            ? Promise.all(promises).tap(() => this._runningTask = null)
-            : Promise.resolve([]);
+        if (this._runningTask) {
+            this._runningPromise = Promise.all(promises).tap(() => {
+                this._runningTask = null;
+                this._runningPromise = null;
+            }); // Probably some bug (error "Type instantiation too deep"), so cast is required
+            return this._runningPromise; // Probably some bug (error "Type instantiation too deep"), so cast is required
+        }
+        return Promise.resolve([]);
     }
-    async getAllUndoneTasks(clone = true) {
+    getAllUndoneTasks(clone = true) {
         return clone ? lodash_1.cloneDeep(this._tasks) : this._tasks;
     }
-    async getUndoneTasks(clone = true) {
+    getUndoneTasks(clone = true) {
         let tasks = iterare_1.default(this._tasks).filter(t => (!!t.steps
             && t.steps.length > 0) || !t.failedSteps || t.failedSteps.length === 0);
         if (clone) {
@@ -166,7 +179,7 @@ class TaskRunner {
         }
         return tasks.toArray();
     }
-    async getFailedTasks(clone = true) {
+    getFailedTasks(clone = true) {
         let tasks = iterare_1.default(this._tasks).filter(t => !!t.failedSteps
             && t.failedSteps.length > 0);
         if (clone) {
@@ -225,17 +238,20 @@ class TaskRunner {
         }))
             .toArray();
         this._runningTask = task;
-        return this._runningTask
-            ? Promise.all(promises).tap(() => {
+        if (this._runningTask) {
+            this._runningPromise = Promise.all(promises).tap(() => {
                 this._runningTask = null;
+                this._runningPromise = null;
                 if (failedSteps.length >= 0) {
                     this._failedTasks.push({
                         failedSteps,
                         taskType: task.taskType
                     });
                 }
-            })
-            : Promise.resolve([]);
+            }); // Probably some bug (error "Type instantiation too deep"), so cast is required
+            return this._runningPromise; // Probably some bug (error "Type instantiation too deep"), so cast is required
+        }
+        return Promise.resolve([]);
     }
     hasTwiceFailedTasks() {
         return this.getTwiceFailedStepCount() > 0;

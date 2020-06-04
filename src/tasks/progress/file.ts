@@ -19,8 +19,10 @@ export class TaskProgressFileBackend implements ITaskProgressBackend {
     });
   }
 
-  load(): Promise<ITaskDefinition<any>[]> {
-    return fs.readFile(this.fileName, { encoding })
+  async loadAndClear(): Promise<ITaskDefinition<any>[]> {
+    const tasks = await fs.readFile(this.fileName, { encoding })
       .then(text => JSON.parse(text));
+    await fs.unlink(this.fileName);
+    return tasks;
   }
 }

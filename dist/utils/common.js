@@ -89,6 +89,10 @@ function isWindows() {
 exports.isWindows = isWindows;
 var PathUtils;
 (function (PathUtils) {
+    function getPath(path) {
+        return isWindows() ? path.win : path.unix;
+    }
+    PathUtils.getPath = getPath;
     PathUtils.expandVars = isWindows()
         ? function expandVars(path) {
             return path.replace(/\^?%[\w\d]+\^?%/g, matched => {
