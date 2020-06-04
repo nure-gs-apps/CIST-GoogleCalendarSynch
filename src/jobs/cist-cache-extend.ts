@@ -29,7 +29,6 @@ export async function handleCistCacheExtend(
     args,
     config.ncgc.caching.cist.priorities,
   );
-  types.push(TYPES.CacheMaxExpiration);
   const container = createContainer({
     types,
     skip: [TYPES.CacheUtils]
@@ -42,10 +41,7 @@ export async function handleCistCacheExtend(
     );
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
     .to(CachedCistJsonClientService);
-  await getContainerAsyncInitializer([
-    CachedCistJsonClientService,
-    CacheUtilsService,
-  ]);
+  await getContainerAsyncInitializer([CacheUtilsService]);
 
   const cistClient = container
     .get<CachedCistJsonClientService>(TYPES.CistJsonClient);

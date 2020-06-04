@@ -98,11 +98,11 @@ export async function handleSync(
     interrupted = true;
     await taskRunner.runningPromise;
     taskRunner.enqueueAllTwiceFailedTasksAndClear();
-    const unrunTasks = taskRunner.getAllUndoneTasks(false);
+    const undoneTasks = taskRunner.getAllUndoneTasks(false);
     const saver = container.get<ITaskProgressBackend>(
       TYPES.TaskProgressBackend
     );
-    saver.save(unrunTasks);
+    await saver.save(undoneTasks);
   };
   bindOnExitHandler(dispose);
 
@@ -117,6 +117,7 @@ export async function handleSync(
       taskType: TaskType.DeferredDeleteIrrelevantBuildings
     });
   }
+  taskRunner.enqueueTasks(false, ...tasks);
 
   for await (const _ of taskRunner.asRunnableGenerator()) {
     if (interrupted) {
