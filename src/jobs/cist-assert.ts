@@ -3,7 +3,11 @@ import { DeepReadonly, GuardedMap, Nullable } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IInfoLogger } from '../@types/logging';
 import { IFullAppConfig } from '../config/types';
-import { createContainer, getContainerAsyncInitializer } from '../di/container';
+import {
+  createContainer,
+  disposeContainer,
+  getContainerAsyncInitializer,
+} from '../di/container';
 import { TYPES } from '../di/types';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import {
@@ -31,6 +35,7 @@ export async function handleCistAssert(
     types: getCistCachedClientTypes(args, config.ncgc.caching.cist.priorities),
     forceNew: true,
   });
+  bindOnExitHandler(disposeContainer);
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
     .to(CachedCistJsonClientService);
   await getContainerAsyncInitializer([CachedCistJsonClientService]);

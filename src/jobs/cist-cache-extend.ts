@@ -4,7 +4,11 @@ import { IMaxCacheExpiration } from '../@types/caching';
 import { TimetableType } from '../@types/cist';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IFullAppConfig } from '../config/types';
-import { createContainer, getContainerAsyncInitializer } from '../di/container';
+import {
+  createContainer,
+  disposeContainer,
+  getContainerAsyncInitializer,
+} from '../di/container';
 import { TYPES } from '../di/types';
 import { CacheUtilsService } from '../services/caching/cache-utils.service';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
@@ -30,6 +34,7 @@ export async function handleCistCacheExtend(
     types,
     skip: [TYPES.CacheUtils]
   });
+  bindOnExitHandler(disposeContainer);
   container.bind<CacheUtilsService>(TYPES.CacheUtils)
     .toConstantValue(new CacheUtilsServiceWithExpiration( // might be dangerous due to singleton scope
         container.get<IMaxCacheExpiration>(TYPES.CacheMaxExpiration),

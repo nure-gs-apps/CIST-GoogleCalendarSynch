@@ -2,7 +2,7 @@ import { BindingScopeEnum, Container, interfaces } from 'inversify';
 import { DeepReadonly, Nullable } from '../@types';
 import { IMaxCacheExpiration } from '../@types/caching';
 import { ILogger } from '../@types/logging';
-import { ASYNC_INIT } from '../@types/object';
+import { ASYNC_INIT, IDisposable } from '../@types/object';
 import { IApiQuota, ICalendarConfig } from '../@types/services';
 import {
   ITaskProgressBackend,
@@ -42,13 +42,21 @@ import { PathUtils } from '../utils/common';
 import { IContainer, TYPES } from './types';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
 
-let container: Nullable<Container> = null;
-let boundTypes: Nullable<ReadonlySet<ServiceIdentifier<any>>> = null;
+const defaultScope = BindingScopeEnum.Singleton;
 
-export interface ICreateContainerOptions {
+let container: Nullable<Container> = null;
+let boundTypes: Nullable<Set<ServiceIdentifier<any>>> = null;
+let initPromise: Nullable<Promise<any[]>> = null;
+let disposeCallbacks: Nullable<(() => Promise<any>)[]> = null;
+let disposing: Nullable<Promise<any>> = null;
+
+export interface ICreateContainerOptions extends IAddContainerTypes {
+  forceNew: boolean;
+}
+
+export interface IAddContainerTypes {
   types: Iterable<ServiceIdentifier<any>>;
   skip: Iterable<ServiceIdentifier<any>>;
-  forceNew: boolean;
 }
 
 export function hasContainer() {
@@ -56,24 +64,36 @@ export function hasContainer() {
 }
 
 export function createContainer(options?: Partial<ICreateContainerOptions>) {
-  const { forceNew, types: typesIterable, skip: skipIterable } = Object.assign({
+  const fullOptions = Object.assign({
     forceNew: false,
-    skip: [],
-    types: [],
   }, options);
 
-  if (!forceNew && container) {
+  if (!fullOptions.forceNew && container) {
     throw new TypeError('Container is already created');
   }
-  const skip = new Set(skipIterable);
-  const types = new Set<ServiceIdentifier<any>>(typesIterable);
-  const allRequired = types.size === 0;
 
-  const defaultScope = BindingScopeEnum.Singleton;
   container = new Container({
     defaultScope,
     autoBindInjectable: true,
   });
+  addTypesToContainer(options);
+  disposeCallbacks = [];
+
+  return container;
+}
+
+export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
+  if (!container || !boundTypes) {
+    throw new TypeError('Container is not initialized');
+  }
+  const { types: typesIterable, skip: skipIterable } = Object.assign({
+    forceNew: false,
+    skip: [],
+    types: [],
+  }, options);
+  const skip = new Set(skipIterable);
+  const types = new Set<ServiceIdentifier<any>>(typesIterable);
+  const allRequired = types.size === 0;
 
   if ((
     allRequired
@@ -118,6 +138,9 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   if ((
     allRequired || types.has(CachedCistJsonClientService)
   ) && !skip.has(CachedCistJsonClientService)) {
+    container.bind<CachedCistJsonClientService>(CachedCistJsonClientService)
+      .to(CachedCistJsonClientService)
+      .onActivation(addDisposable);
     types.add(TYPES.CacheUtils);
     types.add(TYPES.CistCacheConfig);
   }
@@ -248,7 +271,8 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
       .toDynamicValue(getQuotaLimiterFactory(
         TYPES.GoogleCalendarQuotaLimiterConfig,
         defaultScope === BindingScopeEnum.Singleton,
-      ));
+      ))
+      .onActivation(addDisposable);
     types.add(TYPES.GoogleCalendarQuotaLimiterConfig);
   }
 
@@ -382,14 +406,21 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 
   container.bind<ConfigService>(TYPES.Config).to(ConfigService);
 
-  boundTypes = types;
-
-  return container;
+  if (boundTypes) {
+    for (const type of types) {
+      boundTypes.add(type);
+    }
+  } else {
+    boundTypes = types;
+  }
+  if (initPromise) {
+    initPromise = initPromise.then(() => getInitPromise(types));
+  }
 }
 
-let initPromise: Nullable<Promise<any[]>> = null;
 export function getContainerAsyncInitializer(
   additionalTypes?: Iterable<ServiceIdentifier<any>>
+    | Iterator<ServiceIdentifier<any>>
 ) {
   if (!container) {
     throw new TypeError('Container is not initialized');
@@ -397,8 +428,41 @@ export function getContainerAsyncInitializer(
   if (!initPromise) {
     initPromise = getInitPromise();
   }
-  const types = new Set(additionalTypes);
+  const types = new Set(additionalTypes as ServiceIdentifier<any>[]);
   return types.size === 0 ? initPromise : getInitPromise(types);
+}
+
+export function isContainerDisposing() {
+  return !!disposing;
+}
+
+export async function disposeContainer() {
+  if (!container || !disposeCallbacks) {
+    throw new TypeError('Container is not initialized');
+  }
+  if (disposing) {
+    return disposing;
+  }
+
+  disposing = Promise.resolve();
+  for (const dispose of disposeCallbacks) {
+    disposing.then(dispose);
+  }
+  await disposing;
+  container.unload();
+  container.unbindAll();
+  boundTypes = null;
+  initPromise = null;
+  disposeCallbacks = null;
+  container = null;
+  disposing = null;
+}
+
+export function getContainer() {
+  if (!container) {
+    throw new TypeError('Container is not created');
+  }
+  return container;
 }
 
 function getInitPromise(types = boundTypes) {
@@ -433,9 +497,12 @@ function getInitPromise(types = boundTypes) {
   return Promise.all(promises);
 }
 
-export function getContainer() {
-  if (!container) {
-    throw new TypeError('Container is not created');
+function addDisposable<T extends IDisposable>(
+  context: interfaces.Context,
+  injectable: T,
+) {
+  if (disposeCallbacks) {
+    disposeCallbacks.unshift(() => injectable.dispose());
   }
-  return container;
+  return injectable;
 }
