@@ -18,12 +18,13 @@ export function assertHasEntities(args: DeepReadonly<IArgsWithEntities>) {
 
 export function addEntitiesOptions<T extends DeepPartial<IFullAppConfig> =  DeepPartial<IFullAppConfig>>(
   yargs: Argv<T>,
+  demand = true,
   logger: IWarnLogger = console,
 ): Argv<T & IEntitiesToOperateOn> {
   const groupsName = nameof<IEntitiesToOperateOn>(e => e.groups);
   const auditoriesName = nameof<IEntitiesToOperateOn>(e => e.auditories);
   const eventsName = nameof<IEntitiesToOperateOn>(e => e.events);
-  return yargs
+  let builder = yargs
     .option(groupsName, {
       alias: groupsName[0],
       description: 'Operate on groups',
@@ -60,10 +61,13 @@ export function addEntitiesOptions<T extends DeepPartial<IFullAppConfig> =  Deep
         return ids;
       },
       requiresArg: false,
-    })
-    .check(
+    });
+  if (demand) {
+    builder = builder.check(
       args => assertHasEntities(args as any)
-    ) as any;
+    );
+  }
+  return builder as any;
 }
 
 // const roomsResponse = await cistClient.getRoomsResponse();

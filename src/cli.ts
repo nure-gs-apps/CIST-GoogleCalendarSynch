@@ -3,6 +3,7 @@
 import './polyfills';
 import iterate from 'iterare';
 import { EOL } from 'os';
+import { IEntitiesToOperateOn } from './@types/jobs';
 import {
   addEntitiesOptions,
   IArgsWithEntities,
@@ -17,6 +18,12 @@ import {
   getBasicCliConfiguration,
 } from './config/types';
 import { handleCistCacheExtend } from './jobs/cist-cache-extend';
+import { handleContinueTask } from './jobs/continue-task';
+import {
+  addEntitiesToRemoveOptions,
+  handleSync,
+  IEntitiesToRemove,
+} from './jobs/sync';
 import { exitGracefully, setExitLogger } from './services/exit-handler.service';
 import { handleCistAssert } from './jobs/cist-assert';
 import * as packageInfo from '../package.json';
@@ -99,6 +106,32 @@ const yargs = getBasicCliConfiguration()
                 return date;
               }
             });
+        }
+      })
+      .command({
+        command: 'sync',
+        describe: `Synchronize with CIST schedule with G Suite & Google Calendar. Common flags (${nameof<IEntitiesToOperateOn>(e => e.groups)}, ${nameof<IEntitiesToOperateOn>(e => e.auditories)}, ${nameof<IEntitiesToOperateOn>(e => e.events)}) are used for upload to Google, removal of irrelevant is done with additional flags.`,
+        handler(argv) {
+          handleSync(
+            argv as IArgsWithEntities & IEntitiesToRemove,
+            getFullConfig(),
+            console,
+          ).catch(handleError);
+        },
+        builder(yargs) {
+          return addEntitiesToRemoveOptions(
+            addEntitiesOptions(yargs, false)
+          );
+        }
+      })
+      .command({
+        command: 'finish-sync',
+        describe: 'Finish interrupted synchronization task.',
+        handler(argv) {
+          handleContinueTask(
+            getFullConfig(),
+            console,
+          ).catch(handleError);
         }
       })
       .demandCommand(1);

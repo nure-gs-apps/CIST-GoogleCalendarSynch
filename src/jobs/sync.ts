@@ -68,6 +68,21 @@ export async function handleSync(
   config: DeepReadonly<IFullAppConfig>,
   logger: IInfoLogger,
 ) {
+  const tasks: ITaskDefinition<any>[] = [];
+  if (args.auditories) {
+    tasks.push({
+      taskType: TaskType.DeferredEnsureBuildings
+    });
+  }
+  if (args.deleteIrrelevantAuditories) {
+    tasks.push({
+      taskType: TaskType.DeferredDeleteIrrelevantBuildings
+    });
+  }
+  if (tasks.length === 0) {
+    throw new TypeError('No tasks found. Please, specify either synchronization or removal.');
+  }
+
   const container = createContainer({
     types: [
       TYPES.TaskStepExecutor,
@@ -106,19 +121,7 @@ export async function handleSync(
   };
   bindOnExitHandler(dispose);
 
-  const tasks: ITaskDefinition<any>[] = [];
-  if (args.auditories) {
-    tasks.push({
-      taskType: TaskType.DeferredEnsureBuildings
-    });
-  }
-  if (args.deleteIrrelevantAuditories) {
-    tasks.push({
-      taskType: TaskType.DeferredDeleteIrrelevantBuildings
-    });
-  }
   taskRunner.enqueueTasks(false, ...tasks);
-
   for await (const _ of taskRunner.asRunnableGenerator()) {
     if (interrupted) {
       break;
