@@ -35,7 +35,10 @@ import {
   getQuotaLimiterFactory,
   QuotaLimiterService,
 } from '../services/quota-limiter.service';
-import { getTaskProgressBackend } from '../tasks/progress/di';
+import {
+  getTaskProgressBackend,
+  getTaskProgressBackendSymbol,
+} from '../tasks/progress/di';
 import { TaskProgressFileBackend } from '../tasks/progress/file';
 import { TaskStepExecutor } from '../tasks/task-step-executor';
 import { PathUtils } from '../utils/common';
@@ -112,8 +115,16 @@ export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
   ) && !skip.has(TYPES.TaskProgressBackend)) {
     container.bind<ITaskProgressBackend>(TYPES.TaskProgressBackend)
       .toDynamicValue(getTaskProgressBackend);
-    types.add(TYPES.TaskProgressFileBackend);
-    types.add(TYPES.TaskProgressFileBackendType);
+    types.add(TYPES.TaskProgressBackendType);
+  }
+
+  if ((
+    allRequired
+    || types.has(TYPES.TaskProgressBackendType)
+  ) && !skip.has(TYPES.TaskProgressBackendType)) {
+    container.bind<string>(TYPES.TaskProgressBackendType)
+      .toConstantValue(getConfig().taskProgress.backend);
+    types.add(getTaskProgressBackendSymbol(getConfig().taskProgress.backend));
   }
 
   if ((
@@ -311,14 +322,6 @@ export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
       .toConstantValue(PathUtils.getPath(
         getConfig().taskProgress.backendConfigs[TaskProgressBackend.File]
       ));
-  }
-
-  if ((
-    allRequired
-    || types.has(TYPES.TaskProgressFileBackendType)
-  ) && !skip.has(TYPES.TaskProgressFileBackendType)) {
-    container.bind<string>(TYPES.TaskProgressFileBackendType)
-      .toConstantValue(getConfig().taskProgress.backend);
   }
 
   if ((

@@ -33,10 +33,10 @@ export async function handleContinueTask(
   });
   bindOnExitHandler(disposeContainer);
   await getContainerAsyncInitializer();
-  const backend = container.get<ITaskProgressBackend>(
+  const progressBackend = container.get<ITaskProgressBackend>(
     TYPES.TaskProgressBackend
   );
-  const tasks = await backend.loadAndClear();
+  const tasks = await progressBackend.loadAndClear();
 
   addTypesToContainer(getRequiredServicesConfig(tasks));
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
@@ -54,14 +54,14 @@ export async function handleContinueTask(
     await taskRunner.runningPromise;
     taskRunner.enqueueAllTwiceFailedTasksAndClear();
     const undoneTasks = taskRunner.getAllUndoneTasks(false);
-    await backend.save(undoneTasks);
+    await progressBackend.save(undoneTasks);
   };
   bindOnExitHandler(dispose);
 
   taskRunner.enqueueTasks(false, ...tasks);
   for await (const _ of taskRunner.asRunnableGenerator()) {
     if (interrupted) {
-      return;
+      break;
     }
   }
 

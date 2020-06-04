@@ -99,10 +99,10 @@ export async function handleSync(
     await taskRunner.runningPromise;
     taskRunner.enqueueAllTwiceFailedTasksAndClear();
     const undoneTasks = taskRunner.getAllUndoneTasks(false);
-    const saver = container.get<ITaskProgressBackend>(
+    const progressBackend = container.get<ITaskProgressBackend>(
       TYPES.TaskProgressBackend
     );
-    await saver.save(undoneTasks);
+    await progressBackend.save(undoneTasks);
   };
   bindOnExitHandler(dispose);
 
@@ -121,7 +121,7 @@ export async function handleSync(
 
   for await (const _ of taskRunner.asRunnableGenerator()) {
     if (interrupted) {
-      return;
+      break;
     }
   }
 

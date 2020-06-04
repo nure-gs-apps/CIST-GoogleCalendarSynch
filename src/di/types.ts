@@ -5,7 +5,7 @@ import 'reflect-metadata';
 export const TYPES = {
   // constants tokens
   TaskProgressFileBackendFileName: Symbol.for('TaskProgressFileBackendFileName'),
-  TaskProgressFileBackendType: Symbol.for('TaskProgressFileBackendType'),
+  TaskProgressBackendType: Symbol.for('TaskProgressBackendType'),
 
   CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
   CistApiKey: Symbol.for('CistApiKey'),
