@@ -10,7 +10,7 @@ const config_1 = require("./config");
 const constants_1 = require("./config/constants");
 const types_1 = require("./config/types");
 const cist_cache_extend_1 = require("./jobs/cist-cache-extend");
-const continue_task_1 = require("./jobs/continue-task");
+const finish_task_1 = require("./jobs/finish-task");
 const sync_1 = require("./jobs/sync");
 const exit_handler_service_1 = require("./services/exit-handler.service");
 const cist_assert_1 = require("./jobs/cist-assert");
@@ -85,31 +85,37 @@ const yargs = types_1.getBasicCliConfiguration()
             });
         }
     })
-        .command({
-        command: 'sync',
-        describe: `Synchronize with CIST schedule with G Suite & Google Calendar. Common flags (${"groups"}, ${"auditories"}, ${"events"}) are used for upload to Google, removal of irrelevant is done with additional flags.`,
-        handler(argv) {
-            sync_1.handleSync(argv, config_1.getFullConfig(), console).catch(handleError);
-        },
-        builder(yargs) {
-            return sync_1.addEntitiesToRemoveOptions(common_1.addEntitiesOptions(yargs, false));
-        }
-    })
-        .command({
-        command: 'finish-sync',
-        describe: 'Finish interrupted synchronization task.',
-        handler(argv) {
-            continue_task_1.handleContinueTask(config_1.getFullConfig(), console).catch(handleError);
-        }
-    })
         .demandCommand(1);
-}, () => { throw 'Valid command is required'; })
+}, noCommandHandler)
+    .command({
+    command: 'sync',
+    describe: `Synchronize with CIST schedule with G Suite & Google Calendar. Common flags (${"groups"}, ${"auditories"}, ${"events"}) are used for upload to Google, removal of irrelevant is done with additional flags.`,
+    handler(argv) {
+        sync_1.handleSync(argv, config_1.getFullConfig(), console).catch(handleError);
+    },
+    builder(yargs) {
+        return sync_1.addEntitiesToRemoveOptions(common_1.addEntitiesOptions(yargs, false)).command({
+            command: 'finish',
+            describe: 'Finish interrupted synchronization task.',
+            handler(argv) {
+                finish_task_1.handleFinishTask(config_1.getFullConfig(), console).catch(handleError);
+            },
+            builder(yargs) {
+                return yargs
+                    .help('help').alias('h', 'help');
+            }
+        }).help('help').alias('h', 'help');
+    }
+})
     .completion()
     .recommendCommands()
     .demandCommand(1)
     .help('help').alias('h', 'help')
     .showHelpOnFail(true);
 yargs.parse();
+function noCommandHandler() {
+    throw 'Valid command is required';
+}
 function initializeMiddleware() {
     return config_1.initializeConfig(yargs);
 }

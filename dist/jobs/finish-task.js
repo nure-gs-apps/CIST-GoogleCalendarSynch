@@ -7,7 +7,7 @@ const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-
 const exit_handler_service_1 = require("../services/exit-handler.service");
 const runner_1 = require("../tasks/runner");
 const task_step_executor_1 = require("../tasks/task-step-executor");
-async function handleContinueTask(config, logger) {
+async function handleFinishTask(config, logger) {
     const container = container_1.createContainer({
         types: [types_1.TYPES.TaskProgressBackend],
         forceNew: true,
@@ -44,7 +44,7 @@ async function handleContinueTask(config, logger) {
     exit_handler_service_1.unbindOnExitHandler(dispose);
     exit_handler_service_1.exitGracefully(0);
 }
-exports.handleContinueTask = handleContinueTask;
+exports.handleFinishTask = handleFinishTask;
 function getRequiredServicesConfig(tasks) {
     const types = [];
     if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureBuildings
@@ -59,4 +59,4 @@ function getRequiredServicesConfig(tasks) {
     }
     return { types };
 }
-//# sourceMappingURL=continue-task.js.map
+//# sourceMappingURL=finish-task.js.map

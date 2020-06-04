@@ -28,6 +28,7 @@ let TaskProgressFileBackend = class TaskProgressFileBackend {
     }
 };
 TaskProgressFileBackend = tslib_1.__decorate([
+    inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.TaskProgressFileBackendFileName)),
     tslib_1.__metadata("design:paramtypes", [String])
 ], TaskProgressFileBackend);

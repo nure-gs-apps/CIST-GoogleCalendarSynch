@@ -18,7 +18,7 @@ import {
   getBasicCliConfiguration,
 } from './config/types';
 import { handleCistCacheExtend } from './jobs/cist-cache-extend';
-import { handleContinueTask } from './jobs/continue-task';
+import { handleFinishTask } from './jobs/finish-task';
 import {
   addEntitiesToRemoveOptions,
   handleSync,
@@ -108,34 +108,37 @@ const yargs = getBasicCliConfiguration()
             });
         }
       })
-      .command({
-        command: 'sync',
-        describe: `Synchronize with CIST schedule with G Suite & Google Calendar. Common flags (${nameof<IEntitiesToOperateOn>(e => e.groups)}, ${nameof<IEntitiesToOperateOn>(e => e.auditories)}, ${nameof<IEntitiesToOperateOn>(e => e.events)}) are used for upload to Google, removal of irrelevant is done with additional flags.`,
+      .demandCommand(1);
+  }, noCommandHandler)
+  .command({
+    command: 'sync',
+    describe: `Synchronize with CIST schedule with G Suite & Google Calendar. Common flags (${nameof<IEntitiesToOperateOn>(e => e.groups)}, ${nameof<IEntitiesToOperateOn>(e => e.auditories)}, ${nameof<IEntitiesToOperateOn>(e => e.events)}) are used for upload to Google, removal of irrelevant is done with additional flags.`,
+    handler(argv) {
+      handleSync(
+        argv as IArgsWithEntities & IEntitiesToRemove,
+        getFullConfig(),
+        console,
+      ).catch(handleError);
+    },
+    builder(yargs) {
+      return addEntitiesToRemoveOptions(
+        addEntitiesOptions(yargs, false)
+      ).command({
+        command: 'finish',
+        describe: 'Finish interrupted synchronization task.',
         handler(argv) {
-          handleSync(
-            argv as IArgsWithEntities & IEntitiesToRemove,
+          handleFinishTask(
             getFullConfig(),
             console,
           ).catch(handleError);
         },
         builder(yargs) {
-          return addEntitiesToRemoveOptions(
-            addEntitiesOptions(yargs, false)
-          );
+          return yargs
+            .help('help').alias('h', 'help');
         }
-      })
-      .command({
-        command: 'finish-sync',
-        describe: 'Finish interrupted synchronization task.',
-        handler(argv) {
-          handleContinueTask(
-            getFullConfig(),
-            console,
-          ).catch(handleError);
-        }
-      })
-      .demandCommand(1);
-  }, () => { throw 'Valid command is required'; })
+      }).help('help').alias('h', 'help');
+    }
+  })
   .completion()
   .recommendCommands()
   .demandCommand(1)
@@ -143,6 +146,10 @@ const yargs = getBasicCliConfiguration()
   .showHelpOnFail(true);
 
 yargs.parse();
+
+function noCommandHandler() {
+  throw 'Valid command is required';
+}
 
 function initializeMiddleware() {
   return initializeConfig(yargs);

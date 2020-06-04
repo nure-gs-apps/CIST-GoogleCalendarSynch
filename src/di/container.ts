@@ -86,7 +86,7 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
 }
 
 export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
-  if (!container || !boundTypes) {
+  if (!container) {
     throw new TypeError('Container is not initialized');
   }
   const { types: typesIterable, skip: skipIterable } = Object.assign({
@@ -134,16 +134,6 @@ export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
     container.bind<ITaskProgressBackend>(TYPES.TaskProgressFileBackend)
       .to(TaskProgressFileBackend);
     types.add(TYPES.TaskProgressFileBackendFileName);
-  }
-
-  if ((
-    allRequired
-    || types.has(TYPES.TaskProgressFileBackendFileName)
-  ) && !skip.has(TYPES.TaskProgressFileBackendFileName)) {
-    container.bind<string>(TYPES.TaskProgressFileBackendFileName)
-      .toConstantValue(PathUtils.getPath(
-        getConfig().taskProgress.backendConfigs[TaskProgressBackend.File]
-      ));
   }
 
   if ((

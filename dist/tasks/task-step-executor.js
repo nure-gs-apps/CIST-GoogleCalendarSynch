@@ -10,6 +10,7 @@ var EventNames;
 (function (EventNames) {
     EventNames["NewTask"] = "new-task";
 })(EventNames = exports.EventNames || (exports.EventNames = {}));
+types_1.ensureInjectable(events_1.EventEmitter);
 let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
     constructor(container, logger) {
         super();

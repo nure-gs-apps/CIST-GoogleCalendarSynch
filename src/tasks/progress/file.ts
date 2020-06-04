@@ -1,4 +1,4 @@
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { DeepReadonlyArray } from '../../@types';
 import { ITaskDefinition, ITaskProgressBackend } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
@@ -6,6 +6,7 @@ import { promises as fs } from 'fs';
 
 export const encoding = 'utf8';
 
+@injectable()
 export class TaskProgressFileBackend implements ITaskProgressBackend {
   readonly fileName: string;
 

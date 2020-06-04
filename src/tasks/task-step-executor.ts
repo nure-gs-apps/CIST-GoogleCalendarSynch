@@ -4,7 +4,7 @@ import { DeepReadonly, Nullable, Optional } from '../@types';
 import { ApiRoomsResponse, ICistJsonClient } from '../@types/cist';
 import { ILogger } from '../@types/logging';
 import { ITaskDefinition, ITaskStepExecutor, TaskType } from '../@types/tasks';
-import { IContainer, TYPES } from '../di/types';
+import { ensureInjectable, IContainer, TYPES } from '../di/types';
 import {
   BuildingsService,
   IBuildingsTaskContext,
@@ -22,6 +22,7 @@ export interface ITaskStepExecutorWithEvents extends ITaskStepExecutor, EventEmi
   ): this;
 }
 
+ensureInjectable(EventEmitter);
 @injectable()
 export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor {
   protected readonly _container: IContainer;

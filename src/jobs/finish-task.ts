@@ -23,7 +23,7 @@ import { TaskRunner } from '../tasks/runner';
 import { EventNames, TaskStepExecutor } from '../tasks/task-step-executor';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
 
-export async function handleContinueTask(
+export async function handleFinishTask(
   config: DeepReadonly<IFullAppConfig>,
   logger: IInfoLogger,
 ) {

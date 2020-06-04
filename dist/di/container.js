@@ -52,7 +52,7 @@ function createContainer(options) {
 }
 exports.createContainer = createContainer;
 function addTypesToContainer(options) {
-    if (!container || !boundTypes) {
+    if (!container) {
         throw new TypeError('Container is not initialized');
     }
     const { types: typesIterable, skip: skipIterable } = Object.assign({
@@ -88,11 +88,6 @@ function addTypesToContainer(options) {
         container.bind(types_1.TYPES.TaskProgressFileBackend)
             .to(file_1.TaskProgressFileBackend);
         types.add(types_1.TYPES.TaskProgressFileBackendFileName);
-    }
-    if ((allRequired
-        || types.has(types_1.TYPES.TaskProgressFileBackendFileName)) && !skip.has(types_1.TYPES.TaskProgressFileBackendFileName)) {
-        container.bind(types_1.TYPES.TaskProgressFileBackendFileName)
-            .toConstantValue(common_1.PathUtils.getPath(config_1.getConfig().taskProgress.backendConfigs[tasks_1.TaskProgressBackend.File]));
     }
     if ((allRequired || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) && !skip.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
         container.bind(cached_cist_json_client_service_1.CachedCistJsonClientService)

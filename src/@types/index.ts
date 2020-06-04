@@ -1,7 +1,5 @@
-import { FilterIterator } from 'iterare/lib/filter';
-import { MapIterator } from 'iterare/lib/map';
+import iterate from 'iterare';
 import { ReadonlyDate } from 'readonly-date';
-import { isIterable } from '../utils/common';
 
 export type primitive =
   number
@@ -109,9 +107,7 @@ export class GuardedMap<K, V> extends Map<K, NonOptional<V>> implements IReadonl
   ) {
     super(
       entries !== undefined && entries !== null ? (
-        isIterable(entries) ? (
-          toGuardedMapIterator(entries[Symbol.iterator](), filterUndefined)
-        ) : toGuardedMapIterator(entries, filterUndefined)
+        toGuardedMapIterable(entries, filterUndefined)
       ) as any : null
     );
   }
@@ -138,13 +134,13 @@ export class GuardedMap<K, V> extends Map<K, NonOptional<V>> implements IReadonl
     return super.forEach(callbackfn as any, thisArg);
   }
 }
-function toGuardedMapIterator<K, V>(
-  entries: Iterator<[K, V]>,
+function toGuardedMapIterable<K, V>(
+  entries: Iterator<[K, V]> | Iterable<[K, V]>,
   filterUndefined = false,
-): Iterator<[K, NonOptional<V>]> {
+): Iterable<[K, NonOptional<V>]> {
   return filterUndefined
-    ? new FilterIterator(entries, pair => pair[1] !== undefined)
-    : new MapIterator(entries, pair => {
+    ? iterate(entries).filter(pair => pair[1] !== undefined)
+    : iterate(entries).map(pair => {
       if (pair[1] === undefined) {
         throwMapSetError(pair[0], pair[1]);
       }

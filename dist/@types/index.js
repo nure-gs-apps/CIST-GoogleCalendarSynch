@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const filter_1 = require("iterare/lib/filter");
-const map_1 = require("iterare/lib/map");
-const common_1 = require("../utils/common");
+const iterare_1 = require("iterare");
 exports.asReadonly = Symbol('asReadonly');
 exports.asPartial = Symbol('asPartial');
 function t(...args) {
@@ -13,7 +11,7 @@ class GuardedMap extends Map {
     constructor(
     // tslint:disable-next-line:max-line-length
     entries, filterUndefined = false) {
-        super(entries !== undefined && entries !== null ? (common_1.isIterable(entries) ? (toGuardedMapIterator(entries[Symbol.iterator](), filterUndefined)) : toGuardedMapIterator(entries, filterUndefined)) : null);
+        super(entries !== undefined && entries !== null ? (toGuardedMapIterable(entries, filterUndefined)) : null);
     }
     get(key) {
         const value = super.get(key);
@@ -33,10 +31,10 @@ class GuardedMap extends Map {
     }
 }
 exports.GuardedMap = GuardedMap;
-function toGuardedMapIterator(entries, filterUndefined = false) {
+function toGuardedMapIterable(entries, filterUndefined = false) {
     return filterUndefined
-        ? new filter_1.FilterIterator(entries, pair => pair[1] !== undefined)
-        : new map_1.MapIterator(entries, pair => {
+        ? iterare_1.default(entries).filter(pair => pair[1] !== undefined)
+        : iterare_1.default(entries).map(pair => {
             if (pair[1] === undefined) {
                 throwMapSetError(pair[0], pair[1]);
             }
