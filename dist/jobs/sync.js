@@ -88,6 +88,19 @@ async function handleSync(args, config, logger) {
             break;
         }
     }
+    if (taskRunner.hasFailedTasks()) {
+        logger.warn(`Totally ${taskRunner.getFailedStepCount()} task steps failed. Rerunning...`);
+        for await (const _ of taskRunner.asFailedRunnableGenerator()) {
+            if (interrupted) {
+                break;
+            }
+        }
+        if (taskRunner.hasTwiceFailedTasks()) {
+            logger.error(`Rerunning ${taskRunner.getTwiceFailedStepCount()} failed task steps failed. Saving these steps...`);
+            const progressBackend = container.get(types_1.TYPES.TaskProgressBackend);
+            await progressBackend.save(taskRunner.getTwiceFailedTasks(false));
+        }
+    }
     logger.info('Finished synchronization');
     exit_handler_service_1.unbindOnExitHandler(dispose);
     exit_handler_service_1.exitGracefully(0);

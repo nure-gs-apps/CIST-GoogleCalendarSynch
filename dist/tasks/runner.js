@@ -149,13 +149,13 @@ class TaskRunner {
         }
         else {
             promises = [
-                Promise.resolve(this._taskStepExecutor.run(task.taskType)
+                Promise.resolve(this._taskStepExecutor.run(task.taskType))
                     .catch(error => task.failedSteps = [{ error }])
                     .tap(() => {
                     if (!task.failedSteps || task.failedSteps.length === 0) {
                         this.doRemoveTask(task);
                     }
-                })),
+                }),
             ];
         }
         this._runningTask = task;

@@ -35,9 +35,22 @@ async function handleFinishTask(config, logger) {
     };
     exit_handler_service_1.bindOnExitHandler(dispose);
     taskRunner.enqueueTasks(false, ...tasks);
+    logger.info('Running tasks...');
     for await (const _ of taskRunner.asRunnableGenerator()) {
         if (interrupted) {
             break;
+        }
+    }
+    if (taskRunner.hasFailedTasks()) {
+        logger.warn(`${taskRunner.getFailedStepCount()} failed task steps found. Rerunning...`);
+        for await (const _ of taskRunner.asFailedRunnableGenerator()) {
+            if (interrupted) {
+                break;
+            }
+        }
+        if (taskRunner.hasTwiceFailedTasks()) {
+            logger.error(`Rerunning ${taskRunner.getTwiceFailedStepCount()} failed task steps failed. Saving these steps...`);
+            await progressBackend.save(taskRunner.getTwiceFailedTasks(false));
         }
     }
     logger.info('Finished synchronization');

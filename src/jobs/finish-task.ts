@@ -1,6 +1,6 @@
 import { interfaces } from 'inversify';
 import { DeepReadonly, DeepReadonlyArray } from '../@types';
-import { IInfoLogger } from '../@types/logging';
+import { IErrorLogger, IInfoLogger, IWarnLogger } from '../@types/logging';
 import {
   ITaskDefinition,
   ITaskProgressBackend,
@@ -25,7 +25,7 @@ import ServiceIdentifier = interfaces.ServiceIdentifier;
 
 export async function handleFinishTask(
   config: DeepReadonly<IFullAppConfig>,
-  logger: IInfoLogger,
+  logger: IInfoLogger & IWarnLogger & IErrorLogger,
 ) {
   const container = createContainer({
     types: [TYPES.TaskProgressBackend],
@@ -59,9 +59,22 @@ export async function handleFinishTask(
   bindOnExitHandler(dispose);
 
   taskRunner.enqueueTasks(false, ...tasks);
+  logger.info('Running tasks...');
   for await (const _ of taskRunner.asRunnableGenerator()) {
     if (interrupted) {
       break;
+    }
+  }
+  if (taskRunner.hasFailedTasks()) {
+    logger.warn(`${taskRunner.getFailedStepCount()} failed task steps found. Rerunning...`);
+    for await (const _ of taskRunner.asFailedRunnableGenerator()) {
+      if (interrupted) {
+        break;
+      }
+    }
+    if (taskRunner.hasTwiceFailedTasks()) {
+      logger.error(`Rerunning ${taskRunner.getTwiceFailedStepCount()} failed task steps failed. Saving these steps...`);
+      await progressBackend.save(taskRunner.getTwiceFailedTasks(false));
     }
   }
 

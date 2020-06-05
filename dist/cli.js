@@ -47,9 +47,12 @@ const yargs = types_1.getBasicCliConfiguration()
     .usage(usage)
     .scriptName(packageInfo.name)
     .middleware(initializeMiddleware)
+    .help('help').alias('h', 'help')
+    .showHelpOnFail(true)
     .command('cist', 'CIST Commands', (yargs) => {
     const expirationArg = "expiration";
     return yargs
+        .help('help').alias('h', 'help')
         .command({
         command: 'assert',
         describe: 'Check responses for validity',
@@ -57,7 +60,8 @@ const yargs = types_1.getBasicCliConfiguration()
             cist_assert_1.handleCistAssert(argv, config_1.getFullConfig(), console).catch(handleError);
         },
         builder(yargs) {
-            return common_1.addEntitiesOptions(yargs);
+            return common_1.addEntitiesOptions(yargs)
+                .help('help').alias('h', 'help');
         }
     })
         .command({
@@ -70,6 +74,7 @@ const yargs = types_1.getBasicCliConfiguration()
         },
         builder(yargs) {
             return common_1.addEntitiesOptions(yargs)
+                .help('help').alias('h', 'help')
                 .option(expirationArg, {
                 type: 'string',
                 alias: ['date', 'd', 'exp'],
@@ -85,6 +90,8 @@ const yargs = types_1.getBasicCliConfiguration()
             });
         }
     })
+        .completion()
+        .recommendCommands()
         .demandCommand(1);
 }, noCommandHandler)
     .command({
@@ -94,24 +101,26 @@ const yargs = types_1.getBasicCliConfiguration()
         sync_1.handleSync(argv, config_1.getFullConfig(), console).catch(handleError);
     },
     builder(yargs) {
-        return sync_1.addEntitiesToRemoveOptions(common_1.addEntitiesOptions(yargs, false)).command({
+        return sync_1.addEntitiesToRemoveOptions(common_1.addEntitiesOptions(yargs, false))
+            .help('help').alias('h', 'help')
+            .command({
             command: 'finish',
             describe: 'Finish interrupted synchronization task.',
-            handler(argv) {
-                finish_task_1.handleFinishTask(config_1.getFullConfig(), console).catch(handleError);
-            },
             builder(yargs) {
                 return yargs
                     .help('help').alias('h', 'help');
-            }
-        }).help('help').alias('h', 'help');
+            },
+            handler(argv) {
+                finish_task_1.handleFinishTask(config_1.getFullConfig(), console).catch(handleError);
+            },
+        })
+            .completion()
+            .recommendCommands();
     }
 })
     .completion()
     .recommendCommands()
-    .demandCommand(1)
-    .help('help').alias('h', 'help')
-    .showHelpOnFail(true);
+    .demandCommand(1);
 yargs.parse();
 function noCommandHandler() {
     throw 'Valid command is required';

@@ -2,7 +2,7 @@ import { interfaces } from 'inversify';
 import { Argv } from 'yargs';
 import { DeepPartial, DeepReadonly } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
-import { IInfoLogger } from '../@types/logging';
+import { IErrorLogger, IInfoLogger, IWarnLogger } from '../@types/logging';
 import {
   ITaskDefinition,
   ITaskProgressBackend,
@@ -66,7 +66,7 @@ export function addEntitiesToRemoveOptions<T extends DeepPartial<IFullAppConfig>
 export async function handleSync(
   args: IEntitiesToOperateOn & IEntitiesToRemove,
   config: DeepReadonly<IFullAppConfig>,
-  logger: IInfoLogger,
+  logger: IInfoLogger & IWarnLogger & IErrorLogger,
 ) {
   const tasks: ITaskDefinition<any>[] = [];
   if (args.auditories) {
@@ -127,7 +127,21 @@ export async function handleSync(
       break;
     }
   }
-
+  if (taskRunner.hasFailedTasks()) {
+    logger.warn(`Totally ${taskRunner.getFailedStepCount()} task steps failed. Rerunning...`);
+    for await (const _ of taskRunner.asFailedRunnableGenerator()) {
+      if (interrupted) {
+        break;
+      }
+    }
+    if (taskRunner.hasTwiceFailedTasks()) {
+      logger.error(`Rerunning ${taskRunner.getTwiceFailedStepCount()} failed task steps failed. Saving these steps...`);
+      const progressBackend = container.get<ITaskProgressBackend>(
+        TYPES.TaskProgressBackend
+      );
+      await progressBackend.save(taskRunner.getTwiceFailedTasks(false));
+    }
+  }
   logger.info('Finished synchronization');
   unbindOnExitHandler(dispose);
   exitGracefully(0);

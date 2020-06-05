@@ -66,9 +66,12 @@ const yargs = getBasicCliConfiguration()
   .usage(usage)
   .scriptName(packageInfo.name)
   .middleware(initializeMiddleware)
+  .help('help').alias('h', 'help')
+  .showHelpOnFail(true)
   .command('cist', 'CIST Commands', (yargs) => {
     const expirationArg = nameof<ICistCacheExtendOptions>(o => o.expiration);
     return yargs
+      .help('help').alias('h', 'help')
       .command({
         command: 'assert',
         describe: 'Check responses for validity',
@@ -80,7 +83,8 @@ const yargs = getBasicCliConfiguration()
           ).catch(handleError);
         },
         builder(yargs) {
-          return addEntitiesOptions(yargs);
+          return addEntitiesOptions(yargs)
+            .help('help').alias('h', 'help');
         }
       })
       .command({
@@ -93,6 +97,7 @@ const yargs = getBasicCliConfiguration()
         },
         builder(yargs) {
           return addEntitiesOptions(yargs)
+            .help('help').alias('h', 'help')
             .option(expirationArg, {
               type: 'string',
               alias: ['date', 'd', 'exp'],
@@ -108,6 +113,8 @@ const yargs = getBasicCliConfiguration()
             });
         }
       })
+      .completion()
+      .recommendCommands()
       .demandCommand(1);
   }, noCommandHandler)
   .command({
@@ -123,27 +130,29 @@ const yargs = getBasicCliConfiguration()
     builder(yargs) {
       return addEntitiesToRemoveOptions(
         addEntitiesOptions(yargs, false)
-      ).command({
-        command: 'finish',
-        describe: 'Finish interrupted synchronization task.',
-        handler(argv) {
-          handleFinishTask(
-            getFullConfig(),
-            console,
-          ).catch(handleError);
-        },
-        builder(yargs) {
-          return yargs
-            .help('help').alias('h', 'help');
-        }
-      }).help('help').alias('h', 'help');
+      )
+        .help('help').alias('h', 'help')
+        .command({
+          command: 'finish',
+          describe: 'Finish interrupted synchronization task.',
+          builder(yargs) {
+            return yargs
+              .help('help').alias('h', 'help');
+          },
+          handler(argv) {
+            handleFinishTask(
+              getFullConfig(),
+              console,
+            ).catch(handleError);
+          },
+        })
+        .completion()
+        .recommendCommands();
     }
   })
   .completion()
   .recommendCommands()
-  .demandCommand(1)
-  .help('help').alias('h', 'help')
-  .showHelpOnFail(true);
+  .demandCommand(1);
 
 yargs.parse();
 
