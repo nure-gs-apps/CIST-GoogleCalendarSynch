@@ -17,3 +17,8 @@ TODO:
 - process errors: https://developers.google.com/admin-sdk/directory/v1/limits
 - handle backendError
 - add path transformer https://www.npmjs.com/package/@zerollup/ts-transform-paths
+
+FIX:
+- no handler for sync-finish (probably, debug using attach);
+- 404 for Buildings service
+- exit for bottleneck (google or rollback versions)

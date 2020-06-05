@@ -66,7 +66,7 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
     rerunFailed(taskType, errorOrStep, errorParam) {
         let step;
         let error;
-        if (error !== undefined) {
+        if (errorParam !== undefined) {
             step = errorOrStep;
             error = errorParam;
         }

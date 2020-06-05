@@ -70,7 +70,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor 
   ): Promise<any> {
     let step: Optional<T>;
     let error: any;
-    if (error !== undefined) {
+    if (errorParam !== undefined) {
       step = errorOrStep as T;
       error = errorParam;
     } else {

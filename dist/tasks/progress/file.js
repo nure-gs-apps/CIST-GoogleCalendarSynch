@@ -16,15 +16,22 @@ let TaskProgressFileBackend = class TaskProgressFileBackend {
         this.fileName = fileName;
     }
     save(tasks) {
-        return fs_1.promises.writeFile(this.fileName, JSON.stringify(tasks), {
+        fs_1.writeFileSync(this.fileName, JSON.stringify(tasks), {
             encoding: exports.encoding
-        });
+        }); // No other way to write in async way from signal listener
+        return Promise.resolve();
     }
     async loadAndClear() {
-        const tasks = await fs_1.promises.readFile(this.fileName, { encoding: exports.encoding })
-            .then(text => JSON.parse(text));
-        await fs_1.promises.unlink(this.fileName);
+        const tasks = await this.load();
+        await this.clear();
         return tasks;
+    }
+    async load() {
+        return fs_1.promises.readFile(this.fileName, { encoding: exports.encoding })
+            .then(text => JSON.parse(text));
+    }
+    async clear() {
+        return fs_1.promises.unlink(this.fileName);
     }
 };
 TaskProgressFileBackend = tslib_1.__decorate([

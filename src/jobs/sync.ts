@@ -12,7 +12,7 @@ import { createContainer, getContainerAsyncInitializer } from '../di/container';
 import { TYPES } from '../di/types';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import {
-  bindOnExitHandler, exitGracefully,
+  bindOnExitHandler, disableExitTimeout, exitGracefully,
   unbindOnExitHandler,
 } from '../services/exit-handler.service';
 import { TaskRunner } from '../tasks/runner';
@@ -104,7 +104,9 @@ export async function handleSync(
   });
   let interrupted = false;
   const dispose = async () => {
+    disableExitTimeout();
     interrupted = true;
+    logger.info('Waiting for current task step to finish...');
     await taskRunner.runningPromise;
     taskRunner.enqueueAllTwiceFailedTasksAndClear();
     const undoneTasks = taskRunner.getAllUndoneTasks(false);

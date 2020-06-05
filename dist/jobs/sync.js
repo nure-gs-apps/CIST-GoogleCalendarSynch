@@ -70,7 +70,9 @@ async function handleSync(args, config, logger) {
     });
     let interrupted = false;
     const dispose = async () => {
+        exit_handler_service_1.disableExitTimeout();
         interrupted = true;
+        logger.info('Waiting for current task step to finish...');
         await taskRunner.runningPromise;
         taskRunner.enqueueAllTwiceFailedTasksAndClear();
         const undoneTasks = taskRunner.getAllUndoneTasks(false);

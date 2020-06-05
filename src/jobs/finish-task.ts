@@ -16,9 +16,10 @@ import {
 import { TYPES } from '../di/types';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import {
-  bindOnExitHandler, exitGracefully,
+  bindOnExitHandler, disableExitTimeout, exitGracefully,
   unbindOnExitHandler,
 } from '../services/exit-handler.service';
+import { TaskProgressFileBackend } from '../tasks/progress/file';
 import { TaskRunner } from '../tasks/runner';
 import { EventNames, TaskStepExecutor } from '../tasks/task-step-executor';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
@@ -36,7 +37,11 @@ export async function handleFinishTask(
   const progressBackend = container.get<ITaskProgressBackend>(
     TYPES.TaskProgressBackend
   );
-  const tasks = await progressBackend.loadAndClear();
+  const tasks = await (
+    progressBackend instanceof TaskProgressFileBackend
+    ? progressBackend.load()
+    : progressBackend.loadAndClear()
+  );
 
   addTypesToContainer(getRequiredServicesConfig(tasks));
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
@@ -50,7 +55,9 @@ export async function handleFinishTask(
   });
   let interrupted = false;
   const dispose = async () => {
+    disableExitTimeout();
     interrupted = true;
+    logger.info('Waiting for current task step to finish...');
     await taskRunner.runningPromise;
     taskRunner.enqueueAllTwiceFailedTasksAndClear();
     const undoneTasks = taskRunner.getAllUndoneTasks(false);
@@ -65,6 +72,7 @@ export async function handleFinishTask(
       break;
     }
   }
+  let deleteProgressFile = true;
   if (taskRunner.hasFailedTasks()) {
     logger.warn(`${taskRunner.getFailedStepCount()} failed task steps found. Rerunning...`);
     for await (const _ of taskRunner.asFailedRunnableGenerator()) {
@@ -75,7 +83,14 @@ export async function handleFinishTask(
     if (taskRunner.hasTwiceFailedTasks()) {
       logger.error(`Rerunning ${taskRunner.getTwiceFailedStepCount()} failed task steps failed. Saving these steps...`);
       await progressBackend.save(taskRunner.getTwiceFailedTasks(false));
+      deleteProgressFile = false;
     }
+  }
+  if (
+    progressBackend instanceof TaskProgressFileBackend
+    && deleteProgressFile
+  ) {
+    await progressBackend.clear();
   }
 
   logger.info('Finished synchronization');
@@ -86,7 +101,10 @@ export async function handleFinishTask(
 function getRequiredServicesConfig(
   tasks: DeepReadonlyArray<ITaskDefinition<any>>,
 ): Partial<IAddContainerTypes> {
-  const types = [] as ServiceIdentifier<any>[];
+  const types = [
+    CachedCistJsonClientService,
+    TYPES.TaskStepExecutor
+  ] as ServiceIdentifier<any>[];
   if (tasks.some(({ taskType }) => (
     taskType === TaskType.DeferredEnsureBuildings
     || taskType === TaskType.DeferredDeleteIrrelevantBuildings

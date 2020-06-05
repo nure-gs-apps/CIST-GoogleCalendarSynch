@@ -1,6 +1,10 @@
 import iterate from 'iterare';
 import { Nullable } from '../@types';
-import { ITaskDefinition, ITaskFailedStep, ITaskStepExecutor } from '../@types/tasks';
+import {
+  ITaskDefinition,
+  ITaskFailedStep,
+  ITaskStepExecutor,
+} from '../@types/tasks';
 import { cloneDeep } from 'lodash';
 
 // FIXME: possibly add `isError` monad in run steps
@@ -9,6 +13,8 @@ export class TaskRunner {
   protected _tasks: ITaskDefinition<any>[];
   protected _failedTasks: ITaskDefinition<any>[];
   protected _runningTask: Nullable<ITaskDefinition<any>>;
+  protected _twiceFailedTask: Nullable<ITaskDefinition<any>>;
+  protected _runningFailedTask: Nullable<ITaskDefinition<any>>;
   protected _runningPromise: Nullable<Promise<any[]>>;
   private _maxConcurrentSteps: number;
 
@@ -33,11 +39,20 @@ export class TaskRunner {
     this._tasks = [];
     this._failedTasks = [];
     this._runningTask = null;
+    this._runningFailedTask = null;
+    this._twiceFailedTask = null;
     this._runningPromise = null;
   }
 
   enqueueTask(task: ITaskDefinition<any>, clone = true) {
-    if (!task.steps || task.steps.length === 0) {
+    if (
+      (!task.steps || task.steps.length === 0)
+      && (
+        !task.failedSteps
+        || task.failedSteps.length === 0
+        || !('value' in task.failedSteps[0])
+      )
+    ) {
       if (this._taskStepExecutor.requiresSteps(task.taskType)) {
         throw new TypeError(l(`Task with type "${task.taskType}" requires steps`));
       }
@@ -149,14 +164,11 @@ export class TaskRunner {
       ];
     }
     this._runningTask = task;
-    if (this._runningTask) {
-      this._runningPromise = Promise.all(promises).tap(() => {
-        this._runningTask = null;
-        this._runningPromise = null;
-      }) as any; // Probably some bug (error "Type instantiation too deep"), so cast is required
-      return this._runningPromise as any; // Probably some bug (error "Type instantiation too deep"), so cast is required
-    }
-    return Promise.resolve([]);
+    this._runningPromise = Promise.all(promises).tap(() => {
+      this._runningTask = null;
+      this._runningPromise = null;
+    }) as any; // Probably some bug (error "Type instantiation too deep"), so cast is required
+    return this._runningPromise as any; // Probably some bug (error "Type instantiation too deep"), so cast is required
   }
 
   getAllUndoneTasks(clone = true) {
@@ -213,10 +225,13 @@ export class TaskRunner {
       return Promise.resolve([]);
     }
     const task = this._tasks[index];
+    if (this._runningFailedTask !== task) {
+      this.flushFailedTask();
+    }
     if (!task.failedSteps || task.failedSteps.length === 0) {
       return Promise.resolve([]);
     }
-    const failedSteps = [] as ITaskFailedStep<any>[];
+    const failedSteps = this._twiceFailedTask?.failedSteps ?? [];
     const promises = iterate(task.failedSteps)
       .take(this._maxConcurrentSteps)
       .map(
@@ -231,6 +246,14 @@ export class TaskRunner {
               failedStep.value = s.value;
             }
             failedSteps.push(failedStep);
+            if (!this._twiceFailedTask) {
+              this._twiceFailedTask = {
+                failedSteps,
+                taskType: task.taskType
+              };
+              this._failedTasks.push(this._twiceFailedTask);
+              this._runningFailedTask = this._runningTask;
+            }
           })
           .tap(() => {
             if (task.failedSteps) {
@@ -250,20 +273,11 @@ export class TaskRunner {
       )
       .toArray();
     this._runningTask = task;
-    if (this._runningTask) {
-      this._runningPromise = Promise.all(promises).tap(() => {
-        this._runningTask = null;
-        this._runningPromise = null;
-        if (failedSteps.length >= 0) {
-          this._failedTasks.push({
-            failedSteps,
-            taskType: task.taskType
-          });
-        }
-      }) as any; // Probably some bug (error "Type instantiation too deep"), so cast is required
-      return this._runningPromise as any; // Probably some bug (error "Type instantiation too deep"), so cast is required
-    }
-    return Promise.resolve([]);
+    this._runningPromise = Promise.all(promises).tap(() => {
+      this._runningTask = null;
+      this._runningPromise = null;
+    }) as any; // Probably some bug (error "Type instantiation too deep"), so cast is required
+    return this._runningPromise as any; // Probably some bug (error "Type instantiation too deep"), so cast is required
   }
 
   hasTwiceFailedTasks() {
@@ -288,9 +302,17 @@ export class TaskRunner {
     const i = this._tasks.indexOf(task);
     if (i >= 0) {
       this._tasks.splice(i, 1);
+      if (this._runningFailedTask === task) {
+        this.flushFailedTask();
+      }
       return true;
     }
     return false;
+  }
+
+  protected flushFailedTask() {
+    this._runningFailedTask = null;
+    this._twiceFailedTask = null;
   }
 }
 
