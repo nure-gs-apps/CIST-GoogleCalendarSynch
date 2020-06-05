@@ -1,4 +1,3 @@
-import { interfaces } from 'inversify';
 import { Argv } from 'yargs';
 import { DeepPartial, DeepReadonly } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
@@ -16,11 +15,9 @@ import {
   bindOnExitHandler, exitGracefully,
   unbindOnExitHandler,
 } from '../services/exit-handler.service';
-import { BuildingsService } from '../services/google/buildings.service';
 import { TaskRunner } from '../tasks/runner';
 import { EventNames, TaskStepExecutor } from '../tasks/task-step-executor';
 import { getCistCachedClientTypes } from '../utils/jobs';
-import ServiceIdentifier = interfaces.ServiceIdentifier;
 
 export interface IEntitiesToRemove {
   deleteIrrelevantBuildings: boolean;
@@ -83,25 +80,22 @@ export async function handleSync(
     throw new TypeError('No tasks found. Please, specify either synchronization or removal.');
   }
 
+  const types = [
+    TYPES.TaskStepExecutor,
+    TYPES.TaskProgressBackend,
+    ...getCistCachedClientTypes(args, config.ncgc.caching.cist.priorities),
+    CachedCistJsonClientService,
+  ];
+  if (args.auditories || args.deleteIrrelevantBuildings) {
+    types.push(TYPES.BuildingsService);
+  }
   const container = createContainer({
-    types: [
-      TYPES.TaskStepExecutor,
-      TYPES.TaskProgressBackend,
-      ...getCistCachedClientTypes(args, config.ncgc.caching.cist.priorities)
-    ],
+    types,
     forceNew: true,
   });
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
     .to(CachedCistJsonClientService);
-  const additionalTypes: ServiceIdentifier<any>[] = [
-    CachedCistJsonClientService
-  ];
-  if (args.auditories || args.deleteIrrelevantBuildings) {
-    container.bind<BuildingsService>(TYPES.BuildingsService)
-      .to(BuildingsService);
-    additionalTypes.push(BuildingsService);
-  }
-  await getContainerAsyncInitializer(additionalTypes);
+  await getContainerAsyncInitializer();
 
   const executor = container.get<TaskStepExecutor>(TYPES.TaskStepExecutor);
   const taskRunner = new TaskRunner(executor);

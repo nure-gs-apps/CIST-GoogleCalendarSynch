@@ -11,7 +11,7 @@ exports.TYPES = {
     CistApiKey: Symbol.for('CistApiKey'),
     GoogleAuthAdminDirectoryKey: Symbol.for('GoogleAuthAdminDirectoryKey'),
     GoogleAdminDirectoryQuotaLimiterConfig: Symbol.for('GoogleAdminDirectoryQuotaLimiterConfig'),
-    GoogleCalendarQuotaLimiterConfig: Symbol.for('GoogleAdminDirectoryQuotaLimiterConfig'),
+    GoogleCalendarQuotaLimiterConfig: Symbol.for('GoogleCalendarQuotaLimiterConfig'),
     GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
     GoogleEntityIdPrefix: Symbol.for('GoogleEntityIdPrefix'),
     GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
