@@ -68,9 +68,10 @@ export class BuildingsService {
     this._delete = this._quotaLimiter.limiter.wrap(
       this._buildings.delete.bind(this._buildings),
     ) as any;
-    this._list = this._quotaLimiter.limiter.wrap(
-      this._buildings.list.bind(this._buildings),
-    ) as any;
+    // this._list = this._quotaLimiter.limiter.wrap(
+    //   this._buildings.list.bind(this._buildings),
+    // ) as any;
+    this._list = this._buildings.list.bind(this._buildings);
   }
 
   /**
