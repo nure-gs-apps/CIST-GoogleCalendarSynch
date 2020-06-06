@@ -8,6 +8,7 @@ import { GoogleAuthKey } from '../@types/google';
 import { IApiQuota, ICalendarConfig } from '../@types/services';
 import { TaskProgressBackend } from '../@types/tasks';
 import { ICrossPlatformFilePath } from '../@types/utils';
+import { parseDuration } from '../utils/common';
 import { getDefaultConfigDirectory } from './constants';
 import { getConfig } from './index';
 
@@ -20,11 +21,15 @@ export interface IFullAppConfig {
   // Keep the key in common camel case or environment config will break
   ncgc: {
     configDir: string;
-    taskProgress: {
-      backend: TaskProgressBackend;
-      backendConfigs: {
-        [TaskProgressBackend.File]: ICrossPlatformFilePath;
-      }
+    tasks: {
+      concurrency: number;
+      timeout: string;
+      progress: {
+        backend: TaskProgressBackend;
+        backendConfigs: {
+          [TaskProgressBackend.File]: ICrossPlatformFilePath;
+        };
+      };
     };
     caching: {
       maxExpiration: IMaxCacheExpiration;
@@ -142,6 +147,10 @@ export function assertConfigPrefixId() {
   if (!prefixIsValid) {
     throw new TypeError('idPrefix must be a alphanumeric string or null to omit');
   }
+}
+
+export function parseTasksTimeout(config = getConfig()) {
+  return parseDuration(config.tasks.timeout, 'Task running timeout ');
 }
 
 function o(paramName: string) {

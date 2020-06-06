@@ -54,6 +54,9 @@ class TaskRunner {
             value: void 0
         });
         this._taskStepExecutor = taskStepExecutor;
+        if (maxConcurrentSteps < 1 || !Number.isInteger(maxConcurrentSteps)) {
+            throw new TypeError(`${TaskRunner.name}: concurrency must be a positive integer, found ${maxConcurrentSteps}`);
+        }
         this.maxConcurrentSteps = maxConcurrentSteps; // to perform validation
         this._maxConcurrentSteps = maxConcurrentSteps; // to satisfy compiler
         this._tasks = [];
@@ -159,6 +162,9 @@ class TaskRunner {
                     }
                 }
                 if ((!task.steps || task.steps.length === 0) && (!task.failedSteps || task.failedSteps.length === 0)) {
+                    if (task.steps && task.steps.length === 0) {
+                        delete task.steps;
+                    }
                     this.doRemoveTask(task);
                 }
             }))

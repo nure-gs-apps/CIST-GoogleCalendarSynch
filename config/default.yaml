@@ -3,12 +3,15 @@ ncgc:
     baseUrl: http://cist.nure.ua/ias/app/tt/
     apiKey: yourKey # Required if classes are loaded
 
-  taskProgress:
-    backend: file
-    backendConfigs:
-      file:
-        unix: /var/tmp/ncgc/task.json
-        win: %SystemRoot%\Temp\ncgc\task.json
+  tasks:
+    timeout: 00:08:00.000 # 8 minutes. Timeout for interruption, required for Google Cloud Function
+    concurrency: 5 # Max number of requests to run simultaneously
+    progress:
+      backend: file
+      backendConfigs:
+        file:
+          unix: /var/tmp/ncgc/task.json
+          win: %SystemRoot%\Temp\ncgc\task.json
   caching:
     maxExpiration:
       hours: 5

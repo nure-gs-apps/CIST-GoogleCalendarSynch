@@ -16,4 +16,8 @@ function getCistCachedClientTypes(operateOn, cachePriorities) {
     return types;
 }
 exports.getCistCachedClientTypes = getCistCachedClientTypes;
+function toDeadlineDate(duration) {
+    return new Date(Date.now() + duration.asMilliseconds());
+}
+exports.toDeadlineDate = toDeadlineDate;
 //# sourceMappingURL=jobs.js.map

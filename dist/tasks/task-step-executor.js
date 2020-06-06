@@ -6,10 +6,10 @@ const inversify_1 = require("inversify");
 const tasks_1 = require("../@types/tasks");
 const types_1 = require("../di/types");
 const errors_1 = require("../services/google/errors");
-var EventNames;
-(function (EventNames) {
-    EventNames["NewTask"] = "new-task";
-})(EventNames = exports.EventNames || (exports.EventNames = {}));
+var TaskStepExecutorEventNames;
+(function (TaskStepExecutorEventNames) {
+    TaskStepExecutorEventNames["NewTask"] = "new-task";
+})(TaskStepExecutorEventNames = exports.TaskStepExecutorEventNames || (exports.TaskStepExecutorEventNames = {}));
 types_1.ensureInjectable(events_1.EventEmitter);
 let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
     constructor(container, logger) {
@@ -89,13 +89,13 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
                 {
                     assertNoStep(step);
                     const roomsResponse = await this.getCistClient().getRoomsResponse();
-                    this.emit(EventNames.NewTask, this.getBuildingsService().createEnsureBuildingsTask(roomsResponse));
+                    this.emit(TaskStepExecutorEventNames.NewTask, this.getBuildingsService().createEnsureBuildingsTask(roomsResponse));
                 }
                 break;
             case tasks_1.TaskType.DeferredDeleteIrrelevantBuildings:
                 {
                     assertNoStep(step);
-                    this.emit(EventNames.NewTask, this.getBuildingsService().createDeleteIrrelevantTask((_a = this._buildingsContext) !== null && _a !== void 0 ? _a : await this.saveAndGetBuildingsContext(await this.getCistClient().getRoomsResponse())));
+                    this.emit(TaskStepExecutorEventNames.NewTask, this.getBuildingsService().createDeleteIrrelevantTask((_a = this._buildingsContext) !== null && _a !== void 0 ? _a : await this.saveAndGetBuildingsContext(await this.getCistClient().getRoomsResponse())));
                 }
                 break;
             case tasks_1.TaskType.EnsureBuildings:

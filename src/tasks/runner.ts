@@ -34,6 +34,9 @@ export class TaskRunner {
 
   constructor(taskStepExecutor: ITaskStepExecutor, maxConcurrentSteps = 1) {
     this._taskStepExecutor = taskStepExecutor;
+    if (maxConcurrentSteps < 1 || !Number.isInteger(maxConcurrentSteps)) {
+      throw new TypeError(`${TaskRunner.name}: concurrency must be a positive integer, found ${maxConcurrentSteps}`);
+    }
     this.maxConcurrentSteps = maxConcurrentSteps; // to perform validation
     this._maxConcurrentSteps = maxConcurrentSteps; // to satisfy compiler
     this._tasks = [];
@@ -148,6 +151,9 @@ export class TaskRunner {
             ) && (
               !task.failedSteps || task.failedSteps.length === 0
             )) {
+              if (task.steps && task.steps.length === 0) {
+                delete task.steps;
+              }
               this.doRemoveTask(task);
             }
           }))

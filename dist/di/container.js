@@ -80,8 +80,8 @@ function addTypesToContainer(options) {
     if ((allRequired
         || types.has(types_1.TYPES.TaskProgressBackendType)) && !skip.has(types_1.TYPES.TaskProgressBackendType)) {
         container.bind(types_1.TYPES.TaskProgressBackendType)
-            .toConstantValue(config_1.getConfig().taskProgress.backend);
-        types.add(di_1.getTaskProgressBackendSymbol(config_1.getConfig().taskProgress.backend));
+            .toConstantValue(config_1.getConfig().tasks.progress.backend);
+        types.add(di_1.getTaskProgressBackendSymbol(config_1.getConfig().tasks.progress.backend));
     }
     if ((allRequired
         || types.has(types_1.TYPES.TaskProgressFileBackend)) && !skip.has(types_1.TYPES.TaskProgressFileBackend)) {
@@ -206,7 +206,7 @@ function addTypesToContainer(options) {
     if ((allRequired
         || types.has(types_1.TYPES.TaskProgressFileBackendFileName)) && !skip.has(types_1.TYPES.TaskProgressFileBackendFileName)) {
         container.bind(types_1.TYPES.TaskProgressFileBackendFileName)
-            .toConstantValue(common_1.PathUtils.getPath(config_1.getConfig().taskProgress.backendConfigs[tasks_1.TaskProgressBackend.File]));
+            .toConstantValue(common_1.PathUtils.getPath(config_1.getConfig().tasks.progress.backendConfigs[tasks_1.TaskProgressBackend.File]));
     }
     if ((allRequired || types.has(types_1.TYPES.CistCacheConfig)) && !skip.has(types_1.TYPES.CistCacheConfig)) {
         container.bind(types_1.TYPES.CistCacheConfig)

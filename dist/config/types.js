@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const change_case_1 = require("change-case");
 const yargs = require("yargs");
 const tasks_1 = require("../@types/tasks");
+const common_1 = require("../utils/common");
 const constants_1 = require("./constants");
 const index_1 = require("./index");
 var CacheType;
@@ -75,6 +76,10 @@ function assertConfigPrefixId() {
     }
 }
 exports.assertConfigPrefixId = assertConfigPrefixId;
+function parseTasksTimeout(config = index_1.getConfig()) {
+    return common_1.parseDuration(config.tasks.timeout, 'Task running timeout ');
+}
+exports.parseTasksTimeout = parseTasksTimeout;
 function o(paramName) {
     return paramName
         .split('.')

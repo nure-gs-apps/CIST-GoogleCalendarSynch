@@ -123,8 +123,8 @@ export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
     || types.has(TYPES.TaskProgressBackendType)
   ) && !skip.has(TYPES.TaskProgressBackendType)) {
     container.bind<string>(TYPES.TaskProgressBackendType)
-      .toConstantValue(getConfig().taskProgress.backend);
-    types.add(getTaskProgressBackendSymbol(getConfig().taskProgress.backend));
+      .toConstantValue(getConfig().tasks.progress.backend);
+    types.add(getTaskProgressBackendSymbol(getConfig().tasks.progress.backend));
   }
 
   if ((
@@ -310,7 +310,7 @@ export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
   ) && !skip.has(TYPES.TaskProgressFileBackendFileName)) {
     container.bind<string>(TYPES.TaskProgressFileBackendFileName)
       .toConstantValue(PathUtils.getPath(
-        getConfig().taskProgress.backendConfigs[TaskProgressBackend.File]
+        getConfig().tasks.progress.backendConfigs[TaskProgressBackend.File]
       ));
   }
 

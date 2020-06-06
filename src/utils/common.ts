@@ -4,6 +4,7 @@ import { isObjectLike as _isObjectLike } from 'lodash';
 import { ReadonlyDate } from 'readonly-date';
 import { ApiGroup, ApiGroupsResponse } from '../@types/cist';
 import { ICrossPlatformFilePath } from '../@types/utils';
+import moment = require('moment');
 
 export function arrayContentEqual<T>(
   first: ReadonlyArray<T>,
@@ -159,4 +160,12 @@ export function toGroupIds(groupsResponse: ApiGroupsResponse) {
 export function isIterable(value: any): value is Iterable<any> {
   return isObjectLike<Iterable<any>>(value)
     && typeof value[Symbol.iterator] === 'function';
+}
+
+export function parseDuration(value: any, errorPrefix = ''): moment.Duration {
+  const duration = moment.duration(value);
+  if (!duration.isValid()) {
+    throw new TypeError(`${errorPrefix} duration "${value}" is invalid`);
+  }
+  return duration;
 }

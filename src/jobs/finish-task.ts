@@ -6,7 +6,7 @@ import {
   ITaskProgressBackend,
   TaskType,
 } from '../@types/tasks';
-import { IFullAppConfig } from '../config/types';
+import { IFullAppConfig, parseTasksTimeout } from '../config/types';
 import {
   addTypesToContainer,
   createContainer,
@@ -16,12 +16,16 @@ import {
 import { TYPES } from '../di/types';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import {
-  bindOnExitHandler, disableExitTimeout, exitGracefully,
+  DeadlineService,
+  DeadlineServiceEventNames,
+} from '../services/deadline.service';
+import {
+  bindOnExitHandler, disableExitTimeout, enableExitTimeout, exitGracefully,
   unbindOnExitHandler,
 } from '../services/exit-handler.service';
 import { TaskProgressFileBackend } from '../tasks/progress/file';
 import { TaskRunner } from '../tasks/runner';
-import { EventNames, TaskStepExecutor } from '../tasks/task-step-executor';
+import { TaskStepExecutorEventNames, TaskStepExecutor } from '../tasks/task-step-executor';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
 
 export async function handleFinishTask(
@@ -49,21 +53,29 @@ export async function handleFinishTask(
   await getContainerAsyncInitializer();
 
   const executor = container.get<TaskStepExecutor>(TYPES.TaskStepExecutor);
-  const taskRunner = new TaskRunner(executor);
-  executor.on(EventNames.NewTask, (task: ITaskDefinition<any>) => {
-    taskRunner.enqueueTask(task);
-  });
+  const taskRunner = new TaskRunner(executor, config.ncgc.tasks.concurrency);
+  executor.on(
+    TaskStepExecutorEventNames.NewTask,
+    (task: ITaskDefinition<any>) => {
+      taskRunner.enqueueTask(task);
+    },
+  );
   let interrupted = false;
   const dispose = async () => {
     disableExitTimeout();
-    interrupted = true;
     logger.info('Waiting for current task step to finish...');
-    await taskRunner.runningPromise;
-    taskRunner.enqueueAllTwiceFailedTasksAndClear();
-    const undoneTasks = taskRunner.getAllUndoneTasks(false);
-    await progressBackend.save(undoneTasks);
+    await saveInterruptedTasks();
+    enableExitTimeout();
   };
   bindOnExitHandler(dispose);
+  const deadlineService = new DeadlineService(parseTasksTimeout(config.ncgc));
+  deadlineService.on(DeadlineServiceEventNames.Deadline, () => {
+    logger.info('Time has run out, saving interrupted tasks...');
+    saveInterruptedTasks().catch(error => logger.error(
+      'Error while saving interrupted task',
+      error,
+    ));
+  });
 
   taskRunner.enqueueTasks(false, ...tasks);
   logger.info('Running tasks...');
@@ -73,7 +85,7 @@ export async function handleFinishTask(
     }
   }
   let deleteProgressFile = true;
-  if (taskRunner.hasFailedTasks()) {
+  if (!interrupted && taskRunner.hasFailedTasks()) {
     logger.warn(`${taskRunner.getFailedStepCount()} failed task steps found. Rerunning...`);
     for await (const _ of taskRunner.asFailedRunnableGenerator()) {
       if (interrupted) {
@@ -88,14 +100,27 @@ export async function handleFinishTask(
   }
   if (
     progressBackend instanceof TaskProgressFileBackend
+    && !interrupted
     && deleteProgressFile
   ) {
     await progressBackend.clear();
   }
 
-  logger.info('Finished synchronization');
+  logger.info(
+    !interrupted
+    ? 'Finished job'
+    : 'Job execution was interrupted'
+  );
   unbindOnExitHandler(dispose);
   exitGracefully(0);
+
+  async function saveInterruptedTasks() {
+    interrupted = true;
+    await taskRunner.runningPromise;
+    taskRunner.enqueueAllTwiceFailedTasksAndClear();
+    const undoneTasks = taskRunner.getAllUndoneTasks(false);
+    await progressBackend.save(undoneTasks);
+  }
 }
 
 function getRequiredServicesConfig(

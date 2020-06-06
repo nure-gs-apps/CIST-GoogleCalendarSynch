@@ -5,7 +5,7 @@ import iterate from 'iterare';
 import { EOL } from 'os';
 import { IEntitiesToOperateOn } from './@types/jobs';
 import {
-  addEntitiesOptions,
+  addEntitiesOptions, addEntitiesToRemoveOptions,
   IArgsWithEntities,
 } from './cli/common';
 import {
@@ -20,7 +20,6 @@ import {
 import { handleCistCacheExtend } from './jobs/cist-cache-extend';
 import { handleFinishTask } from './jobs/finish-task';
 import {
-  addEntitiesToRemoveOptions,
   handleSync,
   IEntitiesToRemove,
 } from './jobs/sync';

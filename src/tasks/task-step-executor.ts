@@ -11,13 +11,13 @@ import {
 } from '../services/google/buildings.service';
 import { FatalError } from '../services/google/errors';
 
-export enum EventNames {
+export enum TaskStepExecutorEventNames {
   NewTask = 'new-task'
 }
 
 export interface ITaskStepExecutorWithEvents extends ITaskStepExecutor, EventEmitter {
   on(
-    event: EventNames.NewTask,
+    event: TaskStepExecutorEventNames.NewTask,
     listener: (newTask: ITaskDefinition<any>) => any,
   ): this;
 }
@@ -93,7 +93,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor 
         assertNoStep(step);
         const roomsResponse = await this.getCistClient().getRoomsResponse();
         this.emit(
-          EventNames.NewTask,
+          TaskStepExecutorEventNames.NewTask,
           this.getBuildingsService().createEnsureBuildingsTask(roomsResponse),
         );
       }
@@ -102,7 +102,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor 
       case TaskType.DeferredDeleteIrrelevantBuildings: {
         assertNoStep(step);
         this.emit(
-          EventNames.NewTask,
+          TaskStepExecutorEventNames.NewTask,
           this.getBuildingsService().createDeleteIrrelevantTask(
             this._buildingsContext
             ?? await this.saveAndGetBuildingsContext(

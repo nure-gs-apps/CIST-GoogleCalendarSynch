@@ -1,37 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const tasks_1 = require("../@types/tasks");
+const types_1 = require("../config/types");
 const container_1 = require("../di/container");
-const types_1 = require("../di/types");
+const types_2 = require("../di/types");
 const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-json-client.service");
+const deadline_service_1 = require("../services/deadline.service");
 const exit_handler_service_1 = require("../services/exit-handler.service");
 const runner_1 = require("../tasks/runner");
 const task_step_executor_1 = require("../tasks/task-step-executor");
 const jobs_1 = require("../utils/jobs");
-function addEntitiesToRemoveOptions(yargs) {
-    const buildingsName = "deleteIrrelevantBuildings";
-    const auditoriesName = "deleteIrrelevantAuditories";
-    const groupsName = "deleteIrrelevantGroups";
-    const eventsName = "deleteIrrelevantEvents";
-    return yargs
-        .option(buildingsName, {
-        description: 'Delete irrelevant buildings, that are not found in current CIST Auditories response',
-        type: 'boolean'
-    })
-        .option(auditoriesName, {
-        description: 'Delete irrelevant auditories, that are not found in current CIST Auditories response',
-        type: 'boolean'
-    })
-        .option(groupsName, {
-        description: 'Delete irrelevant groups, that are not found in current CIST Groups response',
-        type: 'boolean'
-    })
-        .option(eventsName, {
-        description: 'Delete irrelevant events, that are not found in current CIST Events responses',
-        type: 'boolean'
-    });
-}
-exports.addEntitiesToRemoveOptions = addEntitiesToRemoveOptions;
 async function handleSync(args, config, logger) {
     const tasks = [];
     if (args.auditories) {
@@ -48,45 +26,47 @@ async function handleSync(args, config, logger) {
         throw new TypeError('No tasks found. Please, specify either synchronization or removal.');
     }
     const types = [
-        types_1.TYPES.TaskStepExecutor,
-        types_1.TYPES.TaskProgressBackend,
+        types_2.TYPES.TaskStepExecutor,
+        types_2.TYPES.TaskProgressBackend,
         ...jobs_1.getCistCachedClientTypes(args, config.ncgc.caching.cist.priorities),
         cached_cist_json_client_service_1.CachedCistJsonClientService,
     ];
     if (args.auditories || args.deleteIrrelevantBuildings) {
-        types.push(types_1.TYPES.BuildingsService);
+        types.push(types_2.TYPES.BuildingsService);
     }
     const container = container_1.createContainer({
         types,
         forceNew: true,
     });
-    container.bind(types_1.TYPES.CistJsonClient)
+    container.bind(types_2.TYPES.CistJsonClient)
         .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
     await container_1.getContainerAsyncInitializer();
-    const executor = container.get(types_1.TYPES.TaskStepExecutor);
-    const taskRunner = new runner_1.TaskRunner(executor);
-    executor.on(task_step_executor_1.EventNames.NewTask, (task) => {
+    const executor = container.get(types_2.TYPES.TaskStepExecutor);
+    const taskRunner = new runner_1.TaskRunner(executor, config.ncgc.tasks.concurrency);
+    executor.on(task_step_executor_1.TaskStepExecutorEventNames.NewTask, (task) => {
         taskRunner.enqueueTask(task);
     });
     let interrupted = false;
     const dispose = async () => {
         exit_handler_service_1.disableExitTimeout();
-        interrupted = true;
-        logger.info('Waiting for current task step to finish...');
-        await taskRunner.runningPromise;
-        taskRunner.enqueueAllTwiceFailedTasksAndClear();
-        const undoneTasks = taskRunner.getAllUndoneTasks(false);
-        const progressBackend = container.get(types_1.TYPES.TaskProgressBackend);
-        await progressBackend.save(undoneTasks);
+        logger.info('Waiting for current task step to finish and saving interrupted tasks...');
+        await saveInterruptedTasks();
+        exit_handler_service_1.enableExitTimeout();
     };
     exit_handler_service_1.bindOnExitHandler(dispose);
+    const deadlineService = new deadline_service_1.DeadlineService(types_1.parseTasksTimeout(config.ncgc));
+    deadlineService.on(deadline_service_1.DeadlineServiceEventNames.Deadline, () => {
+        logger.info('Time has run out, saving interrupted tasks...');
+        saveInterruptedTasks().catch(error => logger.error('Error while saving interrupted task', error));
+    });
     taskRunner.enqueueTasks(false, ...tasks);
+    logger.info('Running synchronization tasks...');
     for await (const _ of taskRunner.asRunnableGenerator()) {
         if (interrupted) {
             break;
         }
     }
-    if (taskRunner.hasFailedTasks()) {
+    if (!interrupted && taskRunner.hasFailedTasks()) {
         logger.warn(`Totally ${taskRunner.getFailedStepCount()} task steps failed. Rerunning...`);
         for await (const _ of taskRunner.asFailedRunnableGenerator()) {
             if (interrupted) {
@@ -95,13 +75,23 @@ async function handleSync(args, config, logger) {
         }
         if (taskRunner.hasTwiceFailedTasks()) {
             logger.error(`Rerunning ${taskRunner.getTwiceFailedStepCount()} failed task steps failed. Saving these steps...`);
-            const progressBackend = container.get(types_1.TYPES.TaskProgressBackend);
+            const progressBackend = container.get(types_2.TYPES.TaskProgressBackend);
             await progressBackend.save(taskRunner.getTwiceFailedTasks(false));
         }
     }
-    logger.info('Finished synchronization');
+    logger.info(!interrupted
+        ? 'Finished synchronization'
+        : 'Synchronization was interrupted');
     exit_handler_service_1.unbindOnExitHandler(dispose);
     exit_handler_service_1.exitGracefully(0);
+    async function saveInterruptedTasks() {
+        interrupted = true;
+        await taskRunner.runningPromise;
+        taskRunner.enqueueAllTwiceFailedTasksAndClear();
+        const undoneTasks = taskRunner.getAllUndoneTasks(false);
+        const progressBackend = container.get(types_2.TYPES.TaskProgressBackend);
+        await progressBackend.save(undoneTasks);
+    }
 }
 exports.handleSync = handleSync;
 //# sourceMappingURL=sync.js.map

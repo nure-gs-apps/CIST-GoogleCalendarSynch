@@ -101,7 +101,7 @@ const yargs = types_1.getBasicCliConfiguration()
         sync_1.handleSync(argv, config_1.getFullConfig(), console).catch(handleError);
     },
     builder(yargs) {
-        return sync_1.addEntitiesToRemoveOptions(common_1.addEntitiesOptions(yargs, false))
+        return common_1.addEntitiesToRemoveOptions(common_1.addEntitiesOptions(yargs, false))
             .help('help').alias('h', 'help')
             .command({
             command: 'finish',

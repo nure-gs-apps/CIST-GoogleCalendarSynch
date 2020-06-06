@@ -78,8 +78,10 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         this._insert = this._quotaLimiter.limiter.wrap(this._buildings.insert.bind(this._buildings));
         this._patch = this._quotaLimiter.limiter.wrap(this._buildings.patch.bind(this._buildings));
         this._delete = this._quotaLimiter.limiter.wrap(this._buildings.delete.bind(this._buildings));
-        this._list = this._quotaLimiter.limiter.wrap(this._buildings.list.bind(this._buildings));
-        // this._list = this._buildings.list.bind(this._buildings);
+        // this._list = this._quotaLimiter.limiter.wrap(
+        //   this._buildings.list.bind(this._buildings),
+        // ) as any;
+        this._list = this._buildings.list.bind(this._buildings);
     }
     /**
      * Doesn't handle errors properly

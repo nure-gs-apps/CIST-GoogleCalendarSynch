@@ -4,6 +4,7 @@ import { DeepPartial, DeepReadonly } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IWarnLogger } from '../@types/logging';
 import { IFullAppConfig } from '../config/types';
+import { IEntitiesToRemove } from '../jobs/sync';
 import { toPrintString } from '../utils/common';
 
 export interface IArgsWithEntities extends Arguments<DeepPartial<IFullAppConfig>>, IEntitiesToOperateOn {
@@ -70,6 +71,40 @@ export function addEntitiesOptions<T extends DeepPartial<IFullAppConfig> =  Deep
   return builder as any;
 }
 
+export function addEntitiesToRemoveOptions<T extends DeepPartial<IFullAppConfig> = DeepPartial<IFullAppConfig>>(
+  yargs: Argv<T>,
+): Argv<T & IEntitiesToRemove> {
+  const buildingsName = nameof<IEntitiesToRemove>(
+    e => e.deleteIrrelevantBuildings,
+  );
+  const auditoriesName = nameof<IEntitiesToRemove>(
+    e => e.deleteIrrelevantAuditories,
+  );
+  const groupsName = nameof<IEntitiesToRemove>(
+    e => e.deleteIrrelevantGroups,
+  );
+  const eventsName = nameof<IEntitiesToRemove>(
+    e => e.deleteIrrelevantEvents,
+  );
+  return yargs
+    .option(buildingsName, {
+      description: 'Delete irrelevant buildings, that are not found in current CIST Auditories response',
+      type: 'boolean',
+    })
+    .option(auditoriesName, {
+      description: 'Delete irrelevant auditories, that are not found in current CIST Auditories response',
+      type: 'boolean',
+    })
+    .option(groupsName, {
+      description: 'Delete irrelevant groups, that are not found in current CIST Groups response',
+      type: 'boolean',
+    })
+    .option(eventsName, {
+      description: 'Delete irrelevant events, that are not found in current CIST Events responses',
+      type: 'boolean',
+    }) as any;
+}
+
 // const roomsResponse = await cistClient.getRoomsResponse();
 // // if (!assertRoomsResponse(roomsResponse)) {
 // //   return;
@@ -120,4 +155,3 @@ export function addEntitiesOptions<T extends DeepPartial<IFullAppConfig> =  Deep
 // );
 // logger.info(calendars);
 // logger.info('Calendars are created');
-

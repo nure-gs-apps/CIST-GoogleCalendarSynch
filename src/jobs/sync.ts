@@ -1,5 +1,4 @@
-import { Argv } from 'yargs';
-import { DeepPartial, DeepReadonly } from '../@types';
+import { DeepReadonly } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IErrorLogger, IInfoLogger, IWarnLogger } from '../@types/logging';
 import {
@@ -7,16 +6,22 @@ import {
   ITaskProgressBackend,
   TaskType,
 } from '../@types/tasks';
-import { IFullAppConfig } from '../config/types';
+import { IFullAppConfig, parseTasksTimeout } from '../config/types';
 import { createContainer, getContainerAsyncInitializer } from '../di/container';
 import { TYPES } from '../di/types';
 import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
 import {
-  bindOnExitHandler, disableExitTimeout, exitGracefully,
+  DeadlineService,
+  DeadlineServiceEventNames,
+} from '../services/deadline.service';
+import {
+  bindOnExitHandler,
+  disableExitTimeout, enableExitTimeout,
+  exitGracefully,
   unbindOnExitHandler,
 } from '../services/exit-handler.service';
 import { TaskRunner } from '../tasks/runner';
-import { EventNames, TaskStepExecutor } from '../tasks/task-step-executor';
+import { TaskStepExecutorEventNames, TaskStepExecutor } from '../tasks/task-step-executor';
 import { getCistCachedClientTypes } from '../utils/jobs';
 
 export interface IEntitiesToRemove {
@@ -24,40 +29,6 @@ export interface IEntitiesToRemove {
   deleteIrrelevantAuditories: boolean;
   deleteIrrelevantGroups: boolean;
   deleteIrrelevantEvents: boolean;
-}
-
-export function addEntitiesToRemoveOptions<T extends DeepPartial<IFullAppConfig> =  DeepPartial<IFullAppConfig>>(
-  yargs: Argv<T>,
-): Argv<T & IEntitiesToRemove> {
-  const buildingsName = nameof<IEntitiesToRemove>(
-    e => e.deleteIrrelevantBuildings
-  );
-  const auditoriesName = nameof<IEntitiesToRemove>(
-    e => e.deleteIrrelevantAuditories
-  );
-  const groupsName = nameof<IEntitiesToRemove>(
-    e => e.deleteIrrelevantGroups
-  );
-  const eventsName = nameof<IEntitiesToRemove>(
-    e => e.deleteIrrelevantEvents
-  );
-  return yargs
-    .option(buildingsName, {
-      description: 'Delete irrelevant buildings, that are not found in current CIST Auditories response',
-      type: 'boolean'
-    })
-    .option(auditoriesName, {
-      description: 'Delete irrelevant auditories, that are not found in current CIST Auditories response',
-      type: 'boolean'
-    })
-    .option(groupsName, {
-      description: 'Delete irrelevant groups, that are not found in current CIST Groups response',
-      type: 'boolean'
-    })
-    .option(eventsName, {
-      description: 'Delete irrelevant events, that are not found in current CIST Events responses',
-      type: 'boolean'
-    }) as any;
 }
 
 export async function handleSync(
@@ -98,32 +69,38 @@ export async function handleSync(
   await getContainerAsyncInitializer();
 
   const executor = container.get<TaskStepExecutor>(TYPES.TaskStepExecutor);
-  const taskRunner = new TaskRunner(executor);
-  executor.on(EventNames.NewTask, (task: ITaskDefinition<any>) => {
-    taskRunner.enqueueTask(task);
-  });
+  const taskRunner = new TaskRunner(executor, config.ncgc.tasks.concurrency);
+  executor.on(
+    TaskStepExecutorEventNames.NewTask,
+    (task: ITaskDefinition<any>) => {
+      taskRunner.enqueueTask(task);
+    },
+  );
   let interrupted = false;
   const dispose = async () => {
     disableExitTimeout();
-    interrupted = true;
-    logger.info('Waiting for current task step to finish...');
-    await taskRunner.runningPromise;
-    taskRunner.enqueueAllTwiceFailedTasksAndClear();
-    const undoneTasks = taskRunner.getAllUndoneTasks(false);
-    const progressBackend = container.get<ITaskProgressBackend>(
-      TYPES.TaskProgressBackend
-    );
-    await progressBackend.save(undoneTasks);
+    logger.info('Waiting for current task step to finish and saving interrupted tasks...');
+    await saveInterruptedTasks();
+    enableExitTimeout();
   };
   bindOnExitHandler(dispose);
+  const deadlineService = new DeadlineService(parseTasksTimeout(config.ncgc));
+  deadlineService.on(DeadlineServiceEventNames.Deadline, () => {
+    logger.info('Time has run out, saving interrupted tasks...');
+    saveInterruptedTasks().catch(error => logger.error(
+      'Error while saving interrupted task',
+      error,
+    ));
+  });
 
   taskRunner.enqueueTasks(false, ...tasks);
+  logger.info('Running synchronization tasks...');
   for await (const _ of taskRunner.asRunnableGenerator()) {
     if (interrupted) {
       break;
     }
   }
-  if (taskRunner.hasFailedTasks()) {
+  if (!interrupted && taskRunner.hasFailedTasks()) {
     logger.warn(`Totally ${taskRunner.getFailedStepCount()} task steps failed. Rerunning...`);
     for await (const _ of taskRunner.asFailedRunnableGenerator()) {
       if (interrupted) {
@@ -138,7 +115,22 @@ export async function handleSync(
       await progressBackend.save(taskRunner.getTwiceFailedTasks(false));
     }
   }
-  logger.info('Finished synchronization');
+  logger.info(
+    !interrupted
+      ? 'Finished synchronization'
+      : 'Synchronization was interrupted'
+  );
   unbindOnExitHandler(dispose);
   exitGracefully(0);
+
+  async function saveInterruptedTasks() {
+    interrupted = true;
+    await taskRunner.runningPromise;
+    taskRunner.enqueueAllTwiceFailedTasksAndClear();
+    const undoneTasks = taskRunner.getAllUndoneTasks(false);
+    const progressBackend = container.get<ITaskProgressBackend>(
+      TYPES.TaskProgressBackend
+    );
+    await progressBackend.save(undoneTasks);
+  }
 }

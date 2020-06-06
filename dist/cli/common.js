@@ -57,6 +57,30 @@ function addEntitiesOptions(yargs, demand = true, logger = console) {
     return builder;
 }
 exports.addEntitiesOptions = addEntitiesOptions;
+function addEntitiesToRemoveOptions(yargs) {
+    const buildingsName = "deleteIrrelevantBuildings";
+    const auditoriesName = "deleteIrrelevantAuditories";
+    const groupsName = "deleteIrrelevantGroups";
+    const eventsName = "deleteIrrelevantEvents";
+    return yargs
+        .option(buildingsName, {
+        description: 'Delete irrelevant buildings, that are not found in current CIST Auditories response',
+        type: 'boolean',
+    })
+        .option(auditoriesName, {
+        description: 'Delete irrelevant auditories, that are not found in current CIST Auditories response',
+        type: 'boolean',
+    })
+        .option(groupsName, {
+        description: 'Delete irrelevant groups, that are not found in current CIST Groups response',
+        type: 'boolean',
+    })
+        .option(eventsName, {
+        description: 'Delete irrelevant events, that are not found in current CIST Events responses',
+        type: 'boolean',
+    });
+}
+exports.addEntitiesToRemoveOptions = addEntitiesToRemoveOptions;
 // const roomsResponse = await cistClient.getRoomsResponse();
 // // if (!assertRoomsResponse(roomsResponse)) {
 // //   return;

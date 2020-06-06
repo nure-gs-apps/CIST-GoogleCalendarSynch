@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const change_case_1 = require("change-case");
 const iterare_1 = require("iterare");
 const lodash_1 = require("lodash");
+const moment = require("moment");
 function arrayContentEqual(first, second) {
     return first.length === second.length && first.every(e => second.includes(e));
 }
@@ -144,4 +145,12 @@ function isIterable(value) {
         && typeof value[Symbol.iterator] === 'function';
 }
 exports.isIterable = isIterable;
+function parseDuration(value, errorPrefix = '') {
+    const duration = moment.duration(value);
+    if (!duration.isValid()) {
+        throw new TypeError(`${errorPrefix} duration "${value}" is invalid`);
+    }
+    return duration;
+}
+exports.parseDuration = parseDuration;
 //# sourceMappingURL=common.js.map

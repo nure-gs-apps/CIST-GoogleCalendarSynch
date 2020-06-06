@@ -30,7 +30,7 @@ class ListNode {
 class List {
   head: Nullable<ListNode>;
   tail: Nullable<ListNode>;
-  private _length: number; // without initialization fails
+  private _length: number;
 
   get length() {
     return this._length;
@@ -50,6 +50,8 @@ class List {
     } else {
       // tslint:disable-next-line:no-non-null-assertion
       this.tail!.next = node;
+      // tslint:disable-next-line:no-non-null-assertion
+      this.tail = this.tail!.next;
     }
     this._length += 1;
   }
@@ -60,7 +62,8 @@ class List {
     }
     // tslint:disable-next-line:no-non-null-assertion
     if (this.head!.handler === handler) {
-      this.head = this.tail = null;
+      // tslint:disable-next-line:no-non-null-assertion
+      this.head = this.head!.next;
       return true;
     }
     // tslint:disable-next-line:no-non-null-assertion
@@ -186,6 +189,7 @@ async function execHandlers() {
     logger.info('Process exit handlers are being executed. Waiting...');
     return;
   }
+  handled = true;
   if (list.length > 0) {
     logger.info('The process is running exit handlers...');
     if (timeoutEnabled) {
@@ -196,7 +200,6 @@ async function execHandlers() {
     }
     resetExitTimeout();
   }
-  handled = true;
 }
 
 function setExitTimeout() {
