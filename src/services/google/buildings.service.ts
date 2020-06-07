@@ -219,7 +219,7 @@ export class BuildingsService {
       );
       if (buildingPatch) {
         this._logger.info(`Patching building ${cistBuilding.short_name}`);
-        return this._patch({
+        return this._patch({ // TODO: handle no update for floors
           customer,
           buildingId: googleBuildingId,
           requestBody: buildingPatch,
