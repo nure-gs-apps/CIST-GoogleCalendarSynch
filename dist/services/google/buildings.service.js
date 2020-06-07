@@ -188,6 +188,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
                     requestBody: buildingPatch,
                 });
             }
+            return Promise.resolve();
         }
         this._logger.info(`Inserting building ${cistBuilding.short_name}`);
         return this._insert({

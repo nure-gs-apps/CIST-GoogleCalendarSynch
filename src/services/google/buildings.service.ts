@@ -80,7 +80,7 @@ export class BuildingsService {
   async ensureBuildings(cistResponse: DeepReadonly<ApiRoomsResponse>) {
     const buildings = await this.getAllBuildings();
 
-    const promises = [] as GaxiosPromise[];
+    const promises = [] as Promise<any>[];
     for (const cistBuilding of cistResponse.university.buildings) {
       const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
       promises.push(this.doEnsureBuilding(cistBuilding, buildings.find(
@@ -225,6 +225,7 @@ export class BuildingsService {
           requestBody: buildingPatch,
         });
       }
+      return Promise.resolve();
     }
     this._logger.info(`Inserting building ${cistBuilding.short_name}`);
     return this._insert({
