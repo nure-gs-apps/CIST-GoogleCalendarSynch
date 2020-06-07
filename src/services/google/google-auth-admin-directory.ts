@@ -9,7 +9,7 @@ import {
   addDefaultScopes,
   AnyGoogleAuthClient, createAuth,
   createAuthWithFallback,
-  IGoogleAuth,
+  IGoogleAuth, setDefaultSubject,
 } from './google-auth';
 
 addDefaultScopes(adminDirectoryAuthScopes);
@@ -30,11 +30,16 @@ export class GoogleAuthAdminDirectory implements IAsyncInitializable, IGoogleAut
     @inject(
       TYPES.GoogleAuthAdminDirectoryKey
     ) key: GoogleAuthConfigKey,
+    @inject(
+      TYPES.GoogleAuthSubject
+    ) subject: string,
   ) {
     this._authClient = null;
+    setDefaultSubject(subject);
     this[ASYNC_INIT] = (key ? createAuthWithFallback(
       key,
       adminDirectoryAuthScopes.slice(),
+      subject,
       (error, keyPath) => {
         if (keyPath) {
           logger.warn(l(`Failed to load key from file "${keyPath}" due to error:`), error);

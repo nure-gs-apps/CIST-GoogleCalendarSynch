@@ -9,7 +9,7 @@ const constants_1 = require("./constants");
 const google_auth_1 = require("./google-auth");
 google_auth_1.addDefaultScopes(constants_1.adminDirectoryAuthScopes);
 let GoogleAuthAdminDirectory = class GoogleAuthAdminDirectory {
-    constructor(logger, key) {
+    constructor(logger, key, subject) {
         Object.defineProperty(this, _a, {
             enumerable: true,
             configurable: true,
@@ -23,7 +23,8 @@ let GoogleAuthAdminDirectory = class GoogleAuthAdminDirectory {
             value: void 0
         });
         this._authClient = null;
-        this[object_1.ASYNC_INIT] = (key ? google_auth_1.createAuthWithFallback(key, constants_1.adminDirectoryAuthScopes.slice(), (error, keyPath) => {
+        google_auth_1.setDefaultSubject(subject);
+        this[object_1.ASYNC_INIT] = (key ? google_auth_1.createAuthWithFallback(key, constants_1.adminDirectoryAuthScopes.slice(), subject, (error, keyPath) => {
             if (keyPath) {
                 logger.warn(l(`Failed to load key from file "${keyPath}" due to error:`), error);
             }
@@ -44,7 +45,8 @@ GoogleAuthAdminDirectory = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.Logger)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAuthAdminDirectoryKey)),
-    tslib_1.__metadata("design:paramtypes", [Object, Object])
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleAuthSubject)),
+    tslib_1.__metadata("design:paramtypes", [Object, Object, String])
 ], GoogleAuthAdminDirectory);
 exports.GoogleAuthAdminDirectory = GoogleAuthAdminDirectory;
 function l(message) {
