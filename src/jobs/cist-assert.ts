@@ -9,7 +9,10 @@ import {
   getContainerAsyncInitializer,
 } from '../di/container';
 import { TYPES } from '../di/types';
-import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
+import {
+  CachedCistJsonClientService,
+  getSharedCachedCistJsonClientInstance,
+} from '../services/cist/cached-cist-json-client.service';
 import {
   ApiGroupsResponse,
   EntityType, TimetableType,
@@ -37,7 +40,7 @@ export async function handleCistAssert(
   });
   bindOnExitHandler(disposeContainer);
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
-    .to(CachedCistJsonClientService);
+    .toDynamicValue(getSharedCachedCistJsonClientInstance);
   await getContainerAsyncInitializer([CachedCistJsonClientService]);
 
   const cistClient = container

@@ -183,6 +183,8 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     if (this._cistClient && isDisposable(this._cistClient)) {
       promises.push(this._cistClient.dispose());
     }
+    this._cistClient = null;
+    this._buildingsService = null;
     return Promise.all(promises).tap(
       () => this._isDisposed = true
     ) as Promise<any>;

@@ -39,7 +39,7 @@ async function handleSync(args, config, logger) {
         forceNew: true,
     });
     container.bind(types_2.TYPES.CistJsonClient)
-        .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
+        .toDynamicValue(cached_cist_json_client_service_1.getSharedCachedCistJsonClientInstance);
     await container_1.getContainerAsyncInitializer();
     const executor = container.get(types_2.TYPES.TaskStepExecutor);
     const taskRunner = new runner_1.TaskRunner(executor, config.ncgc.tasks.concurrency);
@@ -48,10 +48,12 @@ async function handleSync(args, config, logger) {
     });
     let interrupted = false;
     const dispose = async () => {
-        exit_handler_service_1.disableExitTimeout();
-        logger.info('Waiting for current task step to finish and saving interrupted tasks...');
-        await saveInterruptedTasks();
-        exit_handler_service_1.enableExitTimeout();
+        if (taskRunner.hasAnyTasks()) {
+            exit_handler_service_1.disableExitTimeout();
+            logger.info('Waiting for current task step to finish and saving interrupted tasks...');
+            await saveInterruptedTasks();
+            exit_handler_service_1.enableExitTimeout();
+        }
     };
     exit_handler_service_1.bindOnExitHandler(dispose);
     const deadlineService = new deadline_service_1.DeadlineService(types_1.parseTasksTimeout(config.ncgc));

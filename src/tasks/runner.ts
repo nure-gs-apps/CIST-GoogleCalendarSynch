@@ -96,6 +96,19 @@ export class TaskRunner {
     this._failedTasks.length = 0;
   }
 
+  hasAnyTasks() {
+    return this.hasEnqueuedTasks()
+      || this.hasTwiceFailedTasks();
+  }
+
+  hasEnqueuedTasks() {
+    return this._tasks.length > 0;
+  }
+
+  getEnqueuedStepCount() {
+    return this.getRemainingStepCount() + this.getFailedStepCount();
+  }
+
   hasUndoneTasks() {
     return this.getRemainingStepCount() > 0;
   }

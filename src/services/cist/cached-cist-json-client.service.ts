@@ -1,8 +1,9 @@
+import { Sema } from 'async-sema/lib';
 import { promises as fs } from 'fs';
-import { inject, injectable, optional } from 'inversify';
+import { inject, injectable, interfaces, optional } from 'inversify';
 import * as path from 'path';
 import { ReadonlyDate } from 'readonly-date';
-import { DeepReadonly, GuardedMap, Nullable, Optional } from '../../@types';
+import { DeepReadonly, Nullable, Optional } from '../../@types';
 import {
   ASYNC_INIT,
   IAsyncInitializable,
@@ -38,6 +39,14 @@ import {
   TimetableType, EntityType,
 } from '../../@types/cist';
 
+export function getSharedCachedCistJsonClientInstance(
+  context: interfaces.Context
+) {
+  return context.container.get<CachedCistJsonClientService>(
+    CachedCistJsonClientService
+  );
+}
+
 @injectable()
 export class CachedCistJsonClientService implements ICistJsonClient, IAsyncInitializable, IDisposable {
   readonly [ASYNC_INIT]: Promise<any>;
@@ -51,10 +60,13 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   private readonly _http: Nullable<CistJsonHttpClient>;
   // tslint:disable-next-line:max-line-length
   private readonly _eventsCachedValues: Map<string, CachedValue<ApiEventsResponse>>;
+  private readonly _eventsCacheSemaphores: Map<string, Sema>;
   // tslint:disable-next-line:max-line-length
   private _groupsCachedValue: Nullable<CachedValue<ApiGroupsResponse>>;
+  private _groupsCacheSemaphore: Nullable<Sema>;
   // tslint:disable-next-line:max-line-length
   private _roomsCachedValue: Nullable<CachedValue<ApiRoomsResponse>>;
+  private _roomsCacheSemaphore: Nullable<Sema>;
 
   constructor(
     @inject(TYPES.CacheUtils) cacheUtils: CacheUtilsService,
@@ -64,9 +76,12 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   ) {
     this._cacheConfig = cacheConfig;
     this._cacheUtils = cacheUtils;
-    this._eventsCachedValues = new GuardedMap();
+    this._eventsCachedValues = new Map();
+    this._eventsCacheSemaphores = new Map();
     this._groupsCachedValue = null;
+    this._groupsCacheSemaphore = null;
     this._roomsCachedValue = null;
+    this._roomsCacheSemaphore = null;
     this._isDisposed = false;
 
     this[ASYNC_INIT] = Promise.resolve();
@@ -131,10 +146,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   }
 
   async getGroupsResponse(): Promise<ApiGroupsResponse> {
-    if (!this._groupsCachedValue) {
-      this._groupsCachedValue = await this.createGroupsCachedValue();
-    }
-    const response = await this._groupsCachedValue.loadValue();
+    const response = await (await this.getGroupsCachedValue()).loadValue();
     if (!response) {
       throw new TypeError(g('failed to find value in cache chain!'));
     }
@@ -142,10 +154,7 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   }
 
   async getRoomsResponse(): Promise<ApiRoomsResponse> {
-    if (!this._roomsCachedValue) {
-      this._roomsCachedValue = await this.createRoomsCachedValue();
-    }
-    const response = await this._roomsCachedValue.loadValue();
+    const response = await (await this.getRoomsCachedValue()).loadValue();
     if (!response) {
       throw new TypeError(r('failed to find value in cache chain!'));
     }
@@ -167,17 +176,11 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   }
 
   async setGroupsCacheExpiration(expiration: ReadonlyDate) {
-    if (!this._groupsCachedValue) {
-      this._groupsCachedValue = await this.createGroupsCachedValue();
-    }
-    await setExpirationInChain(this._groupsCachedValue, expiration);
+    await setExpirationInChain(await this.getGroupsCachedValue(), expiration);
   }
 
   async setRoomsCacheExpiration(expiration: ReadonlyDate) {
-    if (!this._roomsCachedValue) {
-      this._roomsCachedValue = await this.createRoomsCachedValue();
-    }
-    await setExpirationInChain(this._roomsCachedValue, expiration);
+    await setExpirationInChain(await this.getRoomsCachedValue(), expiration);
   }
 
   async destroyEventsCache(): Promise<void> {
@@ -216,19 +219,25 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
   }
 
   async destroyGroupsCache(): Promise<void> {
-    if (!this._groupsCachedValue) {
-      this._groupsCachedValue = await this.createGroupsCachedValue();
-    }
-    await destroyChain(this._groupsCachedValue);
+    await destroyChain(await this.getGroupsCachedValue());
     this._groupsCachedValue = null;
   }
 
   async destroyRoomsCache(): Promise<void> {
-    if (!this._roomsCachedValue) {
-      this._roomsCachedValue = await this.createRoomsCachedValue();
-    }
-    await destroyChain(this._roomsCachedValue);
+    await destroyChain(await this.getRoomsCachedValue());
     this._roomsCachedValue = null;
+  }
+
+  private async getGroupsCachedValue() {
+    if (!this._groupsCacheSemaphore) {
+      this._groupsCacheSemaphore = new Sema(1);
+    }
+    await this._groupsCacheSemaphore.acquire();
+    if (!this._groupsCachedValue) {
+      this._groupsCachedValue = await this.createGroupsCachedValue();
+    }
+    this._groupsCacheSemaphore.release();
+    return this._groupsCachedValue;
   }
 
   private async createGroupsCachedValue() {
@@ -279,6 +288,18 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
       throw new TypeError(g('No cache sources found'));
     }
     return cachedValue;
+  }
+
+  private async getRoomsCachedValue() {
+    if (!this._roomsCacheSemaphore) {
+      this._roomsCacheSemaphore = new Sema(1);
+    }
+    await this._roomsCacheSemaphore.acquire();
+    if (!this._roomsCachedValue) {
+      this._roomsCachedValue = await this.createRoomsCachedValue();
+    }
+    this._roomsCacheSemaphore.release();
+    return this._roomsCachedValue;
   }
 
   private async createRoomsCachedValue() {
@@ -342,12 +363,19 @@ export class CachedCistJsonClientService implements ICistJsonClient, IAsyncIniti
     dateLimits?: DeepReadonly<IDateLimits>
   ) {
     const params = { entityId, dateLimits, typeId: type };
-    const hash = getEventsCacheFileNamePart(params);
+    const hash = getEventHash(params);
+    let semaphore = this._eventsCacheSemaphores.get(hash);
+    if (!semaphore) {
+      semaphore = new Sema(1);
+      this._eventsCacheSemaphores.set(hash, semaphore);
+    }
+    await semaphore.acquire();
     let cachedValue = this._eventsCachedValues.get(hash);
     if (!cachedValue) {
       cachedValue = await this.createEventsCachedValue(params);
       this._eventsCachedValues.set(hash, cachedValue);
     }
+    semaphore.release();
     return cachedValue;
   }
 
@@ -421,12 +449,12 @@ function getCacheFileName(
 ) {
   let hash = type.toString();
   if (options) {
-    hash += separator + getEventsCacheFileNamePart(options);
+    hash += separator + getEventHash(options);
   }
   return `${hash}.tmp`;
 }
 
-function getEventsCacheFileNamePart(options: DeepReadonly<IEventsQueryParams>) {
+function getEventHash(options: DeepReadonly<IEventsQueryParams>) {
   let hash = options.typeId.toString() + separator + options.entityId;
   if (options.dateLimits && (
     options.dateLimits.from || options.dateLimits.to

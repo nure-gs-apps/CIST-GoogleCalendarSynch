@@ -11,7 +11,10 @@ import {
 } from '../di/container';
 import { TYPES } from '../di/types';
 import { CacheUtilsService } from '../services/caching/cache-utils.service';
-import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
+import {
+  CachedCistJsonClientService,
+  getSharedCachedCistJsonClientInstance,
+} from '../services/cist/cached-cist-json-client.service';
 import {
   bindOnExitHandler,
   exitGracefully,
@@ -40,7 +43,7 @@ export async function handleCistCacheExtend(
         newExpiration)
     );
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
-    .to(CachedCistJsonClientService);
+    .toDynamicValue(getSharedCachedCistJsonClientInstance);
   await getContainerAsyncInitializer([CacheUtilsService]);
 
   const cistClient = container

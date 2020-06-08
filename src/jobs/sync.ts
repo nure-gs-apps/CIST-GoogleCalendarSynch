@@ -9,7 +9,10 @@ import {
 import { IFullAppConfig, parseTasksTimeout } from '../config/types';
 import { createContainer, getContainerAsyncInitializer } from '../di/container';
 import { TYPES } from '../di/types';
-import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
+import {
+  CachedCistJsonClientService,
+  getSharedCachedCistJsonClientInstance,
+} from '../services/cist/cached-cist-json-client.service';
 import {
   DeadlineService,
   DeadlineServiceEventNames,
@@ -65,7 +68,7 @@ export async function handleSync(
     forceNew: true,
   });
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
-    .to(CachedCistJsonClientService);
+    .toDynamicValue(getSharedCachedCistJsonClientInstance);
   await getContainerAsyncInitializer();
 
   const executor = container.get<TaskStepExecutor>(TYPES.TaskStepExecutor);
@@ -78,10 +81,12 @@ export async function handleSync(
   );
   let interrupted = false;
   const dispose = async () => {
-    disableExitTimeout();
-    logger.info('Waiting for current task step to finish and saving interrupted tasks...');
-    await saveInterruptedTasks();
-    enableExitTimeout();
+    if (taskRunner.hasAnyTasks()) {
+      disableExitTimeout();
+      logger.info('Waiting for current task step to finish and saving interrupted tasks...');
+      await saveInterruptedTasks();
+      enableExitTimeout();
+    }
   };
   bindOnExitHandler(dispose);
   const deadlineService = new DeadlineService(parseTasksTimeout(config.ncgc));

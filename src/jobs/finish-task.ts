@@ -14,7 +14,10 @@ import {
   getContainerAsyncInitializer, IAddContainerTypes,
 } from '../di/container';
 import { TYPES } from '../di/types';
-import { CachedCistJsonClientService } from '../services/cist/cached-cist-json-client.service';
+import {
+  CachedCistJsonClientService,
+  getSharedCachedCistJsonClientInstance,
+} from '../services/cist/cached-cist-json-client.service';
 import {
   DeadlineService,
   DeadlineServiceEventNames,
@@ -49,7 +52,7 @@ export async function handleFinishTask(
 
   addTypesToContainer(getRequiredServicesConfig(tasks));
   container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
-    .to(CachedCistJsonClientService);
+    .toDynamicValue(getSharedCachedCistJsonClientInstance);
   await getContainerAsyncInitializer();
 
   const executor = container.get<TaskStepExecutor>(TYPES.TaskStepExecutor);
@@ -62,10 +65,13 @@ export async function handleFinishTask(
   );
   let interrupted = false;
   const dispose = async () => {
-    disableExitTimeout();
-    logger.info('Waiting for current task step to finish...');
-    await saveInterruptedTasks();
-    enableExitTimeout();
+    if (taskRunner.hasAnyTasks()) {
+      disableExitTimeout();
+      logger.info(
+        'Waiting for current task step to finish and saving interrupted tasks...');
+      await saveInterruptedTasks();
+      enableExitTimeout();
+    }
   };
   bindOnExitHandler(dispose);
   const deadlineService = new DeadlineService(parseTasksTimeout(config.ncgc));
@@ -92,7 +98,7 @@ export async function handleFinishTask(
         break;
       }
     }
-    if (taskRunner.hasTwiceFailedTasks()) {
+    if (!interrupted && taskRunner.hasTwiceFailedTasks()) {
       logger.error(`Rerunning ${taskRunner.getTwiceFailedStepCount()} failed task steps failed. Saving these steps...`);
       await progressBackend.save(taskRunner.getTwiceFailedTasks(false));
       deleteProgressFile = false;
@@ -105,7 +111,6 @@ export async function handleFinishTask(
   ) {
     await progressBackend.clear();
   }
-  await dispose();
 
   logger.info(
     !interrupted

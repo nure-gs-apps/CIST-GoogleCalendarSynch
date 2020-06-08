@@ -17,7 +17,7 @@ async function handleCistAssert(args, config, logger) {
     });
     exit_handler_service_1.bindOnExitHandler(container_1.disposeContainer);
     container.bind(types_1.TYPES.CistJsonClient)
-        .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
+        .toDynamicValue(cached_cist_json_client_service_1.getSharedCachedCistJsonClientInstance);
     await container_1.getContainerAsyncInitializer([cached_cist_json_client_service_1.CachedCistJsonClientService]);
     const cistClient = container
         .get(types_1.TYPES.CistJsonClient);

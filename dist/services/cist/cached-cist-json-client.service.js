@@ -2,10 +2,10 @@
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
+const lib_1 = require("async-sema/lib");
 const fs_1 = require("fs");
 const inversify_1 = require("inversify");
 const path = require("path");
-const _types_1 = require("../../@types");
 const object_1 = require("../../@types/object");
 const types_1 = require("../../config/types");
 const types_2 = require("../../di/types");
@@ -19,6 +19,10 @@ const cist_json_http_events_cached_value_1 = require("./cist-json-http-events-ca
 const cist_json_http_groups_cached_value_1 = require("./cist-json-http-groups-cached-value");
 const cist_json_http_rooms_cached_value_1 = require("./cist-json-http-rooms-cached-value");
 const cist_2 = require("../../@types/cist");
+function getSharedCachedCistJsonClientInstance(context) {
+    return context.container.get(CachedCistJsonClientService);
+}
+exports.getSharedCachedCistJsonClientInstance = getSharedCachedCistJsonClientInstance;
 let CachedCistJsonClientService = class CachedCistJsonClientService {
     constructor(cacheUtils, cacheConfig, 
     // tslint:disable-next-line:max-line-length
@@ -66,8 +70,20 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "_eventsCacheSemaphores", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         // tslint:disable-next-line:max-line-length
         Object.defineProperty(this, "_groupsCachedValue", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_groupsCacheSemaphore", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -80,11 +96,20 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "_roomsCacheSemaphore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this._cacheConfig = cacheConfig;
         this._cacheUtils = cacheUtils;
-        this._eventsCachedValues = new _types_1.GuardedMap();
+        this._eventsCachedValues = new Map();
+        this._eventsCacheSemaphores = new Map();
         this._groupsCachedValue = null;
+        this._groupsCacheSemaphore = null;
         this._roomsCachedValue = null;
+        this._roomsCacheSemaphore = null;
         this._isDisposed = false;
         this[object_1.ASYNC_INIT] = Promise.resolve();
         // File cache
@@ -138,20 +163,14 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         return response;
     }
     async getGroupsResponse() {
-        if (!this._groupsCachedValue) {
-            this._groupsCachedValue = await this.createGroupsCachedValue();
-        }
-        const response = await this._groupsCachedValue.loadValue();
+        const response = await (await this.getGroupsCachedValue()).loadValue();
         if (!response) {
             throw new TypeError(g('failed to find value in cache chain!'));
         }
         return response;
     }
     async getRoomsResponse() {
-        if (!this._roomsCachedValue) {
-            this._roomsCachedValue = await this.createRoomsCachedValue();
-        }
-        const response = await this._roomsCachedValue.loadValue();
+        const response = await (await this.getRoomsCachedValue()).loadValue();
         if (!response) {
             throw new TypeError(r('failed to find value in cache chain!'));
         }
@@ -162,16 +181,10 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         await caching_1.setExpirationInChain(cachedValue, expiration);
     }
     async setGroupsCacheExpiration(expiration) {
-        if (!this._groupsCachedValue) {
-            this._groupsCachedValue = await this.createGroupsCachedValue();
-        }
-        await caching_1.setExpirationInChain(this._groupsCachedValue, expiration);
+        await caching_1.setExpirationInChain(await this.getGroupsCachedValue(), expiration);
     }
     async setRoomsCacheExpiration(expiration) {
-        if (!this._roomsCachedValue) {
-            this._roomsCachedValue = await this.createRoomsCachedValue();
-        }
-        await caching_1.setExpirationInChain(this._roomsCachedValue, expiration);
+        await caching_1.setExpirationInChain(await this.getRoomsCachedValue(), expiration);
     }
     async destroyEventsCache() {
         for (const cachedValue of this._eventsCachedValues.values()) {
@@ -207,18 +220,23 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         }
     }
     async destroyGroupsCache() {
-        if (!this._groupsCachedValue) {
-            this._groupsCachedValue = await this.createGroupsCachedValue();
-        }
-        await caching_1.destroyChain(this._groupsCachedValue);
+        await caching_1.destroyChain(await this.getGroupsCachedValue());
         this._groupsCachedValue = null;
     }
     async destroyRoomsCache() {
-        if (!this._roomsCachedValue) {
-            this._roomsCachedValue = await this.createRoomsCachedValue();
-        }
-        await caching_1.destroyChain(this._roomsCachedValue);
+        await caching_1.destroyChain(await this.getRoomsCachedValue());
         this._roomsCachedValue = null;
+    }
+    async getGroupsCachedValue() {
+        if (!this._groupsCacheSemaphore) {
+            this._groupsCacheSemaphore = new lib_1.Sema(1);
+        }
+        await this._groupsCacheSemaphore.acquire();
+        if (!this._groupsCachedValue) {
+            this._groupsCachedValue = await this.createGroupsCachedValue();
+        }
+        this._groupsCacheSemaphore.release();
+        return this._groupsCachedValue;
     }
     async createGroupsCachedValue() {
         let cachedValue = null;
@@ -252,6 +270,17 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             throw new TypeError(g('No cache sources found'));
         }
         return cachedValue;
+    }
+    async getRoomsCachedValue() {
+        if (!this._roomsCacheSemaphore) {
+            this._roomsCacheSemaphore = new lib_1.Sema(1);
+        }
+        await this._roomsCacheSemaphore.acquire();
+        if (!this._roomsCachedValue) {
+            this._roomsCachedValue = await this.createRoomsCachedValue();
+        }
+        this._roomsCacheSemaphore.release();
+        return this._roomsCachedValue;
     }
     async createRoomsCachedValue() {
         let cachedValue = null;
@@ -296,12 +325,19 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
     }
     async getEventsCachedValue(type, entityId, dateLimits) {
         const params = { entityId, dateLimits, typeId: type };
-        const hash = getEventsCacheFileNamePart(params);
+        const hash = getEventHash(params);
+        let semaphore = this._eventsCacheSemaphores.get(hash);
+        if (!semaphore) {
+            semaphore = new lib_1.Sema(1);
+            this._eventsCacheSemaphores.set(hash, semaphore);
+        }
+        await semaphore.acquire();
         let cachedValue = this._eventsCachedValues.get(hash);
         if (!cachedValue) {
             cachedValue = await this.createEventsCachedValue(params);
             this._eventsCachedValues.set(hash, cachedValue);
         }
+        semaphore.release();
         return cachedValue;
     }
     async createEventsCachedValue(params) {
@@ -354,11 +390,11 @@ const separator = '.';
 function getCacheFileName(type, options) {
     let hash = type.toString();
     if (options) {
-        hash += separator + getEventsCacheFileNamePart(options);
+        hash += separator + getEventHash(options);
     }
     return `${hash}.tmp`;
 }
-function getEventsCacheFileNamePart(options) {
+function getEventHash(options) {
     let hash = options.typeId.toString() + separator + options.entityId;
     if (options.dateLimits && (options.dateLimits.from || options.dateLimits.to)) {
         hash += separator;

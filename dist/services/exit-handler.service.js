@@ -148,7 +148,7 @@ function exitGracefully(exitCode) {
 exports.exitGracefully = exitGracefully;
 function enableExitTimeout() {
     if (!timeoutEnabled) {
-        logger.info(`${exitTimeout} before exiting...`);
+        logger.info(`${exitTimeout} ms  before exiting...`);
         setExitTimeout();
         timeoutEnabled = true;
     }

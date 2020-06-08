@@ -20,7 +20,7 @@ async function handleCistCacheExtend(args, newExpiration, config) {
         .toConstantValue(new CacheUtilsServiceWithExpiration(// might be dangerous due to singleton scope
     container.get(types_1.TYPES.CacheMaxExpiration), newExpiration));
     container.bind(types_1.TYPES.CistJsonClient)
-        .to(cached_cist_json_client_service_1.CachedCistJsonClientService);
+        .toDynamicValue(cached_cist_json_client_service_1.getSharedCachedCistJsonClientInstance);
     await container_1.getContainerAsyncInitializer([cache_utils_service_1.CacheUtilsService]);
     const cistClient = container
         .get(types_1.TYPES.CistJsonClient);

@@ -155,6 +155,8 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
         if (this._cistClient && object_1.isDisposable(this._cistClient)) {
             promises.push(this._cistClient.dispose());
         }
+        this._cistClient = null;
+        this._buildingsService = null;
         return Promise.all(promises).tap(() => this._isDisposed = true);
     }
 };
