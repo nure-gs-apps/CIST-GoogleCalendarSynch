@@ -85,7 +85,6 @@ export async function handleCistAssert(
     }
     failures.set(EntityType.Events, eventFailures);
   }
-  await cistClient.dispose();
 
   logger.info('Results:');
   let ids = failures.get(EntityType.Rooms);

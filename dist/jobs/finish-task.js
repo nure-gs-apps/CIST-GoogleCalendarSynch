@@ -69,6 +69,7 @@ async function handleFinishTask(config, logger) {
         && deleteProgressFile) {
         await progressBackend.clear();
     }
+    await dispose();
     logger.info(!interrupted
         ? 'Finished job'
         : 'Job execution was interrupted');

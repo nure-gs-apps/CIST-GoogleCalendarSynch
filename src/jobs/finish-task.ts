@@ -105,6 +105,7 @@ export async function handleFinishTask(
   ) {
     await progressBackend.clear();
   }
+  await dispose();
 
   logger.info(
     !interrupted

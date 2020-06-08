@@ -14,6 +14,7 @@ const constants_1 = require("./constants");
 const errors_1 = require("./errors");
 const google_api_admin_directory_1 = require("./google-api-admin-directory");
 const google_utils_service_1 = require("./google-utils.service");
+const lodash_1 = require("lodash");
 let BuildingsService = BuildingsService_1 = class BuildingsService {
     constructor(googleApiAdminDirectory, quotaLimiter, utils, logger) {
         Object.defineProperty(this, "_directory", {
@@ -177,24 +178,40 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         } while (buildingsPage.data.nextPageToken);
         return buildings;
     }
-    doEnsureBuilding(cistBuilding, googleBuilding, googleBuildingId) {
+    async doEnsureBuilding(cistBuilding, googleBuilding, googleBuildingId) {
         if (googleBuilding) {
             const buildingPatch = cistBuildingToGoogleBuildingPatch(cistBuilding, googleBuilding);
             if (buildingPatch) {
-                this._logger.info(`Patching building ${cistBuilding.short_name}`);
-                return this._patch({
-                    customer: constants_1.customer,
-                    buildingId: googleBuildingId,
-                    requestBody: buildingPatch,
-                });
+                let floorNames = buildingPatch.floorNames;
+                if (floorNames
+                    && googleBuilding.floorNames
+                    && floorNames.every(f => { var _a; return (_a = googleBuilding.floorNames) === null || _a === void 0 ? void 0 : _a.includes(f); })) {
+                    delete buildingPatch.floorNames;
+                }
+                if (lodash_1.isEmpty(buildingPatch)) {
+                    return Promise.resolve(null);
+                }
+                const updatedBuilding = await this.patch(googleBuildingId, buildingPatch);
+                if (floorNames && (!updatedBuilding.data.floorNames
+                    || updatedBuilding.data.floorNames.length < floorNames.length
+                    || !floorNames.every(f => { var _a; return (_a = updatedBuilding.data.floorNames) === null || _a === void 0 ? void 0 : _a.includes(f); }))) {
+                    if (updatedBuilding.data.floorNames) {
+                        floorNames = iterare_1.iterate(floorNames)
+                            .concat(iterare_1.iterate(updatedBuilding.data.floorNames) // FIXME: add only floors with rooms
+                            .filter(f => !(floorNames === null || floorNames === void 0 ? void 0 : floorNames.includes(f)))).toArray();
+                    }
+                    return this.patch(googleBuildingId, { floorNames }).tap(() => {
+                        this._logger.info(`Patched building ${cistBuilding.short_name} with relevant and irrelevant floor names`);
+                    });
+                }
+                this._logger.info(`Patched building ${cistBuilding.short_name}`);
             }
-            return Promise.resolve();
+            return Promise.resolve(null);
         }
-        this._logger.info(`Inserting building ${cistBuilding.short_name}`);
         return this._insert({
             customer: constants_1.customer,
             requestBody: this.cistBuildingToInsertGoogleBuilding(cistBuilding, googleBuildingId),
-        });
+        }).tap(() => this._logger.info(`Inserted building ${cistBuilding.short_name}`));
     }
     doDeleteByIds(buildings, ids, promises = []) {
         for (const googleBuilding of buildings) {
@@ -222,6 +239,14 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         return iterare_1.iterate(googleBuildings).filter(building => (!cistResponse.university.buildings.some(b => this._utils.isSameBuildingIdentity(b, building))))
             .filter(b => typeof b.buildingId === 'string')
             .map(b => b.buildingId);
+    }
+    patch(id, patch) {
+        return this._patch({
+            customer: // TODO: handle no update for floors
+            constants_1.customer,
+            buildingId: id,
+            requestBody: patch,
+        });
     }
 };
 Object.defineProperty(BuildingsService, "BUILDING_PAGE_SIZE", {

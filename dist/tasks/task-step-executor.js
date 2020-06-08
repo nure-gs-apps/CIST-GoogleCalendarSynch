@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const events_1 = require("events");
 const inversify_1 = require("inversify");
+const object_1 = require("../@types/object");
 const tasks_1 = require("../@types/tasks");
 const types_1 = require("../di/types");
 const errors_1 = require("../services/google/errors");
@@ -43,12 +44,22 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
             configurable: true,
             writable: true,
             value: void 0
-        }); // FIXME: probably, use cahced value with expiration
+        }); // FIXME: probably, use cached value with expiration
+        Object.defineProperty(this, "_isDisposed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this._container = container;
         this._logger = logger;
+        this._isDisposed = false;
         this._buildingsService = null;
         this._cistClient = null;
         this._buildingsContext = null;
+    }
+    get isDisposed() {
+        return this._isDisposed;
     }
     requiresSteps(taskType) {
         switch (taskType) {
@@ -134,6 +145,17 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
             this._buildingsService = this._container.get(types_1.TYPES.BuildingsService);
         }
         return this._buildingsService;
+    }
+    dispose() {
+        if (this.isDisposed) {
+            return Promise.resolve(undefined);
+        }
+        const promises = [];
+        this._buildingsContext = null;
+        if (this._cistClient && object_1.isDisposable(this._cistClient)) {
+            promises.push(this._cistClient.dispose());
+        }
+        return Promise.all(promises).tap(() => this._isDisposed = true);
     }
 };
 TaskStepExecutor = tslib_1.__decorate([

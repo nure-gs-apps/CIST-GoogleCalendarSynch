@@ -1,11 +1,11 @@
-import { GaxiosPromise } from 'gaxios';
+import { GaxiosPromise, GaxiosResponse } from 'gaxios';
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
 import {
   DeepReadonly,
   DeepReadonlyMap,
-  Maybe,
+  Maybe, Nullable,
   t,
 } from '../../@types';
 import { ApiBuilding, ApiRoomsResponse } from '../../@types/cist';
@@ -21,6 +21,7 @@ import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import { GoogleUtilsService } from './google-utils.service';
 import Resource$Resources$Buildings = admin_directory_v1.Resource$Resources$Buildings;
 import Schema$Building = admin_directory_v1.Schema$Building;
+import { isEmpty } from 'lodash';
 
 export interface IBuildingsTaskContext {
   readonly cistBuildingsMap: DeepReadonlyMap<string, ApiBuilding>;
@@ -207,34 +208,61 @@ export class BuildingsService {
     return buildings;
   }
 
-  private doEnsureBuilding(
+  private async doEnsureBuilding(
     cistBuilding: DeepReadonly<ApiBuilding>,
     googleBuilding: Maybe<DeepReadonly<Schema$Building>>,
     googleBuildingId: string,
-  ) {
+  ): Promise<Nullable<GaxiosResponse<Schema$Building>>> {
     if (googleBuilding) {
       const buildingPatch = cistBuildingToGoogleBuildingPatch(
         cistBuilding,
         googleBuilding,
       );
       if (buildingPatch) {
-        this._logger.info(`Patching building ${cistBuilding.short_name}`);
-        return this._patch({ // TODO: handle no update for floors
-          customer,
-          buildingId: googleBuildingId,
-          requestBody: buildingPatch,
-        });
+        let floorNames = buildingPatch.floorNames;
+        if (
+          floorNames
+          && googleBuilding.floorNames
+          && floorNames.every(f => googleBuilding.floorNames?.includes(f))
+        ) {
+          delete buildingPatch.floorNames;
+        }
+        if (isEmpty(buildingPatch)) {
+          return Promise.resolve(null);
+        }
+        const updatedBuilding = await this.patch(
+          googleBuildingId,
+          buildingPatch,
+        );
+        if (floorNames && (
+          !updatedBuilding.data.floorNames
+          || updatedBuilding.data.floorNames.length < floorNames.length
+          || !floorNames.every(
+            f => updatedBuilding.data.floorNames?.includes(f)
+          )
+        )) {
+          if (updatedBuilding.data.floorNames) {
+            floorNames = iterate(floorNames)
+              .concat(
+                iterate(updatedBuilding.data.floorNames) // FIXME: add only floors with rooms
+                  .filter(f => !floorNames?.includes(f))
+              ).toArray();
+          }
+          return this.patch(googleBuildingId, { floorNames }).tap(() => {
+            this._logger.info(`Patched building ${cistBuilding.short_name} with relevant and irrelevant floor names`);
+          });
+        }
+        this._logger.info(`Patched building ${cistBuilding.short_name}`);
       }
-      return Promise.resolve();
+      return Promise.resolve(null);
     }
-    this._logger.info(`Inserting building ${cistBuilding.short_name}`);
     return this._insert({
       customer,
       requestBody: this.cistBuildingToInsertGoogleBuilding(
         cistBuilding,
         googleBuildingId,
       ),
-    });
+    }).tap(() => this._logger.info(`Inserted building ${cistBuilding.short_name}`));
   }
 
   private doDeleteByIds(
@@ -280,6 +308,14 @@ export class BuildingsService {
     ))
       .filter(b => typeof b.buildingId === 'string')
       .map(b => b.buildingId as string);
+  }
+
+  private patch(id: string, patch: Schema$Building) {
+    return this._patch({ // TODO: handle no update for floors
+      customer,
+      buildingId: id,
+      requestBody: patch,
+    });
   }
 }
 

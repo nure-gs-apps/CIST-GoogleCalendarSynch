@@ -49,9 +49,9 @@ async function handleCistCacheExtend(args, newExpiration, config) {
         }
         await Promise.all(promises);
     }
-    exit_handler_service_1.exitGracefully(0);
     await dispose();
     exit_handler_service_1.unbindOnExitHandler(dispose);
+    exit_handler_service_1.exitGracefully(0);
 }
 exports.handleCistCacheExtend = handleCistCacheExtend;
 class CacheUtilsServiceWithExpiration extends cache_utils_service_1.CacheUtilsService {

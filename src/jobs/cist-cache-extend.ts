@@ -75,9 +75,9 @@ export async function handleCistCacheExtend(
     await Promise.all(promises);
   }
 
-  exitGracefully(0);
   await dispose();
   unbindOnExitHandler(dispose);
+  exitGracefully(0);
 }
 
 class CacheUtilsServiceWithExpiration extends CacheUtilsService {

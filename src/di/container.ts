@@ -104,7 +104,13 @@ export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
     || types.has(TaskStepExecutor)
   ) && !skip.has(TaskStepExecutor) && !skip.has(TYPES.TaskStepExecutor)) {
     container.bind<ITaskStepExecutor>(TYPES.TaskStepExecutor)
-      .to(TaskStepExecutor);
+      .to(TaskStepExecutor)
+      .onActivation(
+        (context, injectable) => addDisposable(
+          context,
+          injectable as TaskStepExecutor,
+        )
+      );
     types.add(TYPES.Container);
     types.add(TYPES.Logger);
   }

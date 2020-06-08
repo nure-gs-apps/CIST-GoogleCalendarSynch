@@ -67,7 +67,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.TaskStepExecutor)
         || types.has(task_step_executor_1.TaskStepExecutor)) && !skip.has(task_step_executor_1.TaskStepExecutor) && !skip.has(types_1.TYPES.TaskStepExecutor)) {
         container.bind(types_1.TYPES.TaskStepExecutor)
-            .to(task_step_executor_1.TaskStepExecutor);
+            .to(task_step_executor_1.TaskStepExecutor)
+            .onActivation((context, injectable) => addDisposable(context, injectable));
         types.add(types_1.TYPES.Container);
         types.add(types_1.TYPES.Logger);
     }

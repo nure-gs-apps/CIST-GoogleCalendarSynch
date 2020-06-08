@@ -3,6 +3,7 @@ import { inject, injectable } from 'inversify';
 import { DeepReadonly, Nullable, Optional } from '../@types';
 import { ApiRoomsResponse, ICistJsonClient } from '../@types/cist';
 import { ILogger } from '../@types/logging';
+import { IDisposable, isDisposable } from '../@types/object';
 import { ITaskDefinition, ITaskStepExecutor, TaskType } from '../@types/tasks';
 import { ensureInjectable, IContainer, TYPES } from '../di/types';
 import {
@@ -24,13 +25,18 @@ export interface ITaskStepExecutorWithEvents extends ITaskStepExecutor, EventEmi
 
 ensureInjectable(EventEmitter);
 @injectable()
-export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor {
+export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor, IDisposable {
   protected readonly _container: IContainer;
   protected readonly _logger: ILogger;
   protected _buildingsService: Nullable<BuildingsService>;
   protected _cistClient: Nullable<ICistJsonClient>;
 
-  protected _buildingsContext: Nullable<IBuildingsTaskContext>; // FIXME: probably, use cahced value with expiration
+  protected _buildingsContext: Nullable<IBuildingsTaskContext>; // FIXME: probably, use cached value with expiration
+  protected _isDisposed: boolean;
+
+  get isDisposed() {
+    return this._isDisposed;
+  }
 
   constructor(
     @inject(TYPES.Container) container: IContainer,
@@ -39,6 +45,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor 
     super();
     this._container = container;
     this._logger = logger;
+    this._isDisposed = false;
 
     this._buildingsService = null;
     this._cistClient = null;
@@ -165,6 +172,20 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor 
       );
     }
     return this._buildingsService;
+  }
+
+  dispose(): Promise<void> {
+    if (this.isDisposed) {
+      return Promise.resolve(undefined);
+    }
+    const promises = [];
+    this._buildingsContext = null;
+    if (this._cistClient && isDisposable(this._cistClient)) {
+      promises.push(this._cistClient.dispose());
+    }
+    return Promise.all(promises).tap(
+      () => this._isDisposed = true
+    ) as Promise<any>;
   }
 }
 
