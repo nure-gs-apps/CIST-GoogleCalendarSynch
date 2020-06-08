@@ -11,7 +11,7 @@ import {
   addTypesToContainer,
   createContainer,
   disposeContainer,
-  getContainerAsyncInitializer, IAddContainerTypes,
+  getContainerAsyncInitializer, IAddContainerTypesOptions,
 } from '../di/container';
 import { TYPES } from '../di/types';
 import {
@@ -143,7 +143,7 @@ async function clearTaskProgressBackendIfCan(
 
 function getRequiredServicesConfig(
   tasks: DeepReadonlyArray<ITaskDefinition<any>>,
-): Partial<IAddContainerTypes> {
+): Partial<IAddContainerTypesOptions> {
   const types = [
     CachedCistJsonClientService,
     TYPES.TaskStepExecutor

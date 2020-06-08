@@ -53,11 +53,11 @@ let initPromise: Nullable<Promise<any[]>> = null;
 let disposeCallbacks: Nullable<(() => Promise<any>)[]> = null;
 let disposing: Nullable<Promise<any>> = null;
 
-export interface ICreateContainerOptions extends IAddContainerTypes {
+export interface ICreateContainerOptions extends IAddContainerTypesOptions {
   forceNew: boolean;
 }
 
-export interface IAddContainerTypes {
+export interface IAddContainerTypesOptions {
   types: Iterable<ServiceIdentifier<any>>;
   skip: Iterable<ServiceIdentifier<any>>;
 }
@@ -85,7 +85,9 @@ export function createContainer(options?: Partial<ICreateContainerOptions>) {
   return container;
 }
 
-export function addTypesToContainer(options?: Partial<IAddContainerTypes>) {
+export function addTypesToContainer(
+  options?: Partial<IAddContainerTypesOptions>
+) {
   if (!container) {
     throw new TypeError('Container is not initialized');
   }
