@@ -27,6 +27,12 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "_disposer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "_buildingsService", {
             enumerable: true,
             configurable: true,
@@ -45,21 +51,15 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
             writable: true,
             value: void 0
         }); // FIXME: probably, use cached value with expiration
-        Object.defineProperty(this, "_isDisposed", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this._container = container;
         this._logger = logger;
-        this._isDisposed = false;
+        this._disposer = new object_1.Disposer(this.doDispose.bind(this));
         this._buildingsService = null;
         this._cistClient = null;
         this._buildingsContext = null;
     }
     get isDisposed() {
-        return this._isDisposed;
+        return this._disposer.isDisposed;
     }
     requiresSteps(taskType) {
         switch (taskType) {
@@ -147,9 +147,9 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
         return this._buildingsService;
     }
     dispose() {
-        if (this.isDisposed) {
-            return Promise.resolve(undefined);
-        }
+        return this._disposer.dispose();
+    }
+    doDispose() {
         const promises = [];
         this._buildingsContext = null;
         if (this._cistClient && object_1.isDisposable(this._cistClient)) {
@@ -157,7 +157,7 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
         }
         this._cistClient = null;
         this._buildingsService = null;
-        return Promise.all(promises).tap(() => this._isDisposed = true);
+        return Promise.all(promises);
     }
 };
 TaskStepExecutor = tslib_1.__decorate([

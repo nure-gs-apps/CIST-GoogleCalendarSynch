@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import { DeepReadonly, Nullable, Optional } from '../@types';
 import { ApiRoomsResponse, ICistJsonClient } from '../@types/cist';
 import { ILogger } from '../@types/logging';
-import { IDisposable, isDisposable } from '../@types/object';
+import { Disposer, IDisposable, isDisposable } from '../@types/object';
 import { ITaskDefinition, ITaskStepExecutor, TaskType } from '../@types/tasks';
 import { ensureInjectable, IContainer, TYPES } from '../di/types';
 import {
@@ -28,14 +28,14 @@ ensureInjectable(EventEmitter);
 export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor, IDisposable {
   protected readonly _container: IContainer;
   protected readonly _logger: ILogger;
+  protected readonly _disposer: Disposer;
   protected _buildingsService: Nullable<BuildingsService>;
   protected _cistClient: Nullable<ICistJsonClient>;
 
   protected _buildingsContext: Nullable<IBuildingsTaskContext>; // FIXME: probably, use cached value with expiration
-  protected _isDisposed: boolean;
 
   get isDisposed() {
-    return this._isDisposed;
+    return this._disposer.isDisposed;
   }
 
   constructor(
@@ -45,7 +45,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     super();
     this._container = container;
     this._logger = logger;
-    this._isDisposed = false;
+    this._disposer = new Disposer(this.doDispose.bind(this));
 
     this._buildingsService = null;
     this._cistClient = null;
@@ -175,9 +175,10 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   }
 
   dispose(): Promise<void> {
-    if (this.isDisposed) {
-      return Promise.resolve(undefined);
-    }
+    return this._disposer.dispose();
+  }
+
+  protected doDispose(): Promise<any[]> {
     const promises = [];
     this._buildingsContext = null;
     if (this._cistClient && isDisposable(this._cistClient)) {
@@ -185,9 +186,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     }
     this._cistClient = null;
     this._buildingsService = null;
-    return Promise.all(promises).tap(
-      () => this._isDisposed = true
-    ) as Promise<any>;
+    return Promise.all(promises);
   }
 }
 

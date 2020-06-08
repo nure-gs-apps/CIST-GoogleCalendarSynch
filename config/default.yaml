@@ -10,8 +10,8 @@ ncgc:
       backend: file
       backendConfigs:
         file:
-          unix: /var/tmp/ncgc/task.json
-          win: %SystemRoot%\Temp\ncgc\task.json
+          unix: /var/tmp/ncgc/interrupted-tasks.json
+          win: %SystemRoot%\Temp\ncgc\interrupted-tasks.json
   caching:
     maxExpiration:
       hours: 5

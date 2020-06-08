@@ -63,24 +63,23 @@ export function initializeConfig<T extends DeepPartial<IFullAppConfig>>(argv: Ar
   return initializeConfigPromise;
 }
 
-class Format implements IFormat {
-  private readonly _format: IFormat;
-
-  constructor(format: IFormat) {
-    this._format = format;
-  }
-
-  parse(str: string): any {
-    return this._format.parse(str) ?? {};
-  }
-
-  stringify(obj: any, replacer: any, spacing: any): string {
-    return this._format.stringify(obj, replacer, spacing);
-  }
-}
-
-
 const fileExtensionsAndFormats = (() => {
+  class Format implements IFormat {
+    private readonly _format: IFormat;
+
+    constructor(format: IFormat) {
+      this._format = format;
+    }
+
+    parse(str: string): any {
+      return this._format.parse(str) ?? {};
+    }
+
+    stringify(obj: any, replacer: any, spacing: any): string {
+      return this._format.stringify(obj, replacer, spacing);
+    }
+  }
+
   const yaml = new Format(YAML);
   return [
     t('.toml', new Format(TOML)),

@@ -65,13 +65,11 @@ export async function handleFinishTask(
   );
   let interrupted = false;
   const dispose = async () => {
-    if (taskRunner.hasAnyTasks()) {
-      disableExitTimeout();
-      logger.info(
-        'Waiting for current task step to finish and saving interrupted tasks...');
-      await saveInterruptedTasks();
-      enableExitTimeout();
-    }
+    disableExitTimeout();
+    logger.info(
+      'Waiting for current task step to finish0...');
+    await saveInterruptedTasks();
+    enableExitTimeout();
   };
   bindOnExitHandler(dispose);
   const deadlineService = new DeadlineService(parseTasksTimeout(config.ncgc));
@@ -123,9 +121,23 @@ export async function handleFinishTask(
   async function saveInterruptedTasks() {
     interrupted = true;
     await taskRunner.runningPromise;
-    taskRunner.enqueueAllTwiceFailedTasksAndClear();
-    const undoneTasks = taskRunner.getAllUndoneTasks(false);
-    await progressBackend.save(undoneTasks);
+    if (taskRunner.hasAnyTasks()) {
+      logger.info('Saving interrupted tasks...');
+      taskRunner.enqueueAllTwiceFailedTasksAndClear();
+      const undoneTasks = taskRunner.getAllUndoneTasks(false);
+      await progressBackend.save(undoneTasks);
+    } else {
+      logger.info('All tasks were finished!');
+      await clearTaskProgressBackendIfCan(progressBackend);
+    }
+  }
+}
+
+async function clearTaskProgressBackendIfCan(
+  progressBackend: ITaskProgressBackend
+) {
+  if (progressBackend instanceof TaskProgressFileBackend) {
+    await progressBackend.clear();
   }
 }
 

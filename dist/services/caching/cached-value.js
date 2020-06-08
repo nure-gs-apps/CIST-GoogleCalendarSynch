@@ -311,8 +311,8 @@ class CachedValue extends events_1.EventEmitter {
         return value;
     }
     async dispose() {
-        await this._initSema.acquire();
         try {
+            await this._initSema.acquire();
             if (this.isDisposed) {
                 return;
             }

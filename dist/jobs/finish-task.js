@@ -32,12 +32,10 @@ async function handleFinishTask(config, logger) {
     });
     let interrupted = false;
     const dispose = async () => {
-        if (taskRunner.hasAnyTasks()) {
-            exit_handler_service_1.disableExitTimeout();
-            logger.info('Waiting for current task step to finish and saving interrupted tasks...');
-            await saveInterruptedTasks();
-            exit_handler_service_1.enableExitTimeout();
-        }
+        exit_handler_service_1.disableExitTimeout();
+        logger.info('Waiting for current task step to finish0...');
+        await saveInterruptedTasks();
+        exit_handler_service_1.enableExitTimeout();
     };
     exit_handler_service_1.bindOnExitHandler(dispose);
     const deadlineService = new deadline_service_1.DeadlineService(types_1.parseTasksTimeout(config.ncgc));
@@ -79,12 +77,24 @@ async function handleFinishTask(config, logger) {
     async function saveInterruptedTasks() {
         interrupted = true;
         await taskRunner.runningPromise;
-        taskRunner.enqueueAllTwiceFailedTasksAndClear();
-        const undoneTasks = taskRunner.getAllUndoneTasks(false);
-        await progressBackend.save(undoneTasks);
+        if (taskRunner.hasAnyTasks()) {
+            logger.info('Saving interrupted tasks...');
+            taskRunner.enqueueAllTwiceFailedTasksAndClear();
+            const undoneTasks = taskRunner.getAllUndoneTasks(false);
+            await progressBackend.save(undoneTasks);
+        }
+        else {
+            logger.info('All tasks were finished!');
+            await clearTaskProgressBackendIfCan(progressBackend);
+        }
     }
 }
 exports.handleFinishTask = handleFinishTask;
+async function clearTaskProgressBackendIfCan(progressBackend) {
+    if (progressBackend instanceof file_1.TaskProgressFileBackend) {
+        await progressBackend.clear();
+    }
+}
 function getRequiredServicesConfig(tasks) {
     const types = [
         cached_cist_json_client_service_1.CachedCistJsonClientService,

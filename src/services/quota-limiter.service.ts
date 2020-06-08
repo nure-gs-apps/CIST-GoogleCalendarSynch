@@ -1,6 +1,6 @@
 import Bottleneck from 'bottleneck';
 import { interfaces } from 'inversify';
-import { IDisposable } from '../@types/object';
+import { Disposer, IDisposable } from '../@types/object';
 import { IApiQuota } from '../@types/services';
 import { bindOnExitHandler } from './exit-handler.service';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
@@ -20,18 +20,14 @@ export function getQuotaLimiterFactory(
   };
 }
 
-export class QuotaLimiterService implements IDisposable {
+export class QuotaLimiterService extends Disposer implements IDisposable {
   static readonly DAY_MS = 24 * 60 * 60 * 1000;
 
   readonly dailyLimiter: Bottleneck;
   readonly limiter: Bottleneck;
-  private _disposed: boolean;
-
-  get isDisposed() {
-    return this._disposed;
-  }
 
   constructor(quota: IApiQuota) {
+    super(); // a doDispose() method override is used
     this.dailyLimiter = new Bottleneck({
       reservoir: quota.daily,
       reservoirRefreshInterval: QuotaLimiterService.DAY_MS,
@@ -62,15 +58,10 @@ export class QuotaLimiterService implements IDisposable {
       });
     }
     this.limiter.chain(this.dailyLimiter);
-    this._disposed = false;
   }
 
-  dispose() {
-    if (this._disposed) {
-      return Promise.resolve();
-    }
+  protected doDispose() {
     this.limiter.chain(undefined);
-    this._disposed = true;
     return Promise.join(
       this.limiter.stop(),
       this.dailyLimiter.stop(),

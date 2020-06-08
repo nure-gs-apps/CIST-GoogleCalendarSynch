@@ -23,17 +23,12 @@ function getSharedCachedCistJsonClientInstance(context) {
     return context.container.get(CachedCistJsonClientService);
 }
 exports.getSharedCachedCistJsonClientInstance = getSharedCachedCistJsonClientInstance;
-let CachedCistJsonClientService = class CachedCistJsonClientService {
+let CachedCistJsonClientService = class CachedCistJsonClientService extends object_1.Disposer {
     constructor(cacheUtils, cacheConfig, 
     // tslint:disable-next-line:max-line-length
     http) {
+        super(); // a doDispose() method override is used
         Object.defineProperty(this, _a, {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_isDisposed", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -110,7 +105,6 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         this._groupsCacheSemaphore = null;
         this._roomsCachedValue = null;
         this._roomsCacheSemaphore = null;
-        this._isDisposed = false;
         this[object_1.ASYNC_INIT] = Promise.resolve();
         // File cache
         if (this.includesCache(types_1.CacheType.File)) {
@@ -132,13 +126,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
             this._http = null;
         }
     }
-    get isDisposed() {
-        return this._isDisposed;
-    }
-    async dispose() {
-        if (this._isDisposed) {
-            return;
-        }
+    async doDispose() {
         const promises = [];
         if (this._groupsCachedValue) {
             promises.push(caching_1.disposeChain(this._groupsCachedValue));
@@ -152,7 +140,6 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         if (promises.length > 0) {
             await Promise.all(promises);
         }
-        this._isDisposed = true;
     }
     async getEventsResponse(type, entityId, dateLimits) {
         const cachedValue = await this.getEventsCachedValue(type, entityId, dateLimits);
@@ -228,14 +215,16 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         this._roomsCachedValue = null;
     }
     async getGroupsCachedValue() {
-        if (!this._groupsCacheSemaphore) {
-            this._groupsCacheSemaphore = new lib_1.Sema(1);
-        }
-        await this._groupsCacheSemaphore.acquire();
         if (!this._groupsCachedValue) {
-            this._groupsCachedValue = await this.createGroupsCachedValue();
+            if (!this._groupsCacheSemaphore) {
+                this._groupsCacheSemaphore = new lib_1.Sema(1);
+            }
+            await this._groupsCacheSemaphore.acquire();
+            if (!this._groupsCachedValue) {
+                this._groupsCachedValue = await this.createGroupsCachedValue();
+            }
+            this._groupsCacheSemaphore.release();
         }
-        this._groupsCacheSemaphore.release();
         return this._groupsCachedValue;
     }
     async createGroupsCachedValue() {
@@ -272,14 +261,16 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
         return cachedValue;
     }
     async getRoomsCachedValue() {
-        if (!this._roomsCacheSemaphore) {
-            this._roomsCacheSemaphore = new lib_1.Sema(1);
-        }
-        await this._roomsCacheSemaphore.acquire();
         if (!this._roomsCachedValue) {
-            this._roomsCachedValue = await this.createRoomsCachedValue();
+            if (!this._roomsCacheSemaphore) {
+                this._roomsCacheSemaphore = new lib_1.Sema(1);
+            }
+            await this._roomsCacheSemaphore.acquire();
+            if (!this._roomsCachedValue) {
+                this._roomsCachedValue = await this.createRoomsCachedValue();
+            }
+            this._roomsCacheSemaphore.release();
         }
-        this._roomsCacheSemaphore.release();
         return this._roomsCachedValue;
     }
     async createRoomsCachedValue() {
@@ -326,18 +317,20 @@ let CachedCistJsonClientService = class CachedCistJsonClientService {
     async getEventsCachedValue(type, entityId, dateLimits) {
         const params = { entityId, dateLimits, typeId: type };
         const hash = getEventHash(params);
-        let semaphore = this._eventsCacheSemaphores.get(hash);
-        if (!semaphore) {
-            semaphore = new lib_1.Sema(1);
-            this._eventsCacheSemaphores.set(hash, semaphore);
-        }
-        await semaphore.acquire();
         let cachedValue = this._eventsCachedValues.get(hash);
         if (!cachedValue) {
-            cachedValue = await this.createEventsCachedValue(params);
-            this._eventsCachedValues.set(hash, cachedValue);
+            let semaphore = this._eventsCacheSemaphores.get(hash);
+            if (!semaphore) {
+                semaphore = new lib_1.Sema(1);
+                this._eventsCacheSemaphores.set(hash, semaphore);
+            }
+            await semaphore.acquire();
+            if (!cachedValue) {
+                cachedValue = await this.createEventsCachedValue(params);
+                this._eventsCachedValues.set(hash, cachedValue);
+            }
+            semaphore.release();
         }
-        semaphore.release();
         return cachedValue;
     }
     async createEventsCachedValue(params) {

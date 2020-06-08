@@ -57,25 +57,25 @@ function initializeConfig(argv) {
     return initializeConfigPromise;
 }
 exports.initializeConfig = initializeConfig;
-class Format {
-    constructor(format) {
-        Object.defineProperty(this, "_format", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        this._format = format;
-    }
-    parse(str) {
-        var _a;
-        return (_a = this._format.parse(str)) !== null && _a !== void 0 ? _a : {};
-    }
-    stringify(obj, replacer, spacing) {
-        return this._format.stringify(obj, replacer, spacing);
-    }
-}
 const fileExtensionsAndFormats = (() => {
+    class Format {
+        constructor(format) {
+            Object.defineProperty(this, "_format", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
+            });
+            this._format = format;
+        }
+        parse(str) {
+            var _a;
+            return (_a = this._format.parse(str)) !== null && _a !== void 0 ? _a : {};
+        }
+        stringify(obj, replacer, spacing) {
+            return this._format.stringify(obj, replacer, spacing);
+        }
+    }
     const yaml = new Format(YAML);
     return [
         _types_1.t('.toml', new Format(TOML)),

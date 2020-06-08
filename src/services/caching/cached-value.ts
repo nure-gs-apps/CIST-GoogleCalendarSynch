@@ -314,8 +314,8 @@ export abstract class CachedValue<T> extends EventEmitter implements IReadonlyCa
   }
 
   async dispose() {
-    await this._initSema.acquire();
     try {
+      await this._initSema.acquire();
       if (this.isDisposed) {
         return;
       }

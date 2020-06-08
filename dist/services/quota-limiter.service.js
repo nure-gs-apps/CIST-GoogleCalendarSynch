@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const bottleneck_1 = require("bottleneck");
+const object_1 = require("../@types/object");
 const exit_handler_service_1 = require("./exit-handler.service");
 function getQuotaLimiterFactory(configId, isSingleton) {
     return (context) => {
@@ -12,8 +13,9 @@ function getQuotaLimiterFactory(configId, isSingleton) {
     };
 }
 exports.getQuotaLimiterFactory = getQuotaLimiterFactory;
-class QuotaLimiterService {
+class QuotaLimiterService extends object_1.Disposer {
     constructor(quota) {
+        super(); // a doDispose() method override is used
         Object.defineProperty(this, "dailyLimiter", {
             enumerable: true,
             configurable: true,
@@ -21,12 +23,6 @@ class QuotaLimiterService {
             value: void 0
         });
         Object.defineProperty(this, "limiter", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_disposed", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -62,17 +58,9 @@ class QuotaLimiterService {
             });
         }
         this.limiter.chain(this.dailyLimiter);
-        this._disposed = false;
     }
-    get isDisposed() {
-        return this._disposed;
-    }
-    dispose() {
-        if (this._disposed) {
-            return Promise.resolve();
-        }
+    doDispose() {
         this.limiter.chain(undefined);
-        this._disposed = true;
         return Promise.join(this.limiter.stop(), this.dailyLimiter.stop(), this.limiter.disconnect(), this.dailyLimiter.disconnect());
     }
 }
