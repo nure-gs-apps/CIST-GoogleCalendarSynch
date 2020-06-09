@@ -27,7 +27,7 @@ import {
   assertRoomsResponse,
 } from '../utils/assert-responses';
 import { toGroupIds, toPrintString } from '../utils/common';
-import { getCistCachedClientTypes } from '../utils/jobs';
+import { getCistCachedClientTypesForArgs } from '../utils/jobs';
 
 export async function handleCistAssert(
   args: IEntitiesToOperateOn,
@@ -35,7 +35,7 @@ export async function handleCistAssert(
   logger: IInfoLogger,
 ) {
   const container = createContainer({
-    types: getCistCachedClientTypes(args, config.ncgc.caching.cist.priorities),
+    types: getCistCachedClientTypesForArgs(args, config.ncgc.caching.cist.priorities),
     forceNew: true,
   });
   bindOnExitHandler(disposeContainer);

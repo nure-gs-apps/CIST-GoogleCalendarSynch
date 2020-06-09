@@ -70,20 +70,21 @@ class SyncJob {
             if (tasks.length === 0) {
                 throw new TypeError('No tasks found. Please, specify either synchronization or removal.');
             }
-            this._container = container_1.createContainer(this.getRequiredServicesConfigFromArgs());
+            const types = this.getRequiredServicesFromTasks(tasks);
+            types.push(types_2.TYPES.TaskProgressBackend);
+            this._container = container_1.createContainer(this.getContainerConfig(types));
         }
         else {
-            this._container = container_1.createContainer({
-                types: [types_2.TYPES.TaskProgressBackend],
-                forceNew: true,
-            });
+            this._container = container_1.createContainer(this.getContainerConfig([types_2.TYPES.TaskProgressBackend]));
             exit_handler_service_1.bindOnExitHandler(container_1.disposeContainer);
             await container_1.getContainerAsyncInitializer();
             this._progressBackend = this._container.get(types_2.TYPES.TaskProgressBackend);
             tasks = await (this._progressBackend instanceof file_1.TaskProgressFileBackend
                 ? this._progressBackend.load()
                 : this._progressBackend.loadAndClear());
-            container_1.addTypesToContainer(getRequiredServicesConfigFromTasks(tasks));
+            container_1.addTypesToContainer({
+                types: this.getRequiredServicesFromTasks(tasks)
+            });
         }
         this._container.bind(types_2.TYPES.CistJsonClient)
             .toDynamicValue(cached_cist_json_client_service_1.getSharedCachedCistJsonClientInstance);
@@ -182,44 +183,32 @@ class SyncJob {
         }
         return this._progressBackend;
     }
-    // tslint:disable-next-line:max-line-length
-    getRequiredServicesConfigFromArgs() {
-        if (!this._args) {
-            throw new TypeError('Unknown state');
-        }
-        const types = [
-            types_2.TYPES.TaskStepExecutor,
-            types_2.TYPES.TaskProgressBackend,
-            ...jobs_1.getCistCachedClientTypes(this._args, this._config.ncgc.caching.cist.priorities),
-            cached_cist_json_client_service_1.CachedCistJsonClientService,
-        ];
-        if (this._args.auditories || this._args.deleteIrrelevantBuildings) {
-            types.push(types_2.TYPES.BuildingsService);
-        }
+    getContainerConfig(types) {
         return {
             types,
-            forceNew: true,
+            forceNew: true
         };
+    }
+    getRequiredServicesFromTasks(tasks) {
+        const types = [types_2.TYPES.TaskStepExecutor];
+        if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureBuildings
+            || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
+            || taskType === tasks_1.TaskType.EnsureBuildings
+            || taskType === tasks_1.TaskType.DeleteIrrelevantBuildings))) {
+            types.push(types_2.TYPES.BuildingsService);
+        }
+        if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureBuildings
+            || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
+            || taskType === tasks_1.TaskType.EnsureBuildings
+            || taskType === tasks_1.TaskType.DeleteIrrelevantBuildings))) {
+            types.push(...(this._args
+                ? jobs_1.getCistCachedClientTypesForArgs(this._args, this._config.ncgc.caching.cist.priorities)
+                : jobs_1.getCistCachedClientTypes(this._config.ncgc.caching.cist.priorities)));
+        }
+        return types;
     }
 }
 exports.SyncJob = SyncJob;
-function getRequiredServicesConfigFromTasks(tasks) {
-    const types = [
-        cached_cist_json_client_service_1.CachedCistJsonClientService,
-        types_2.TYPES.TaskStepExecutor
-    ];
-    if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureBuildings
-        || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
-        || taskType === tasks_1.TaskType.EnsureBuildings
-        || taskType === tasks_1.TaskType.DeleteIrrelevantBuildings))) {
-        types.push(types_2.TYPES.BuildingsService);
-    }
-    if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureBuildings
-        || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings))) {
-        types.push(cached_cist_json_client_service_1.CachedCistJsonClientService);
-    }
-    return { types };
-}
 function getTasksFromArgs(args) {
     const tasks = [];
     if (args.auditories) {

@@ -21,14 +21,14 @@ import {
   unbindOnExitHandler,
 } from '../services/exit-handler.service';
 import { toGroupIds } from '../utils/common';
-import { getCistCachedClientTypes } from '../utils/jobs';
+import { getCistCachedClientTypesForArgs } from '../utils/jobs';
 
 export async function handleCistCacheExtend(
   args: IEntitiesToOperateOn,
   newExpiration: Date,
   config: DeepReadonly<IFullAppConfig>
 ) {
-  const types = getCistCachedClientTypes(
+  const types = getCistCachedClientTypesForArgs(
     args,
     config.ncgc.caching.cist.priorities,
   );

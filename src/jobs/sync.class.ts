@@ -13,7 +13,6 @@ import {
   createContainer,
   disposeContainer,
   getContainerAsyncInitializer,
-  IAddContainerTypesOptions,
   ICreateContainerOptions,
 } from '../di/container';
 import { TYPES } from '../di/types';
@@ -27,7 +26,10 @@ import {
 } from '../services/deadline.service';
 import {
   bindOnExitHandler,
-  disableExitTimeout, enableExitTimeout, exitGracefully, unbindOnExitHandler,
+  disableExitTimeout,
+  enableExitTimeout,
+  exitGracefully,
+  unbindOnExitHandler,
 } from '../services/exit-handler.service';
 import { TaskProgressFileBackend } from '../tasks/progress/file';
 import { TaskRunner } from '../tasks/runner';
@@ -35,9 +37,18 @@ import {
   TaskStepExecutor,
   TaskStepExecutorEventNames,
 } from '../tasks/task-step-executor';
-import { getCistCachedClientTypes } from '../utils/jobs';
-import { IEntitiesToRemove } from './sync';
+import {
+  getCistCachedClientTypes,
+  getCistCachedClientTypesForArgs,
+} from '../utils/jobs';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
+
+export interface IEntitiesToRemove {
+  deleteIrrelevantBuildings: boolean;
+  deleteIrrelevantAuditories: boolean;
+  deleteIrrelevantGroups: boolean;
+  deleteIrrelevantEvents: boolean;
+}
 
 export class SyncJob {
   protected readonly _config: DeepReadonly<IFullAppConfig>;
@@ -72,14 +83,13 @@ export class SyncJob {
         throw new TypeError('No tasks found. Please, specify either synchronization or removal.');
       }
 
-      this._container = createContainer(
-        this.getRequiredServicesConfigFromArgs()
-      );
+      const types = this.getRequiredServicesFromTasks(tasks);
+      types.push(TYPES.TaskProgressBackend);
+      this._container = createContainer(this.getContainerConfig(types));
     } else {
-      this._container = createContainer({
-        types: [TYPES.TaskProgressBackend],
-        forceNew: true,
-      });
+      this._container = createContainer(
+        this.getContainerConfig([TYPES.TaskProgressBackend])
+      );
       bindOnExitHandler(disposeContainer);
       await getContainerAsyncInitializer();
       this._progressBackend = this._container.get<ITaskProgressBackend>(
@@ -91,7 +101,9 @@ export class SyncJob {
           : this._progressBackend.loadAndClear()
       );
 
-      addTypesToContainer(getRequiredServicesConfigFromTasks(tasks));
+      addTypesToContainer({
+        types: this.getRequiredServicesFromTasks(tasks)
+      });
     }
     this._container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
       .toDynamicValue(getSharedCachedCistJsonClientInstance);
@@ -220,53 +232,47 @@ export class SyncJob {
     return this._progressBackend;
   }
 
-  // tslint:disable-next-line:max-line-length
-  protected getRequiredServicesConfigFromArgs(): Partial<ICreateContainerOptions> {
-    if (!this._args) {
-      throw new TypeError('Unknown state');
-    }
-    const types = [
-      TYPES.TaskStepExecutor,
-      TYPES.TaskProgressBackend,
-      ...getCistCachedClientTypes(
-        this._args,
-        this._config.ncgc.caching.cist.priorities,
-      ),
-      CachedCistJsonClientService,
-    ];
-    if (this._args.auditories || this._args.deleteIrrelevantBuildings) {
-      types.push(TYPES.BuildingsService);
-    }
+  protected getContainerConfig(
+    types: ReadonlyArray<ServiceIdentifier<any>>,
+  ): Partial<ICreateContainerOptions> {
     return {
       types,
-      forceNew: true,
+      forceNew: true
     };
   }
-}
 
-function getRequiredServicesConfigFromTasks(
-  tasks: DeepReadonlyArray<ITaskDefinition<any>>,
-): Partial<IAddContainerTypesOptions> {
-  const types = [
-    CachedCistJsonClientService,
-    TYPES.TaskStepExecutor
-  ] as ServiceIdentifier<any>[];
-  if (tasks.some(({ taskType }) => (
-    taskType === TaskType.DeferredEnsureBuildings
-    || taskType === TaskType.DeferredDeleteIrrelevantBuildings
-    || taskType === TaskType.EnsureBuildings
-    || taskType === TaskType.DeleteIrrelevantBuildings
-  ))) {
-    types.push(TYPES.BuildingsService);
-  }
+  protected getRequiredServicesFromTasks(
+    tasks: DeepReadonlyArray<ITaskDefinition<any>>,
+  ): ServiceIdentifier<any>[] {
+    const types = [TYPES.TaskStepExecutor] as ServiceIdentifier<any>[];
+    if (tasks.some(({ taskType }) => (
+      taskType === TaskType.DeferredEnsureBuildings
+      || taskType === TaskType.DeferredDeleteIrrelevantBuildings
+      || taskType === TaskType.EnsureBuildings
+      || taskType === TaskType.DeleteIrrelevantBuildings
+    ))) {
+      types.push(TYPES.BuildingsService);
+    }
 
-  if (tasks.some(({ taskType }) => (
-    taskType === TaskType.DeferredEnsureBuildings
-    || taskType === TaskType.DeferredDeleteIrrelevantBuildings
-  ))) {
-    types.push(CachedCistJsonClientService);
+    if (tasks.some(({ taskType }) => (
+      taskType === TaskType.DeferredEnsureBuildings
+      || taskType === TaskType.DeferredDeleteIrrelevantBuildings
+      || taskType === TaskType.EnsureBuildings
+      || taskType === TaskType.DeleteIrrelevantBuildings
+    ))) {
+      types.push(...(
+        this._args
+          ? getCistCachedClientTypesForArgs(
+            this._args,
+            this._config.ncgc.caching.cist.priorities,
+          )
+          : getCistCachedClientTypes(
+            this._config.ncgc.caching.cist.priorities
+          )
+      ));
+    }
+    return types;
   }
-  return { types };
 }
 
 function getTasksFromArgs(

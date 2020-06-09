@@ -4,7 +4,7 @@ import { DeepPartial, DeepReadonly } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IWarnLogger } from '../@types/logging';
 import { IFullAppConfig } from '../config/types';
-import { IEntitiesToRemove } from '../jobs/sync';
+import { IEntitiesToRemove } from '../jobs/sync.class';
 import { toPrintString } from '../utils/common';
 
 export interface IArgsWithEntities extends Arguments<DeepPartial<IFullAppConfig>>, IEntitiesToOperateOn {

@@ -7,9 +7,11 @@ import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.servi
 import ServiceIdentifier = interfaces.ServiceIdentifier;
 import moment = require('moment');
 
-export function getCistCachedClientTypes(
+export type Priorities = DeepReadonly<AppConfig['caching']['cist']['priorities']>;
+
+export function getCistCachedClientTypesForArgs(
   operateOn: DeepReadonly<IEntitiesToOperateOn>,
-  cachePriorities: DeepReadonly<AppConfig['caching']['cist']['priorities']>,
+  cachePriorities: Priorities,
 ) {
   const types: ServiceIdentifier<any>[] = [CachedCistJsonClientService];
   if ((
@@ -24,6 +26,20 @@ export function getCistCachedClientTypes(
       operateOn.events
       && cachePriorities.events.includes(CacheType.Http)
     )) {
+    types.push(CistJsonHttpClient);
+  }
+  return types;
+}
+
+export function getCistCachedClientTypes(
+  cachePriorities: Priorities
+): ServiceIdentifier<any>[] {
+  const types: ServiceIdentifier<any>[] = [CachedCistJsonClientService];
+  if (
+    cachePriorities.groups.includes(CacheType.Http)
+    || cachePriorities.auditories.includes(CacheType.Http)
+    || cachePriorities.events.includes(CacheType.Http)
+  ) {
     types.push(CistJsonHttpClient);
   }
   return types;

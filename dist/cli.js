@@ -10,8 +10,8 @@ const config_1 = require("./config");
 const constants_1 = require("./config/constants");
 const types_1 = require("./config/types");
 const cist_cache_extend_1 = require("./jobs/cist-cache-extend");
-const finish_task_1 = require("./jobs/finish-task");
-const sync_1 = require("./jobs/sync");
+// import { handleFinishTask } from './jobs/finish-task';
+const sync_class_1 = require("./jobs/sync.class");
 const exit_handler_service_1 = require("./services/exit-handler.service");
 const cist_assert_1 = require("./jobs/cist-assert");
 const packageInfo = require("../package.json");
@@ -98,7 +98,7 @@ const yargs = types_1.getBasicCliConfiguration()
     command: 'sync',
     describe: `Synchronize with CIST schedule with G Suite & Google Calendar. Common flags (${"groups"}, ${"auditories"}, ${"events"}) are used for upload to Google, removal of irrelevant is done with additional flags.`,
     handler(argv) {
-        sync_1.handleSync(argv, config_1.getFullConfig(), console).catch(handleError);
+        new sync_class_1.SyncJob(config_1.getFullConfig(), console, argv).handle().catch(handleError);
     },
     builder(yargs) {
         return common_1.addEntitiesToRemoveOptions(common_1.addEntitiesOptions(yargs, false))
@@ -111,7 +111,7 @@ const yargs = types_1.getBasicCliConfiguration()
                     .help('help').alias('h', 'help');
             },
             handler(argv) {
-                finish_task_1.handleFinishTask(config_1.getFullConfig(), console).catch(handleError);
+                new sync_class_1.SyncJob(config_1.getFullConfig(), console).handle().catch(handleError);
             },
         })
             .completion()

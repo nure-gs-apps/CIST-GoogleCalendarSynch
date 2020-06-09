@@ -12,7 +12,7 @@ const common_1 = require("../utils/common");
 const jobs_1 = require("../utils/jobs");
 async function handleCistAssert(args, config, logger) {
     const container = container_1.createContainer({
-        types: jobs_1.getCistCachedClientTypes(args, config.ncgc.caching.cist.priorities),
+        types: jobs_1.getCistCachedClientTypesForArgs(args, config.ncgc.caching.cist.priorities),
         forceNew: true,
     });
     exit_handler_service_1.bindOnExitHandler(container_1.disposeContainer);
