@@ -1,12 +1,12 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
-import { GuardedMap } from '../../@types';
+import { DeepReadonly, DeepReadonlyMap, Maybe } from '../../@types';
 import { ILogger } from '../../@types/logging';
 import { TYPES } from '../../di/types';
 import {
   ApiRoomsResponse,
-  ApiRoom,
+  ApiRoom, ApiBuilding,
 } from '../../@types/cist';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
@@ -14,6 +14,11 @@ import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise } from 'gaxios';
 import { transformFloorName, GoogleUtilsService } from './google-utils.service';
+
+export interface IRoomsTaskContext {
+  readonly cistRoomsMap: DeepReadonlyMap<string, ApiRoom>;
+  readonly googleRoomsMap: DeepReadonlyMap<string, Schema$CalendarResource>;
+}
 
 @injectable()
 export class RoomsService {
@@ -62,61 +67,37 @@ export class RoomsService {
     ) as any;
   }
 
-  async ensureRooms(
-    cistResponse: ApiRoomsResponse,
-    preserveNameChanges = false,
-  ) {
+  /**
+   * Doesn't handle errors properly
+   */
+  async ensureRooms(cistResponse: ApiRoomsResponse) {
     const rooms = await this.getAllRooms();
 
-    const promises = [] as GaxiosPromise<any>[];
-    const newToOldNames = new GuardedMap<string, string>();
+    const promises = [] as GaxiosPromise[];
     for (const cistBuilding of cistResponse.university.buildings) {
       const buildingId = this._utils.getGoogleBuildingId(cistBuilding);
       for (const cistRoom of cistBuilding.auditories) {
         const cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding);
-        const googleRoom = rooms.find(
-          r => r.resourceId === cistRoomId,
-        );
-        if (googleRoom) {
-          const roomPatch = cistRoomToGoogleRoomPatch(
-            cistRoom,
-            googleRoom,
-            buildingId,
-          );
-          if (roomPatch) {
-            if (newToOldNames && roomPatch.resourceName) {
-              newToOldNames.set(
-                roomPatch.resourceName,
-                // tslint:disable-next-line:no-non-null-assertion
-                googleRoom.resourceName!,
-              );
-            }
-            this._logger.info(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
-            promises.push(
-              this._patch({
-                customer,
-                calendarResourceId: cistRoomId,
-                requestBody: roomPatch,
-              }),
-            );
-          }
-        } else {
-          this._logger.info(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
-          promises.push(
-            this._insert({
-              customer,
-              requestBody: cistRoomToInsertGoogleRoom(
-                cistRoom,
-                buildingId,
-                cistRoomId,
-              ),
-            }),
-          );
-        }
+        promises.push(this.doEnsureRoom(
+          cistRoom,
+          rooms.find(
+            r => r.resourceId === cistRoomId,
+          ),
+          cistBuilding,
+          buildingId,
+          cistRoomId,
+        ));
       }
     }
-    await Promise.all(promises as any);
-    return newToOldNames;
+    await Promise.all(promises);
+  }
+
+  async createRoomsContext(
+    cistResponse: DeepReadonly<ApiRoomsResponse>
+  ): Promise<IRoomsTaskContext> {
+    return {
+      cistRoomsMap: iterate(cis)
+    };
   }
 
   async deleteAll() {
@@ -186,6 +167,39 @@ export class RoomsService {
       }
     } while (roomsPage.data.nextPageToken);
     return rooms;
+  }
+
+  private async doEnsureRoom(
+    cistRoom: ApiRoom,
+    googleRoom: Maybe<Schema$CalendarResource>,
+    cistBuilding: ApiBuilding,
+    buildingId = this._utils.getGoogleBuildingId(cistBuilding),
+    cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding)
+  ) {
+    if (googleRoom) {
+      const roomPatch = cistRoomToGoogleRoomPatch(
+        cistRoom,
+        googleRoom,
+        buildingId,
+      );
+      if (roomPatch) {
+        this._logger.info(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
+        return this._patch({
+          customer,
+          calendarResourceId: cistRoomId,
+          requestBody: roomPatch,
+        });
+      }
+    }
+    this._logger.info(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
+    return this._insert({
+      customer,
+      requestBody: cistRoomToInsertGoogleRoom(
+        cistRoom,
+        buildingId,
+        cistRoomId,
+      ),
+    });
   }
 
   private doDeleteByIds(

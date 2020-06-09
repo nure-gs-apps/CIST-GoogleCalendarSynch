@@ -72,7 +72,6 @@ export class BuildingsService {
     this._list = this._quotaLimiter.limiter.wrap(
       this._buildings.list.bind(this._buildings),
     ) as any;
-    // this._list = this._buildings.list.bind(this._buildings);
   }
 
   /**
@@ -161,11 +160,13 @@ export class BuildingsService {
   ): ITaskDefinition<string> {
     return {
       taskType: TaskType.DeleteIrrelevantBuildings,
-      steps: iterate(context.cistBuildingsMap.values())
-        .map(cistBuilding => this._utils.getGoogleBuildingId(cistBuilding))
+      steps: iterate(context.googleBuildingsMap.values())
+        .map(googleBuilding => googleBuilding.buildingId)
         .filter(
-          googleBuildingId => context.googleBuildingsMap.has(googleBuildingId)
+          googleBuildingId => typeof googleBuildingId === 'string'
+            && !context.cistBuildingsMap.has(googleBuildingId),
         )
+        .map(id => id as string)
         .toArray(),
     };
   }

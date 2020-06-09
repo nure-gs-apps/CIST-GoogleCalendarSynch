@@ -59,6 +59,9 @@ export class GroupsService {
     ) as any;
   }
 
+  /**
+   * Doesn't handle errors properly
+   */
   async ensureGroups(
     cistResponse: ApiGroupsResponse,
     preserveEmailChanges = false,
