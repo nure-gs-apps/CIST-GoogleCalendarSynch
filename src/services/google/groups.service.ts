@@ -1,7 +1,7 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
-import { GuardedMap, Nullable } from '../../@types';
+import { DeepReadonly, GuardedMap, Nullable } from '../../@types';
 import { ILogger } from '../../@types/logging';
 import { TYPES } from '../../di/types';
 import { ApiGroup, ApiGroupsResponse } from '../../@types/cist';
@@ -63,7 +63,7 @@ export class GroupsService {
    * Doesn't handle errors properly
    */
   async ensureGroups(
-    cistResponse: ApiGroupsResponse,
+    cistResponse: DeepReadonly<ApiGroupsResponse>,
     preserveEmailChanges = false,
   ) {
     const groups = await this.getAllGroups();

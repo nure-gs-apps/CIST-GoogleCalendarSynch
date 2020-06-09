@@ -253,23 +253,21 @@ export class RoomsService {
         buildingId,
       );
       if (roomPatch) {
-        this._logger.info(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
-        return this._patch({
+        return Promise.resolve(this._patch({
           customer,
           calendarResourceId: cistRoomId,
           requestBody: roomPatch,
-        });
+        })).tap(() => this._logger.info(`Patched room ${cistRoom.short_name}, building ${cistBuilding.short_name}`));
       }
     }
-    this._logger.info(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
-    return this._insert({
+    return Promise.resolve(this._insert({
       customer,
       requestBody: cistRoomToInsertGoogleRoom(
         cistRoom,
         buildingId,
         cistRoomId,
       ),
-    });
+    })).tap(() => this._logger.info(`Inserted room ${cistRoom.short_name}, building ${cistBuilding.short_name}`));
   }
 
   private doDeleteByIds(
