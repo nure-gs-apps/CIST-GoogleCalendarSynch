@@ -1,8 +1,15 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import iterate from 'iterare';
-import { DeepReadonly, DeepReadonlyMap, Maybe } from '../../@types';
+import {
+  DeepReadonly,
+  DeepReadonlyArray,
+  DeepReadonlyMap,
+  Maybe,
+  t,
+} from '../../@types';
 import { ILogger } from '../../@types/logging';
+import { ITaskDefinition, TaskType } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
 import {
   ApiRoomsResponse,
@@ -10,13 +17,14 @@ import {
 } from '../../@types/cist';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
+import { FatalError } from './errors';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise } from 'gaxios';
 import { transformFloorName, GoogleUtilsService } from './google-utils.service';
 
 export interface IRoomsTaskContext {
-  readonly cistRoomsMap: DeepReadonlyMap<string, ApiRoom>;
+  readonly cistRoomsMap: DeepReadonlyMap<string, [ApiRoom, ApiBuilding]>;
   readonly googleRoomsMap: DeepReadonlyMap<string, Schema$CalendarResource>;
 }
 
@@ -70,7 +78,7 @@ export class RoomsService {
   /**
    * Doesn't handle errors properly
    */
-  async ensureRooms(cistResponse: ApiRoomsResponse) {
+  async ensureRooms(cistResponse: DeepReadonly<ApiRoomsResponse>) {
     const rooms = await this.getAllRooms();
 
     const promises = [] as GaxiosPromise[];
@@ -80,10 +88,10 @@ export class RoomsService {
         const cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding);
         promises.push(this.doEnsureRoom(
           cistRoom,
+          cistBuilding,
           rooms.find(
             r => r.resourceId === cistRoomId,
           ),
-          cistBuilding,
           buildingId,
           cistRoomId,
         ));
@@ -96,10 +104,47 @@ export class RoomsService {
     cistResponse: DeepReadonly<ApiRoomsResponse>
   ): Promise<IRoomsTaskContext> {
     return {
-      cistRoomsMap: iterate(cis)
+      cistRoomsMap: toRoomsWithBuildings(cistResponse)
+        .map(([a, b]) => t(this._utils.getRoomId(a, b), t(a, b)))
+        .toMap(),
+      googleRoomsMap: iterate(await this.getAllRooms())
+        .filter(b => typeof b.buildingId === 'string')
+        .map(b => t(b.buildingId as string, b))
+        .toMap()
     };
   }
 
+  createEnsureRoomsTask(
+    cistResponse: DeepReadonly<ApiRoomsResponse>
+  ): ITaskDefinition<string> {
+    return {
+      taskType: TaskType.EnsureRooms,
+      steps: toRoomsWithBuildings(cistResponse)
+        .map(([a, b]) => this._utils.getRoomId(a, b))
+        .toArray(),
+    };
+  }
+
+  async ensureRoom(
+    cistRoomId: string,
+    context: IRoomsTaskContext,
+  ) {
+    const cistData = context.cistRoomsMap.get(cistRoomId);
+    if (!cistData) {
+      throw new FatalError(`Room ${cistRoomId} is not found it context`);
+    }
+    await this.doEnsureRoom(
+      cistData[0] as DeepReadonly<ApiRoom>,
+      cistData[1] as DeepReadonly<ApiBuilding>,
+      context.googleRoomsMap.get(cistRoomId),
+      cistData[1].id,
+      cistRoomId
+    );
+  }
+
+  /**
+   * Doesn't handle errors properly
+   */
   async deleteAll() {
     const rooms = await this.getAllRooms();
     const promises = [];
@@ -112,7 +157,10 @@ export class RoomsService {
     return Promise.all(promises);
   }
 
-  async deleteIrrelevant(cistResponse: ApiRoomsResponse) {
+  /**
+   * Doesn't handle errors properly
+   */
+  async deleteIrrelevant(cistResponse: DeepReadonly<ApiRoomsResponse>) {
     const rooms = await this.getAllRooms();
     return Promise.all(this.doDeleteByIds(
       rooms,
@@ -131,7 +179,29 @@ export class RoomsService {
     ));
   }
 
-  async deleteRelevant(cistResponse: ApiRoomsResponse) {
+  createDeleteIrrelevantTask(
+    context: IRoomsTaskContext
+  ): ITaskDefinition<string> {
+    return {
+      taskType: TaskType.DeleteIrrelevantRooms,
+      steps: iterate(context.googleRoomsMap.keys())
+        .filter(
+          googleRoomId => typeof googleRoomId === 'string'
+            && !context.cistRoomsMap.has(googleRoomId)
+        )
+        .map(id => id as string)
+        .toArray(),
+    };
+  }
+
+  async deleteRoomById(roomId: string) {
+    return this.doDeleteById(roomId);
+  }
+
+  /**
+   * Doesn't handle errors properly
+   */
+  async deleteRelevant(cistResponse: DeepReadonly<ApiRoomsResponse>) {
     const rooms = await this.getAllRooms();
     return Promise.all(this.doDeleteByIds(
       rooms,
@@ -150,7 +220,7 @@ export class RoomsService {
     ));
   }
 
-  async getAllRooms(cacheResults = false) {
+  async getAllRooms() {
     let rooms = [] as Schema$CalendarResource[];
     let roomsPage = null;
     do {
@@ -170,9 +240,9 @@ export class RoomsService {
   }
 
   private async doEnsureRoom(
-    cistRoom: ApiRoom,
-    googleRoom: Maybe<Schema$CalendarResource>,
-    cistBuilding: ApiBuilding,
+    cistRoom: DeepReadonly<ApiRoom>,
+    cistBuilding: DeepReadonly<ApiBuilding>,
+    googleRoom: Maybe<DeepReadonly<Schema$CalendarResource>>,
     buildingId = this._utils.getGoogleBuildingId(cistBuilding),
     cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding)
   ) {
@@ -203,27 +273,28 @@ export class RoomsService {
   }
 
   private doDeleteByIds(
-    rooms: Schema$CalendarResource[],
-    ids: Set<string>,
+    rooms: DeepReadonlyArray<Schema$CalendarResource>,
+    ids: ReadonlySet<string>,
     promises = [] as GaxiosPromise<void>[],
   ) {
     for (const googleRoom of rooms) {
-      // tslint:disable-next-line:no-non-null-assertion
-      if (ids.has(googleRoom.resourceId!)) {
-        promises.push(
-          this._delete({
-            customer,
-            calendarResourceId: googleRoom.resourceId ?? undefined,
-          }),
-        );
+      if (googleRoom.resourceId && ids.has(googleRoom.resourceId)) {
+        promises.push(this.doDeleteById(googleRoom.resourceId));
       }
     }
     return promises;
   }
+
+  private doDeleteById(roomId: string) {
+    return this._delete({
+      customer,
+      calendarResourceId: roomId,
+    });
+  }
 }
 
 function cistRoomToInsertGoogleRoom(
-  cistRoom: ApiRoom,
+  cistRoom: DeepReadonly<ApiRoom>,
   googleBuildingId: string,
   roomId: string,
 ) {
@@ -241,8 +312,8 @@ function cistRoomToInsertGoogleRoom(
 }
 
 function cistRoomToGoogleRoomPatch(
-  cistRoom: ApiRoom,
-  googleRoom: Schema$CalendarResource,
+  cistRoom: DeepReadonly<ApiRoom>,
+  googleRoom: DeepReadonly<Schema$CalendarResource>,
   googleBuildingId: string,
 ) {
   let hasChanges = false;
@@ -269,4 +340,10 @@ function cistRoomToGoogleRoomPatch(
     hasChanges = true;
   }
   return hasChanges ? roomPatch : null;
+}
+
+function toRoomsWithBuildings(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+  return iterate(cistResponse.university.buildings)
+    .map(b => iterate(b.auditories).map(a => t(a, b)))
+    .flatten();
 }

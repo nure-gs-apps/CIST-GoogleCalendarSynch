@@ -160,11 +160,12 @@ export class BuildingsService {
   ): ITaskDefinition<string> {
     return {
       taskType: TaskType.DeleteIrrelevantBuildings,
-      steps: iterate(context.googleBuildingsMap.values())
-        .map(googleBuilding => googleBuilding.buildingId)
+      steps: iterate(context.googleBuildingsMap.keys())
         .filter(
           googleBuildingId => typeof googleBuildingId === 'string'
-            && !context.cistBuildingsMap.has(googleBuildingId),
+            && !context.cistBuildingsMap.has(
+              this._utils.getCistBuildingId(googleBuildingId)
+            ),
         )
         .map(id => id as string)
         .toArray(),

@@ -2,7 +2,7 @@ import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { DeepReadonly, Nullable, Optional } from '../../@types';
 import { TYPES } from '../../di/types';
-import { toBase64 } from '../../utils/common';
+import { fromBase64, toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
 import {
   ApiRoom,
@@ -22,6 +22,7 @@ export class GoogleUtilsService {
   private readonly _idPrefix: Optional<string>;
   public readonly domainName: string;
   public readonly prependIdPrefix: (id: string) => string;
+  public readonly removeIdPrefix: (id: string) => string;
 
   constructor(
     @inject(TYPES.GoogleAuthSubject) subject: string,
@@ -31,9 +32,11 @@ export class GoogleUtilsService {
       .toLowerCase();
     if (!idPrefix) {
       this.prependIdPrefix = id => id;
+      this.removeIdPrefix = id => id;
     } else {
       this._idPrefix = idPrefix;
       this.prependIdPrefix = id => `${this._idPrefix}.${id}`;
+      this.removeIdPrefix = id => id.slice(id.indexOf('.') + 1);
     }
   }
 
@@ -45,9 +48,9 @@ export class GoogleUtilsService {
   }
 
   isSameIdentity(
-    cistRoom: ApiRoom,
-    building: ApiBuilding,
-    googleRoom: Schema$CalendarResource,
+    cistRoom: DeepReadonly<ApiRoom>,
+    building: DeepReadonly<ApiBuilding>,
+    googleRoom: DeepReadonly<Schema$CalendarResource>,
   ) {
     return googleRoom.resourceId === this.getRoomId(cistRoom, building);
   }
@@ -56,11 +59,16 @@ export class GoogleUtilsService {
     return this.prependIdPrefix(`${buildingIdPrefix}.${toBase64(cistBuilding.id)}`);
   }
 
-  getRoomId(room: ApiRoom, building: ApiBuilding) {
+  getCistBuildingId(googleBuildingId: string) {
+    const id = this.removeIdPrefix(googleBuildingId);
+    return fromBase64(id.slice(id.indexOf('.') + 1));
+  }
+
+  getRoomId(room: DeepReadonly<ApiRoom>, building: DeepReadonly<ApiBuilding>) {
     return this.prependIdPrefix(`${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`); // using composite id to ensure uniqueness
   }
 
-  getGroupEmail(cistGroup: ApiGroup) {
+  getGroupEmail(cistGroup: DeepReadonly<ApiGroup>) {
     const uniqueHash = cistGroup.id.toString();
     const localPartTemplate = [`${groupEmailPrefix}_`, `.${uniqueHash}`];
     // is OK for google email, but causes collisions
@@ -86,8 +94,8 @@ export function transformFloorName(floorName: string) {
 }
 
 export function isSameGroupIdentity(
-  cistGroup: ApiGroup,
-  googleGroup: Schema$Group,
+  cistGroup: DeepReadonly<ApiGroup>,
+  googleGroup: DeepReadonly<Schema$Group>,
 ) {
   // tslint:disable-next-line:no-non-null-assertion
   const emailParts = googleGroup.email!.split('@');
