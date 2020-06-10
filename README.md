@@ -20,4 +20,5 @@ TODO:
 - add path transformer https://www.npmjs.com/package/@zerollup/ts-transform-paths
 
 FIX:
-- interrupt sync finish doesn't release the lock
+- group & room sync
+- add room feature: is have power

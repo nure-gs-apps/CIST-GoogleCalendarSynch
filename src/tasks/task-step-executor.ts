@@ -110,7 +110,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
         && other.taskType === TaskType.DeferredDeleteIrrelevantBuildings
       )
     ) {
-      return 1;
+      return -1;
     }
     if (
       (
@@ -130,7 +130,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
         && other.taskType === TaskType.DeferredDeleteIrrelevantRooms
       )
     ) {
-      return -1;
+      return 1;
     }
     return 0;
   }
@@ -214,7 +214,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
         const groupsResponse = await this.getCistClient().getGroupsResponse();
         this.emit(
           TaskStepExecutorEventNames.NewTask,
-          this.getGroupsService().createGroupsTaskContext(groupsResponse),
+          this.getGroupsService().createEnsureGroupsTask(groupsResponse),
         );
       }
         break;
@@ -271,7 +271,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
         await this.getGroupsService().ensureGroup(
           step,
           this._groupsContext ?? await this.saveAndGetGroupsContext(
-          await this.getCistClient().getGroupsResponse(),
+            await this.getCistClient().getGroupsResponse(),
           ),
         );
       }

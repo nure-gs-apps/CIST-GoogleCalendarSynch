@@ -80,9 +80,9 @@ class TaskRunner {
         return (_a = this._runningPromise) !== null && _a !== void 0 ? _a : Promise.resolve([]);
     }
     enqueueTasks(clone, ...tasks) {
-        if (this._runningPromise && this._taskStepExecutor.taskComparator) {
-            throwReorderTasks();
-        }
+        // if (this._runningPromise && this._taskStepExecutor.taskComparator) {
+        //   throwReorderTasks();
+        // }
         for (const task of tasks) {
             this.doEnqueueTask(task, clone);
         }
@@ -90,9 +90,9 @@ class TaskRunner {
         return this;
     }
     enqueueTask(task, clone = true) {
-        if (this._runningPromise && this._taskStepExecutor.taskComparator) {
-            throwReorderTasks();
-        }
+        // if (this._runningPromise && this._taskStepExecutor.taskComparator) {
+        //   throwReorderTasks();
+        // }
         this.doEnqueueTask(task, clone);
         this.ensureTaskOrder();
         return this;
@@ -113,9 +113,9 @@ class TaskRunner {
         this._failedTasks.length = 0;
     }
     ensureTaskOrder() {
-        if (this._runningPromise) {
-            throwReorderTasks();
-        }
+        // if (this._runningPromise) {
+        //   throwReorderTasks();
+        // }
         if (this._taskStepExecutor) {
             this._tasks.sort(this._taskStepExecutor.taskComparator);
         }
@@ -336,9 +336,9 @@ class TaskRunner {
     }
 }
 exports.TaskRunner = TaskRunner;
-function throwReorderTasks() {
-    throw new TypeError(l('cannot reorder tasks while running'));
-}
+// function throwReorderTasks(): never {
+//   throw new TypeError(l('cannot reorder tasks while running'));
+// }
 function l(message) {
     return `${TaskRunner.name}: ${message}`;
 }

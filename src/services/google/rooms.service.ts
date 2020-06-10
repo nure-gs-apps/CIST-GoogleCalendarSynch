@@ -244,10 +244,10 @@ export class RoomsService {
     cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding)
   ) {
     if (googleRoom) {
-      const roomPatch = cistRoomToGoogleRoomPatch(
+      const roomPatch = this.cistRoomToGoogleRoomPatch(
         cistRoom,
         googleRoom,
-        buildingId,
+        cistBuilding
       );
       if (roomPatch) {
         return Promise.resolve(this._patch({
@@ -259,7 +259,7 @@ export class RoomsService {
     }
     return Promise.resolve(this._insert({
       customer,
-      requestBody: cistRoomToInsertGoogleRoom(
+      requestBody: this.cistRoomToInsertGoogleRoom(
         cistRoom,
         buildingId,
         cistRoomId,
@@ -286,55 +286,61 @@ export class RoomsService {
       calendarResourceId: roomId,
     });
   }
-}
 
-function cistRoomToInsertGoogleRoom(
-  cistRoom: DeepReadonly<CistRoom>,
-  googleBuildingId: string,
-  roomId: string,
-) {
-  const room: Schema$CalendarResource = { // TODO: add cist room types and is_have_power as features resources
-    resourceId: roomId,
-    buildingId: googleBuildingId,
-    resourceName: cistRoom.short_name,
-    capacity: 999, // unlimited
-    resourceDescription: cistRoom.short_name, // FIXME: whether add info about buildings or not
-    userVisibleDescription: cistRoom.short_name,
-    floorName: transformFloorName(cistRoom.floor),
-    resourceCategory: 'CONFERENCE_ROOM',
-  };
-  return room;
-}
+  private cistRoomToGoogleRoomPatch(
+    cistRoom: DeepReadonly<CistRoom>,
+    googleRoom: DeepReadonly<Schema$CalendarResource>,
+    cistBuilding: DeepReadonly<CistBuilding>,
+    googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding),
+  ) {
+    let hasChanges = false;
+    const roomPatch = {} as Schema$CalendarResource;
+    if (googleBuildingId !== googleRoom.buildingId) {
+      roomPatch.buildingId = googleBuildingId;
+      hasChanges = true;
+    }
+    if (cistRoom.short_name !== googleRoom.resourceName) {
+      roomPatch.resourceName = cistRoom.short_name;
+      hasChanges = true;
+    }
+    const description = `${cistBuilding.short_name}\n${JSON.stringify(cistRoom)}`;
+    if (description !== googleRoom.resourceDescription) {
+      roomPatch.resourceDescription = description;
+      hasChanges = true;
+    }
+    let userVisibleDescription = `${cistRoom.short_name}, ${cistBuilding.full_name}`;
+    if (cistRoom.is_have_power === '1') {
+      userVisibleDescription += ', has power';
+    }
+    if (userVisibleDescription !== googleRoom.userVisibleDescription) {
+      roomPatch.userVisibleDescription = userVisibleDescription;
+      hasChanges = true;
+    }
+    const floorName = transformFloorName(cistRoom.floor);
+    if (floorName !== googleRoom.floorName) {
+      roomPatch.floorName = floorName;
+      hasChanges = true;
+    }
+    return hasChanges ? roomPatch : null;
+  }
 
-function cistRoomToGoogleRoomPatch(
-  cistRoom: DeepReadonly<CistRoom>,
-  googleRoom: DeepReadonly<Schema$CalendarResource>,
-  googleBuildingId: string,
-) {
-  let hasChanges = false;
-  const roomPatch = {} as Schema$CalendarResource;
-  if (googleBuildingId !== googleRoom.buildingId) {
-    roomPatch.buildingId = googleBuildingId;
-    hasChanges = true;
+  private cistRoomToInsertGoogleRoom(
+    cistRoom: DeepReadonly<CistRoom>,
+    googleBuildingId: string,
+    roomId: string,
+  ) {
+    const room: Schema$CalendarResource = { // TODO: add cist room types and is_have_power as features resources
+      resourceId: roomId,
+      buildingId: googleBuildingId,
+      resourceName: cistRoom.short_name,
+      capacity: 999, // unlimited
+      resourceDescription: cistRoom.short_name, // FIXME: whether add info about buildings or not
+      userVisibleDescription: cistRoom.short_name,
+      floorName: transformFloorName(cistRoom.floor),
+      resourceCategory: 'CONFERENCE_ROOM',
+    };
+    return room;
   }
-  if (cistRoom.short_name !== googleRoom.resourceName) {
-    roomPatch.resourceName = cistRoom.short_name;
-    hasChanges = true;
-  }
-  if (cistRoom.short_name !== googleRoom.resourceDescription) {
-    roomPatch.resourceDescription = cistRoom.short_name;
-    hasChanges = true;
-  }
-  if (cistRoom.short_name !== googleRoom.userVisibleDescription) {
-    roomPatch.userVisibleDescription = cistRoom.short_name;
-    hasChanges = true;
-  }
-  const floorName = transformFloorName(cistRoom.floor);
-  if (floorName !== googleRoom.floorName) {
-    roomPatch.floorName = floorName;
-    hasChanges = true;
-  }
-  return hasChanges ? roomPatch : null;
 }
 
 function toRoomsWithBuildings(cistResponse: DeepReadonly<CistRoomsResponse>) {

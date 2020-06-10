@@ -111,7 +111,7 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
                 && other.taskType === tasks_1.TaskType.DeleteIrrelevantBuildings)
             || (first.taskType === tasks_1.TaskType.DeferredDeleteIrrelevantRooms
                 && other.taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings)) {
-            return 1;
+            return -1;
         }
         if ((first.taskType === tasks_1.TaskType.EnsureRooms
             && other.taskType === tasks_1.TaskType.EnsureBuildings)
@@ -121,7 +121,7 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
                 && other.taskType === tasks_1.TaskType.DeleteIrrelevantRooms)
             || (first.taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
                 && other.taskType === tasks_1.TaskType.DeferredDeleteIrrelevantRooms)) {
-            return -1;
+            return 1;
         }
         return 0;
     }
@@ -177,7 +177,7 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
                 {
                     assertNoStep(step);
                     const groupsResponse = await this.getCistClient().getGroupsResponse();
-                    this.emit(TaskStepExecutorEventNames.NewTask, this.getGroupsService().createGroupsTaskContext(groupsResponse));
+                    this.emit(TaskStepExecutorEventNames.NewTask, this.getGroupsService().createEnsureGroupsTask(groupsResponse));
                 }
                 break;
             case tasks_1.TaskType.DeferredDeleteIrrelevantGroups:
