@@ -1,17 +1,24 @@
 import { admin_directory_v1 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { iterate } from 'iterare';
-import { DeepReadonly, GuardedMap, Nullable } from '../../@types';
+import { DeepReadonly, DeepReadonlyMap, Maybe, t } from '../../@types';
 import { ILogger } from '../../@types/logging';
+import { ITaskDefinition, TaskType } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
 import { ApiGroup, ApiGroupsResponse } from '../../@types/cist';
+import { toIdGroupMap } from '../../utils/common';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
+import { FatalError } from './errors';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$Group = admin_directory_v1.Schema$Group;
 import Resource$Groups = admin_directory_v1.Resource$Groups;
-import { GaxiosPromise } from 'gaxios';
 import { isSameGroupIdentity, GoogleUtilsService } from './google-utils.service';
+
+export interface IGroupsTaskContext {
+  readonly cistGroupsMap: DeepReadonlyMap<number, ApiGroup>;
+  readonly googleGroupsMap: DeepReadonlyMap<string, Schema$Group>;
+}
 
 @injectable()
 export class GroupsService {
@@ -62,94 +69,68 @@ export class GroupsService {
   /**
    * Doesn't handle errors properly
    */
-  async ensureGroups(
-    cistResponse: DeepReadonly<ApiGroupsResponse>,
-    preserveEmailChanges = false,
-  ) {
+  async ensureGroups(cistResponse: DeepReadonly<ApiGroupsResponse>) {
     const groups = await this.getAllGroups();
 
-    const newToOldNames = preserveEmailChanges
-      ? new GuardedMap<string, string>()
-      : null;
-    const promises = [] as GaxiosPromise<any>[];
-    const insertedGroups = new Set<string>();
-    for (const faculty of cistResponse.university.faculties) {
-      for (const direction of faculty.directions) {
-        if (direction.groups) {
-          for (const cistGroup of direction.groups) {
-            const request = this.ensureGroup(
-              groups,
-              cistGroup,
-              insertedGroups,
-              newToOldNames,
-            );
-            if (request) {
-              promises.push(request);
-            }
-          }
-        }
-        for (const speciality of direction.specialities) {
-          for (const cistGroup of speciality.groups) {
-            const request = this.ensureGroup(
-              groups,
-              cistGroup,
-              insertedGroups,
-              newToOldNames,
-            );
-            if (request) {
-              promises.push(request);
-            }
-          }
-        }
-      }
-    }
-    await Promise.all(promises);
-    return newToOldNames;
+    await Promise.all(iterate(toIdGroupMap(cistResponse).values())
+      .map(cistGroup => this.doEnsureGroup(cistGroup, groups.find(
+        g => isSameGroupIdentity(cistGroup, g),
+      ))));
   }
 
+  async createGroupsTaskContext(
+    cistResponse: DeepReadonly<ApiGroupsResponse>
+  ): Promise<IGroupsTaskContext> {
+    return {
+      cistGroupsMap: toIdGroupMap(cistResponse),
+      googleGroupsMap: iterate(await this.getAllGroups())
+        .filter(g => typeof g.email === 'string')
+        .map(g => t(g.email as string, g))
+        .toMap()
+    };
+  }
+
+  createEnsureGroupsTask(
+    cistResponse: DeepReadonly<ApiGroupsResponse>
+  ): ITaskDefinition<number> {
+    return {
+      taskType: TaskType.EnsureGroups,
+      steps: Array.from(toIdGroupMap(cistResponse).keys())
+    };
+  }
+
+  async ensureGroup(
+    cistGroupId: number,
+    context: IGroupsTaskContext,
+  ) {
+    const cistGroup = context.cistGroupsMap.get(cistGroupId);
+    if (!cistGroup) {
+      throw new FatalError(`Group ${cistGroupId} is not found in the context`);
+    }
+    await this.doEnsureGroup(
+      cistGroup,
+      context.googleGroupsMap.get(this._utils.getGroupEmail(cistGroup)),
+    );
+  }
+
+  /**
+   * Doesn't handle errors properly
+   */
   async deleteAll() {
     const groups = await this.getAllGroups();
     const promises = [];
     for (const group of groups) {
-      promises.push(this._delete({
-        groupKey: group.id ?? undefined,
-      }));
+      if (group.id) {
+        promises.push(this.doDeleteById(group.id));
+      }
     }
     return Promise.all(promises);
   }
 
-  async deleteRelevant(cistResponse: ApiGroupsResponse) {
-    const groups = await this.getAllGroups();
-    return this.doDeleteByIds(
-      groups,
-      iterate(groups).filter(g => {
-        for (const faculty of cistResponse.university.faculties) {
-          for (const direction of faculty.directions) {
-            if (direction.groups) {
-              const isRelevant = direction.groups.some(
-                cistGroup =>   isSameGroupIdentity(cistGroup, g),
-              );
-              if (isRelevant) {
-                return true;
-              }
-            }
-            for (const speciality of direction.specialities) {
-              const isRelevant = speciality.groups.some(
-                cistGroup => isSameGroupIdentity(cistGroup, g),
-              );
-              if (isRelevant) {
-                return true;
-              }
-            }
-          }
-        }
-        return false;
-        // tslint:disable-next-line:no-non-null-assertion
-      }).map(g => g.id!).toSet(),
-    );
-  }
-
-  async deleteIrrelevant(cistResponse: ApiGroupsResponse) {
+  /**
+   * Doesn't handle errors properly
+   */
+  async deleteIrrelevant(cistResponse: DeepReadonly<ApiGroupsResponse>) {
     const groups = await this.getAllGroups();
     return this.doDeleteByIds(
       groups,
@@ -180,13 +161,64 @@ export class GroupsService {
     );
   }
 
-  async getAllGroups(cacheResults = false) {
+  createDeleteIrrelevantTask(
+    context: IGroupsTaskContext
+  ): ITaskDefinition<string> {
+    return {
+      taskType: TaskType.DeleteIrrelevantGroups,
+      steps: iterate(context.googleGroupsMap.keys())
+        .filter(email => !context.cistGroupsMap.has(
+          this._utils.getGroupIdFromEmail(email)
+        ))
+        .toArray()
+    };
+  }
+
+  async deleteGroupById(groupEmail: string) {
+    return this.doDeleteById(groupEmail);
+  }
+
+  /**
+   * Doesn't handle errors properly
+   */
+  async deleteRelevant(cistResponse: DeepReadonly<ApiGroupsResponse>) {
+    const groups = await this.getAllGroups();
+    return this.doDeleteByIds(
+      groups,
+      iterate(groups).filter(g => {
+        for (const faculty of cistResponse.university.faculties) {
+          for (const direction of faculty.directions) {
+            if (direction.groups) {
+              const isRelevant = direction.groups.some(
+                cistGroup => isSameGroupIdentity(cistGroup, g),
+              );
+              if (isRelevant) {
+                return true;
+              }
+            }
+            for (const speciality of direction.specialities) {
+              const isRelevant = speciality.groups.some(
+                cistGroup => isSameGroupIdentity(cistGroup, g),
+              );
+              if (isRelevant) {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+        // tslint:disable-next-line:no-non-null-assertion
+      }).map(g => g.id!).toSet(),
+    );
+  }
+
+  async getAllGroups() {
     let groups = [] as Schema$Group[];
     let groupsPage = null;
     do {
       groupsPage = await this._list({
         customer,
-        // maxResults: GroupsService.ROOMS_PAGE_SIZE,
+        maxResults: GroupsService.ROOMS_PAGE_SIZE,
         pageToken: groupsPage ? groupsPage.data.nextPageToken : null, // BUG in typedefs
       } as any);
       if (groupsPage.data.groups) {
@@ -196,65 +228,53 @@ export class GroupsService {
     return groups;
   }
 
-  private ensureGroup(
-    groups: ReadonlyArray<Schema$Group>,
-    cistGroup: ApiGroup,
-    insertedGroups: Set<string>,
-    newToOldNames: Nullable<Map<string, string>>,
+  private doEnsureGroup(
+    cistGroup: DeepReadonly<ApiGroup>,
+    googleGroup: Maybe<DeepReadonly<Schema$Group>>,
   ) {
-    const googleGroupEmail = this._utils.getGroupEmail(cistGroup);
-    const googleGroup = groups.find(
-      g => isSameGroupIdentity(cistGroup, g),
-    );
     if (googleGroup) {
-      insertedGroups.add(googleGroupEmail);
       const groupPatch = this.cistGroupToGoogleGroupPatch(
         cistGroup,
         googleGroup,
       );
       if (groupPatch) {
-        if (newToOldNames && groupPatch.name) {
-          // tslint:disable-next-line:no-non-null-assertion
-          newToOldNames.set(groupPatch.name, googleGroup.name!);
-        }
-        this._logger.info(`Patching group ${cistGroup.name}`);
-        return this._patch({
+        return Promise.resolve(this._patch({
           customer,
-          groupKey: googleGroupEmail,
+          groupKey: this._utils.getGroupEmail(cistGroup),
           requestBody: groupPatch,
-        } as admin_directory_v1.Params$Resource$Groups$Patch);
+        } as admin_directory_v1.Params$Resource$Groups$Patch)).tap(
+          () => this._logger.info(`Patched group ${cistGroup.name}`)
+        );
       }
-      return null;
     }
-    if (insertedGroups.has(googleGroupEmail)) {
-      return null;
-    }
-    this._logger.info(`Inserting group ${cistGroup.name}`);
-    insertedGroups.add(googleGroupEmail);
-    return this._insert({
-      requestBody: this.cistGroupToInsertGoogleGroup(
-        cistGroup, googleGroupEmail
-      ),
-    });
+    return Promise.resolve(this._insert({
+      requestBody: this.cistGroupToInsertGoogleGroup(cistGroup),
+    })).tap(() => `Inserted group ${cistGroup.name}`);
   }
 
-  private doDeleteByIds(groups: ReadonlyArray<Schema$Group>, ids: Set<string>) {
+  private doDeleteByIds(
+    groups: ReadonlyArray<Schema$Group>,
+    ids: ReadonlySet<string>,
+  ) {
     const promises = [];
     for (const group of groups) {
       // tslint:disable-next-line:no-non-null-assertion
       if (ids.has(group.id!)) {
-        promises.push(
-          this._delete({
-            groupKey: group.id ?? undefined,
-          }),
-        );
+        // tslint:disable-next-line:no-non-null-assertion
+        promises.push(this.doDeleteById(group.email!));
       }
     }
     return Promise.all(promises);
   }
 
+  private doDeleteById(groupEmailOrId: string) {
+    return this._delete({
+      groupKey: groupEmailOrId,
+    });
+  }
+
   private cistGroupToInsertGoogleGroup(
-    cistGroup: ApiGroup,
+    cistGroup: DeepReadonly<ApiGroup>,
     email = this._utils.getGroupEmail(cistGroup),
   ): Schema$Group {
     return {
@@ -265,8 +285,8 @@ export class GroupsService {
   }
 
   private cistGroupToGoogleGroupPatch(
-    cistGroup: ApiGroup,
-    googleGroup: Schema$Group,
+    cistGroup: DeepReadonly<ApiGroup>,
+    googleGroup: DeepReadonly<Schema$Group>,
   ) {
     let hasChanges = false;
     const groupPatch = {} as Schema$Group;

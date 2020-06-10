@@ -131,7 +131,7 @@ export class RoomsService {
   ) {
     const cistData = context.cistRoomsMap.get(cistRoomId);
     if (!cistData) {
-      throw new FatalError(`Room ${cistRoomId} is not found it context`);
+      throw new FatalError(`Room ${cistRoomId} is not found in the context`);
     }
     await this.doEnsureRoom(
       cistData[0] as DeepReadonly<ApiRoom>,
@@ -185,10 +185,7 @@ export class RoomsService {
     return {
       taskType: TaskType.DeleteIrrelevantRooms,
       steps: iterate(context.googleRoomsMap.keys())
-        .filter(
-          googleRoomId => typeof googleRoomId === 'string'
-            && !context.cistRoomsMap.has(googleRoomId)
-        )
+        .filter(googleRoomId => !context.cistRoomsMap.has(googleRoomId))
         .map(id => id as string)
         .toArray(),
     };

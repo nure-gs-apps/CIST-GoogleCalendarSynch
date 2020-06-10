@@ -9,6 +9,7 @@ import {
   ApiBuilding,
   ApiGroup,
 } from '../../@types/cist';
+import { FatalError } from './errors';
 import Schema$Building = admin_directory_v1.Schema$Building;
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import Schema$Group = admin_directory_v1.Schema$Group;
@@ -70,7 +71,7 @@ export class GoogleUtilsService {
 
   getGroupEmail(cistGroup: DeepReadonly<ApiGroup>) {
     const uniqueHash = cistGroup.id.toString();
-    const localPartTemplate = [`${groupEmailPrefix}_`, `.${uniqueHash}`];
+    const localPartTemplate = [`${groupEmailPrefix}_`, `_${uniqueHash}`];
     // is OK for google email, but causes collisions
     const groupName = toTranslit(
       cistGroup.name,
@@ -86,6 +87,21 @@ export class GoogleUtilsService {
   //   .split('')
   //   .map(c => v.isAlpha(c) && v.isUpperCase(c) ? `_${c.toLowerCase()}` : c)
   //   .join('');
+
+  getGroupIdFromEmail(email: string) {
+    const atSignIndex = email.indexOf('@');
+    if (atSignIndex < 0) {
+      throwInvalidGroupEmailError(email);
+    }
+    const id = Number.parseFloat(email.slice(
+      email.lastIndexOf('_', atSignIndex) + 1,
+      atSignIndex
+    ));
+    if (Number.isNaN(id)) {
+      throwInvalidGroupEmailError(email);
+    }
+    return id;
+  }
 }
 
 const emptyFloorName = /^\s*$/;
@@ -101,4 +117,8 @@ export function isSameGroupIdentity(
   const emailParts = googleGroup.email!.split('@');
   const parts = emailParts[emailParts.length - 2].split('.');
   return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
+}
+
+function throwInvalidGroupEmailError(email: string): never {
+  throw new FatalError(`Invalid group email ${email}`);
 }

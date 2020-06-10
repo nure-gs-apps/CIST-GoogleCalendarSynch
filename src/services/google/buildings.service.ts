@@ -119,7 +119,7 @@ export class BuildingsService {
   ) {
     const cistBuilding = context.cistBuildingsMap.get(cistBuildingId);
     if (!cistBuilding) {
-      throw new FatalError(`Building ${cistBuildingId} is not found in context`);
+      throw new FatalError(`Building ${cistBuildingId} is not found in the context`);
     }
     const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
     await this.doEnsureBuilding(
@@ -161,12 +161,9 @@ export class BuildingsService {
     return {
       taskType: TaskType.DeleteIrrelevantBuildings,
       steps: iterate(context.googleBuildingsMap.keys())
-        .filter(
-          googleBuildingId => typeof googleBuildingId === 'string'
-            && !context.cistBuildingsMap.has(
-              this._utils.getCistBuildingId(googleBuildingId)
-            ),
-        )
+        .filter(googleBuildingId => !context.cistBuildingsMap.has(
+          this._utils.getCistBuildingId(googleBuildingId)
+        ))
         .map(id => id as string)
         .toArray(),
     };

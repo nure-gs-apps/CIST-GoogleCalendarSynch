@@ -19,7 +19,7 @@ import {
 } from './config/types';
 import { handleCistCacheExtend } from './jobs/cist-cache-extend';
 // import { handleFinishTask } from './jobs/finish-task';
-import { IEntitiesToRemove, SyncJob } from './jobs/sync.class';
+import { IEntitiesToRemove, RunTasksJob } from './jobs/run-tasks.class';
 import { exitGracefully, setExitLogger } from './services/exit-handler.service';
 import { handleCistAssert } from './jobs/cist-assert';
 import * as packageInfo from '../package.json';
@@ -117,7 +117,7 @@ const yargs = getBasicCliConfiguration()
     command: 'sync',
     describe: `Synchronize with CIST schedule with G Suite & Google Calendar. Common flags (${nameof<IEntitiesToOperateOn>(e => e.groups)}, ${nameof<IEntitiesToOperateOn>(e => e.auditories)}, ${nameof<IEntitiesToOperateOn>(e => e.events)}) are used for upload to Google, removal of irrelevant is done with additional flags.`,
     handler(argv) {
-      new SyncJob(
+      new RunTasksJob(
         getFullConfig(),
         console,
         argv as IArgsWithEntities & IEntitiesToRemove,
@@ -136,7 +136,7 @@ const yargs = getBasicCliConfiguration()
               .help('help').alias('h', 'help');
           },
           handler(argv) {
-            new SyncJob(
+            new RunTasksJob(
               getFullConfig(),
               console,
             ).handle().catch(handleError);

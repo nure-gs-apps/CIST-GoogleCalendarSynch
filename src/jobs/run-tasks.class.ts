@@ -50,7 +50,7 @@ export interface IEntitiesToRemove {
   deleteIrrelevantEvents: boolean;
 }
 
-export class SyncJob {
+export class RunTasksJob {
   protected readonly _config: DeepReadonly<IFullAppConfig>;
   protected readonly _logger: IInfoLogger & IWarnLogger & IErrorLogger;
   protected readonly _args: Optional<IEntitiesToOperateOn & IEntitiesToRemove>;
