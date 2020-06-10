@@ -279,7 +279,7 @@ let CachedCistJsonClientService = class CachedCistJsonClientService extends obje
             const oldCachedValue = cachedValue;
             switch (type) {
                 case types_1.CacheType.Http:
-                    // cachedValue = new FileCachedValue<ApiRoomsResponse>(
+                    // cachedValue = new FileCachedValue<CistRoomsResponse>(
                     //   this._cacheUtils,
                     //   '/var/tmp/ncgc/cache/cist/rooms.tmp.tmp',
                     // );

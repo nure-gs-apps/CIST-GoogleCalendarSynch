@@ -12,8 +12,8 @@ import { ILogger } from '../../@types/logging';
 import { ITaskDefinition, TaskType } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
 import {
-  ApiRoomsResponse,
-  ApiRoom, ApiBuilding,
+  CistRoomsResponse,
+  CistRoom, CistBuilding,
 } from '../../@types/cist';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
@@ -24,7 +24,7 @@ import { GaxiosPromise } from 'gaxios';
 import { transformFloorName, GoogleUtilsService } from './google-utils.service';
 
 export interface IRoomsTaskContext {
-  readonly cistRoomsMap: DeepReadonlyMap<string, [ApiRoom, ApiBuilding]>;
+  readonly cistRoomsMap: DeepReadonlyMap<string, [CistRoom, CistBuilding]>;
   readonly googleRoomsMap: DeepReadonlyMap<string, Schema$CalendarResource>;
 }
 
@@ -78,7 +78,7 @@ export class RoomsService {
   /**
    * Doesn't handle errors properly
    */
-  async ensureRooms(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+  async ensureRooms(cistResponse: DeepReadonly<CistRoomsResponse>) {
     const rooms = await this.getAllRooms();
 
     const promises = [] as GaxiosPromise[];
@@ -101,7 +101,7 @@ export class RoomsService {
   }
 
   async createRoomsContext(
-    cistResponse: DeepReadonly<ApiRoomsResponse>
+    cistResponse: DeepReadonly<CistRoomsResponse>
   ): Promise<IRoomsTaskContext> {
     return {
       cistRoomsMap: toRoomsWithBuildings(cistResponse)
@@ -115,7 +115,7 @@ export class RoomsService {
   }
 
   createEnsureRoomsTask(
-    cistResponse: DeepReadonly<ApiRoomsResponse>
+    cistResponse: DeepReadonly<CistRoomsResponse>
   ): ITaskDefinition<string> {
     return {
       taskType: TaskType.EnsureRooms,
@@ -134,8 +134,8 @@ export class RoomsService {
       throw new FatalError(`Room ${cistRoomId} is not found in the context`);
     }
     await this.doEnsureRoom(
-      cistData[0] as DeepReadonly<ApiRoom>,
-      cistData[1] as DeepReadonly<ApiBuilding>,
+      cistData[0] as DeepReadonly<CistRoom>,
+      cistData[1] as DeepReadonly<CistBuilding>,
       context.googleRoomsMap.get(cistRoomId),
       cistData[1].id,
       cistRoomId
@@ -160,7 +160,7 @@ export class RoomsService {
   /**
    * Doesn't handle errors properly
    */
-  async deleteIrrelevant(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+  async deleteIrrelevant(cistResponse: DeepReadonly<CistRoomsResponse>) {
     const rooms = await this.getAllRooms();
     return Promise.all(this.doDeleteByIds(
       rooms,
@@ -198,7 +198,7 @@ export class RoomsService {
   /**
    * Doesn't handle errors properly
    */
-  async deleteRelevant(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+  async deleteRelevant(cistResponse: DeepReadonly<CistRoomsResponse>) {
     const rooms = await this.getAllRooms();
     return Promise.all(this.doDeleteByIds(
       rooms,
@@ -237,8 +237,8 @@ export class RoomsService {
   }
 
   private async doEnsureRoom(
-    cistRoom: DeepReadonly<ApiRoom>,
-    cistBuilding: DeepReadonly<ApiBuilding>,
+    cistRoom: DeepReadonly<CistRoom>,
+    cistBuilding: DeepReadonly<CistBuilding>,
     googleRoom: Maybe<DeepReadonly<Schema$CalendarResource>>,
     buildingId = this._utils.getGoogleBuildingId(cistBuilding),
     cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding)
@@ -289,7 +289,7 @@ export class RoomsService {
 }
 
 function cistRoomToInsertGoogleRoom(
-  cistRoom: DeepReadonly<ApiRoom>,
+  cistRoom: DeepReadonly<CistRoom>,
   googleBuildingId: string,
   roomId: string,
 ) {
@@ -307,7 +307,7 @@ function cistRoomToInsertGoogleRoom(
 }
 
 function cistRoomToGoogleRoomPatch(
-  cistRoom: DeepReadonly<ApiRoom>,
+  cistRoom: DeepReadonly<CistRoom>,
   googleRoom: DeepReadonly<Schema$CalendarResource>,
   googleBuildingId: string,
 ) {
@@ -337,7 +337,7 @@ function cistRoomToGoogleRoomPatch(
   return hasChanges ? roomPatch : null;
 }
 
-function toRoomsWithBuildings(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+function toRoomsWithBuildings(cistResponse: DeepReadonly<CistRoomsResponse>) {
   return iterate(cistResponse.university.buildings)
     .map(b => iterate(b.auditories).map(a => t(a, b)))
     .flatten();

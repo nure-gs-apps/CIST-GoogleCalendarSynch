@@ -8,6 +8,7 @@ const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-
 const cist_1 = require("../@types/cist");
 const exit_handler_service_1 = require("../services/exit-handler.service");
 const assert_responses_1 = require("../utils/assert-responses");
+const cist_2 = require("../utils/cist");
 const common_1 = require("../utils/common");
 const jobs_1 = require("../utils/jobs");
 async function handleCistAssert(args, config, logger) {
@@ -42,7 +43,7 @@ async function handleCistAssert(args, config, logger) {
             if (!groupsResponse) {
                 groupsResponse = await cistClient.getGroupsResponse();
             }
-            groupIds = common_1.toGroupIds(groupsResponse);
+            groupIds = cist_2.toGroupIds(groupsResponse);
         }
         else {
             groupIds = args.events;

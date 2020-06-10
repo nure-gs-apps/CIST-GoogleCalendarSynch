@@ -1,9 +1,9 @@
 import { AxiosResponse } from 'axios';
 import { injectable } from 'inversify';
 import {
-  ApiRoomsResponse,
-  ApiEventsResponse,
-  ApiGroupsResponse,
+  CistRoomsResponse,
+  CistEventsResponse,
+  CistGroupsResponse,
   ICistJsonHttpParserService,
 } from '../../@types/cist';
 
@@ -11,7 +11,7 @@ import {
 export class CistJsonHttpParserService implements ICistJsonHttpParserService {
   parseRoomsResponse(
     response: AxiosResponse,
-  ): ApiRoomsResponse {
+  ): CistRoomsResponse {
     const body = response.data;
     if (typeof body !== 'string') {
       throw new TypeError('Unexpected non-string response');
@@ -23,7 +23,7 @@ export class CistJsonHttpParserService implements ICistJsonHttpParserService {
 
   parseGroupsResponse(
     response: AxiosResponse,
-  ): ApiGroupsResponse {
+  ): CistGroupsResponse {
     if (typeof response.data !== 'string') {
       throw new TypeError('Unexpected non-string response');
     }
@@ -32,7 +32,7 @@ export class CistJsonHttpParserService implements ICistJsonHttpParserService {
 
   parseEventsResponse(
     response: AxiosResponse,
-  ): ApiEventsResponse {
+  ): CistEventsResponse {
     if (typeof response.data !== 'string') {
       throw new TypeError('Unexpected non-string response');
     }

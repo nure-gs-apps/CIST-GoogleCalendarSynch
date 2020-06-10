@@ -5,9 +5,11 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
 const _types_1 = require("../../@types");
+const tasks_1 = require("../../@types/tasks");
 const types_1 = require("../../di/types");
 const quota_limiter_service_1 = require("../quota-limiter.service");
 const constants_1 = require("./constants");
+const errors_1 = require("./errors");
 const google_api_admin_directory_1 = require("./google-api-admin-directory");
 const google_utils_service_1 = require("./google-utils.service");
 let RoomsService = RoomsService_1 = class RoomsService {
@@ -76,43 +78,50 @@ let RoomsService = RoomsService_1 = class RoomsService {
         this._delete = this._quotaLimiter.limiter.wrap(this._rooms.delete.bind(this._rooms));
         this._list = this._quotaLimiter.limiter.wrap(this._rooms.list.bind(this._rooms));
     }
-    async ensureRooms(cistResponse, preserveNameChanges = false) {
+    /**
+     * Doesn't handle errors properly
+     */
+    async ensureRooms(cistResponse) {
         const rooms = await this.getAllRooms();
         const promises = [];
-        const newToOldNames = new _types_1.GuardedMap();
         for (const cistBuilding of cistResponse.university.buildings) {
             const buildingId = this._utils.getGoogleBuildingId(cistBuilding);
             for (const cistRoom of cistBuilding.auditories) {
                 const cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding);
-                const googleRoom = rooms.find(r => r.resourceId === cistRoomId);
-                if (googleRoom) {
-                    const roomPatch = cistRoomToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
-                    if (roomPatch) {
-                        if (newToOldNames && roomPatch.resourceName) {
-                            newToOldNames.set(roomPatch.resourceName, 
-                            // tslint:disable-next-line:no-non-null-assertion
-                            googleRoom.resourceName);
-                        }
-                        this._logger.info(`Patching room ${cistRoomId} ${cistRoom.short_name}`);
-                        promises.push(this._patch({
-                            customer: constants_1.customer,
-                            calendarResourceId: cistRoomId,
-                            requestBody: roomPatch,
-                        }));
-                    }
-                }
-                else {
-                    this._logger.info(`Inserting room ${cistRoomId} ${cistRoom.short_name}`);
-                    promises.push(this._insert({
-                        customer: constants_1.customer,
-                        requestBody: cistRoomToInsertGoogleRoom(cistRoom, buildingId, cistRoomId),
-                    }));
-                }
+                promises.push(this.doEnsureRoom(cistRoom, cistBuilding, rooms.find(r => r.resourceId === cistRoomId), buildingId, cistRoomId));
             }
         }
         await Promise.all(promises);
-        return newToOldNames;
     }
+    async createRoomsContext(cistResponse) {
+        return {
+            cistRoomsMap: toRoomsWithBuildings(cistResponse)
+                .map(([a, b]) => _types_1.t(this._utils.getRoomId(a, b), _types_1.t(a, b)))
+                .toMap(),
+            googleRoomsMap: iterare_1.default(await this.getAllRooms())
+                .filter(b => typeof b.buildingId === 'string')
+                .map(b => _types_1.t(b.buildingId, b))
+                .toMap()
+        };
+    }
+    createEnsureRoomsTask(cistResponse) {
+        return {
+            taskType: tasks_1.TaskType.EnsureRooms,
+            steps: toRoomsWithBuildings(cistResponse)
+                .map(([a, b]) => this._utils.getRoomId(a, b))
+                .toArray(),
+        };
+    }
+    async ensureRoom(cistRoomId, context) {
+        const cistData = context.cistRoomsMap.get(cistRoomId);
+        if (!cistData) {
+            throw new errors_1.FatalError(`Room ${cistRoomId} is not found in the context`);
+        }
+        await this.doEnsureRoom(cistData[0], cistData[1], context.googleRoomsMap.get(cistRoomId), cistData[1].id, cistRoomId);
+    }
+    /**
+     * Doesn't handle errors properly
+     */
     async deleteAll() {
         var _a;
         const rooms = await this.getAllRooms();
@@ -125,6 +134,9 @@ let RoomsService = RoomsService_1 = class RoomsService {
         }
         return Promise.all(promises);
     }
+    /**
+     * Doesn't handle errors properly
+     */
     async deleteIrrelevant(cistResponse) {
         const rooms = await this.getAllRooms();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
@@ -138,6 +150,21 @@ let RoomsService = RoomsService_1 = class RoomsService {
             // tslint:disable-next-line:no-non-null-assertion
         }).map(r => r.resourceId).toSet()));
     }
+    createDeleteIrrelevantTask(context) {
+        return {
+            taskType: tasks_1.TaskType.DeleteIrrelevantRooms,
+            steps: iterare_1.default(context.googleRoomsMap.keys())
+                .filter(googleRoomId => !context.cistRoomsMap.has(googleRoomId))
+                .map(id => id)
+                .toArray(),
+        };
+    }
+    async deleteRoomById(roomId) {
+        return this.doDeleteById(roomId);
+    }
+    /**
+     * Doesn't handle errors properly
+     */
     async deleteRelevant(cistResponse) {
         const rooms = await this.getAllRooms();
         return Promise.all(this.doDeleteByIds(rooms, iterare_1.default(rooms).filter(r => {
@@ -151,7 +178,7 @@ let RoomsService = RoomsService_1 = class RoomsService {
             // tslint:disable-next-line:no-non-null-assertion
         }).map(r => r.resourceId).toSet()));
     }
-    async getAllRooms(cacheResults = false) {
+    async getAllRooms() {
         let rooms = [];
         let roomsPage = null;
         do {
@@ -168,18 +195,35 @@ let RoomsService = RoomsService_1 = class RoomsService {
         } while (roomsPage.data.nextPageToken);
         return rooms;
     }
-    doDeleteByIds(rooms, ids, promises = []) {
-        var _a;
-        for (const googleRoom of rooms) {
-            // tslint:disable-next-line:no-non-null-assertion
-            if (ids.has(googleRoom.resourceId)) {
-                promises.push(this._delete({
+    async doEnsureRoom(cistRoom, cistBuilding, googleRoom, buildingId = this._utils.getGoogleBuildingId(cistBuilding), cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding)) {
+        if (googleRoom) {
+            const roomPatch = cistRoomToGoogleRoomPatch(cistRoom, googleRoom, buildingId);
+            if (roomPatch) {
+                return Promise.resolve(this._patch({
                     customer: constants_1.customer,
-                    calendarResourceId: (_a = googleRoom.resourceId) !== null && _a !== void 0 ? _a : undefined,
-                }));
+                    calendarResourceId: cistRoomId,
+                    requestBody: roomPatch,
+                })).tap(() => this._logger.info(`Patched room ${cistRoom.short_name}, building ${cistBuilding.short_name}`));
+            }
+        }
+        return Promise.resolve(this._insert({
+            customer: constants_1.customer,
+            requestBody: cistRoomToInsertGoogleRoom(cistRoom, buildingId, cistRoomId),
+        })).tap(() => this._logger.info(`Inserted room ${cistRoom.short_name}, building ${cistBuilding.short_name}`));
+    }
+    doDeleteByIds(rooms, ids, promises = []) {
+        for (const googleRoom of rooms) {
+            if (googleRoom.resourceId && ids.has(googleRoom.resourceId)) {
+                promises.push(this.doDeleteById(googleRoom.resourceId));
             }
         }
         return promises;
+    }
+    doDeleteById(roomId) {
+        return this._delete({
+            customer: constants_1.customer,
+            calendarResourceId: roomId,
+        });
     }
 };
 Object.defineProperty(RoomsService, "ROOMS_PAGE_SIZE", {
@@ -243,5 +287,10 @@ function cistRoomToGoogleRoomPatch(cistRoom, googleRoom, googleBuildingId) {
         hasChanges = true;
     }
     return hasChanges ? roomPatch : null;
+}
+function toRoomsWithBuildings(cistResponse) {
+    return iterare_1.default(cistResponse.university.buildings)
+        .map(b => iterare_1.default(b.auditories).map(a => _types_1.t(a, b)))
+        .flatten();
 }
 //# sourceMappingURL=rooms.service.js.map

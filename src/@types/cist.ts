@@ -8,19 +8,19 @@ export enum EntityType {
 }
 
 export interface ICistJsonClient {
-  getRoomsResponse(): Promise<ApiRoomsResponse>;
-  getGroupsResponse(): Promise<ApiGroupsResponse>;
+  getRoomsResponse(): Promise<CistRoomsResponse>;
+  getGroupsResponse(): Promise<CistGroupsResponse>;
   getEventsResponse(
     type: TimetableType,
     entityId: number | string,
     dateLimits?: DeepReadonly<IDateLimits>,
-  ): Promise<ApiEventsResponse>;
+  ): Promise<CistEventsResponse>;
 }
 
 export interface ICistJsonHttpParserService {
-  parseRoomsResponse(response: AxiosResponse): ApiRoomsResponse;
-  parseGroupsResponse(response: AxiosResponse): ApiGroupsResponse;
-  parseEventsResponse(response: AxiosResponse): ApiEventsResponse;
+  parseRoomsResponse(response: AxiosResponse): CistRoomsResponse;
+  parseGroupsResponse(response: AxiosResponse): CistGroupsResponse;
+  parseEventsResponse(response: AxiosResponse): CistEventsResponse;
 }
 
 export class ThrowCistJsonClient implements ICistJsonClient {
@@ -39,93 +39,93 @@ export class ThrowCistJsonClient implements ICistJsonClient {
     type: TimetableType,
     entityId: number | string,
     dateLimits?: DeepReadonly<IDateLimits>
-  ): Promise<ApiEventsResponse> {
+  ): Promise<CistEventsResponse> {
     throw new TypeError('Cist Json Client is not found');
   }
 
-  getGroupsResponse(): Promise<ApiGroupsResponse> {
+  getGroupsResponse(): Promise<CistGroupsResponse> {
     throw new TypeError('Cist Json Client is not found');
   }
 
-  getRoomsResponse(): Promise<ApiRoomsResponse> {
+  getRoomsResponse(): Promise<CistRoomsResponse> {
     throw new TypeError('Cist Json Client is not found');
   }
 
 }
 
-export interface ApiRoomsResponse {
+export interface CistRoomsResponse {
   university: {
     short_name: string;
     full_name: string;
-    buildings: ApiBuilding[];
+    buildings: CistBuilding[];
   };
 }
 
-export interface ApiGroupsResponse {
+export interface CistGroupsResponse {
   university: {
     short_name: string;
     full_name: string;
-    faculties: ApiFaculty[];
+    faculties: CistFaculty[];
   };
 }
 
-export interface ApiEventsResponse {
+export interface CistEventsResponse {
   'time-zone': string;
-  events: ApiEvent[];
-  groups: ApiGroup[];
-  teachers: ApiTeacher[];
-  subjects: ApiSubject[];
-  types: ApiEventType[];
+  events: CistEvent[];
+  groups: CistGroup[];
+  teachers: CistTeacher[];
+  subjects: CistSubject[];
+  types: CistEventType[];
 }
 
-export interface ApiBuilding {
+export interface CistBuilding {
   id: string; // the same as short_name, but don't rely
   short_name: string;
   full_name: string;
-  auditories: ApiRoom[];
+  auditories: CistRoom[];
 }
 
-export interface ApiRoom {
+export interface CistRoom {
   id: string;
   short_name: string;
   floor: string; // number in fact
   is_have_power: string; // string one or (presumably) zero
-  auditory_types: ApiRoomType[];
+  auditory_types: CistRoomType[];
 }
 
-export interface ApiRoomType {
+export interface CistRoomType {
   id: string;
   short_name: string; // (presumably) direction (branch)
 }
 
-export interface ApiFaculty {
+export interface CistFaculty {
   id: number;
   short_name: string;
   full_name: string;
-  directions: ApiDirection[];
+  directions: CistDirection[];
 }
 
-export interface ApiDirection {
+export interface CistDirection {
   id: number;
   short_name: string;
   full_name: string;
-  groups?: ApiGroup[];
-  specialities: ApiSpeciality[];
+  groups?: CistGroup[];
+  specialities: CistSpeciality[];
 }
 
-export interface ApiSpeciality {
+export interface CistSpeciality {
   id: number;
   short_name: string;
   full_name: string;
-  groups: ApiGroup[];
+  groups: CistGroup[];
 }
 
-export interface ApiGroup {
+export interface CistGroup {
   id: number;
   name: string;
 }
 
-export interface ApiEvent {
+export interface CistEvent {
   subject_id: number;
   start_time: number;
   end_time: number;
@@ -136,26 +136,26 @@ export interface ApiEvent {
   groups: number[];
 }
 
-export interface ApiTeacher {
+export interface CistTeacher {
   id: number;
   short_name: string;
   full_name: string;
 }
 
-export interface ApiSubject {
+export interface CistSubject {
   id: number;
   brief: string;
   title: string;
-  hours: ApiSubjectHour[];
+  hours: CistSubjectHour[];
 }
 
-export interface ApiSubjectHour {
+export interface CistSubjectHour {
   type: number;
   val: number;
   teachers: number[];
 }
 
-export interface ApiEventType { // for course work: #BFC9CA
+export interface CistEventType { // for course work: #BFC9CA
   id: number;
   short_name: string;
   full_name: string;

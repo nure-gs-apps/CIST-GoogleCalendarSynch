@@ -5,9 +5,9 @@ import { TYPES } from '../../di/types';
 import { fromBase64, toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
 import {
-  ApiRoom,
-  ApiBuilding,
-  ApiGroup,
+  CistRoom,
+  CistBuilding,
+  CistGroup,
 } from '../../@types/cist';
 import { FatalError } from './errors';
 import Schema$Building = admin_directory_v1.Schema$Building;
@@ -42,21 +42,21 @@ export class GoogleUtilsService {
   }
 
   isSameBuildingIdentity(
-    cistBuilding: DeepReadonly<ApiBuilding>,
+    cistBuilding: DeepReadonly<CistBuilding>,
     googleBuilding: DeepReadonly<Schema$Building>,
   ) {
     return googleBuilding.buildingId === this.getGoogleBuildingId(cistBuilding);
   }
 
   isSameIdentity(
-    cistRoom: DeepReadonly<ApiRoom>,
-    building: DeepReadonly<ApiBuilding>,
+    cistRoom: DeepReadonly<CistRoom>,
+    building: DeepReadonly<CistBuilding>,
     googleRoom: DeepReadonly<Schema$CalendarResource>,
   ) {
     return googleRoom.resourceId === this.getRoomId(cistRoom, building);
   }
 
-  getGoogleBuildingId(cistBuilding: DeepReadonly<ApiBuilding>) {
+  getGoogleBuildingId(cistBuilding: DeepReadonly<CistBuilding>) {
     return this.prependIdPrefix(`${buildingIdPrefix}.${toBase64(cistBuilding.id)}`);
   }
 
@@ -65,11 +65,14 @@ export class GoogleUtilsService {
     return fromBase64(id.slice(id.indexOf('.') + 1));
   }
 
-  getRoomId(room: DeepReadonly<ApiRoom>, building: DeepReadonly<ApiBuilding>) {
+  getRoomId(
+    room: DeepReadonly<CistRoom>,
+    building: DeepReadonly<CistBuilding>,
+  ) {
     return this.prependIdPrefix(`${roomIdPrefix}.${toBase64(building.id)}.${toBase64(room.id)}`); // using composite id to ensure uniqueness
   }
 
-  getGroupEmail(cistGroup: DeepReadonly<ApiGroup>) {
+  getGroupEmail(cistGroup: DeepReadonly<CistGroup>) {
     const uniqueHash = cistGroup.id.toString();
     const localPartTemplate = [`${groupEmailPrefix}_`, `_${uniqueHash}`];
     // is OK for google email, but causes collisions
@@ -110,7 +113,7 @@ export function transformFloorName(floorName: string) {
 }
 
 export function isSameGroupIdentity(
-  cistGroup: DeepReadonly<ApiGroup>,
+  cistGroup: DeepReadonly<CistGroup>,
   googleGroup: DeepReadonly<Schema$Group>,
 ) {
   // tslint:disable-next-line:no-non-null-assertion

@@ -8,7 +8,7 @@ import {
   Maybe, Nullable,
   t,
 } from '../../@types';
-import { ApiBuilding, ApiRoomsResponse } from '../../@types/cist';
+import { CistBuilding, CistRoomsResponse } from '../../@types/cist';
 import { ILogger } from '../../@types/logging';
 import { ITaskDefinition, TaskType } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
@@ -24,7 +24,7 @@ import Schema$Building = admin_directory_v1.Schema$Building;
 import { isEmpty } from 'lodash';
 
 export interface IBuildingsTaskContext {
-  readonly cistBuildingsMap: DeepReadonlyMap<string, ApiBuilding>;
+  readonly cistBuildingsMap: DeepReadonlyMap<string, CistBuilding>;
   readonly googleBuildingsMap: DeepReadonlyMap<string, Schema$Building>;
 }
 
@@ -77,7 +77,7 @@ export class BuildingsService {
   /**
    * Doesn't handle errors properly
    */
-  async ensureBuildings(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+  async ensureBuildings(cistResponse: DeepReadonly<CistRoomsResponse>) {
     const buildings = await this.getAllBuildings();
 
     const promises = [] as Promise<any>[];
@@ -91,7 +91,7 @@ export class BuildingsService {
   }
 
   async createBuildingsContext(
-    cistResponse: DeepReadonly<ApiRoomsResponse>
+    cistResponse: DeepReadonly<CistRoomsResponse>
   ): Promise<IBuildingsTaskContext> {
     return {
       cistBuildingsMap: iterate(cistResponse.university.buildings)
@@ -105,7 +105,7 @@ export class BuildingsService {
   }
 
   createEnsureBuildingsTask(
-    cistResponse: DeepReadonly<ApiRoomsResponse>
+    cistResponse: DeepReadonly<CistRoomsResponse>
   ): ITaskDefinition<string> {
     return {
       taskType: TaskType.EnsureBuildings,
@@ -147,7 +147,7 @@ export class BuildingsService {
   /**
    * Doesn't handle errors properly
    */
-  async deleteIrrelevant(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+  async deleteIrrelevant(cistResponse: DeepReadonly<CistRoomsResponse>) {
     const buildings = await this.getAllBuildings();
     return Promise.all(this.doDeleteByIds(
       buildings,
@@ -176,7 +176,7 @@ export class BuildingsService {
   /**
    * Doesn't handle errors properly
    */
-  async deleteRelevant(cistResponse: DeepReadonly<ApiRoomsResponse>) {
+  async deleteRelevant(cistResponse: DeepReadonly<CistRoomsResponse>) {
     const buildings = await this.getAllBuildings();
     return Promise.all(this.doDeleteByIds(
       buildings,
@@ -208,7 +208,7 @@ export class BuildingsService {
   }
 
   private async doEnsureBuilding(
-    cistBuilding: DeepReadonly<ApiBuilding>,
+    cistBuilding: DeepReadonly<CistBuilding>,
     googleBuilding: Maybe<DeepReadonly<Schema$Building>>,
     googleBuildingId: string,
   ): Promise<Nullable<GaxiosResponse<Schema$Building>>> {
@@ -285,7 +285,7 @@ export class BuildingsService {
   }
 
   private cistBuildingToInsertGoogleBuilding(
-    cistBuilding: DeepReadonly<ApiBuilding>,
+    cistBuilding: DeepReadonly<CistBuilding>,
     id = this._utils.getGoogleBuildingId(cistBuilding),
   ): Schema$Building {
     return {
@@ -298,7 +298,7 @@ export class BuildingsService {
 
   private getIrrelevantBuildingGoogleIds(
     googleBuildings: Iterable<DeepReadonly<Schema$Building>>,
-    cistResponse: DeepReadonly<ApiRoomsResponse>,
+    cistResponse: DeepReadonly<CistRoomsResponse>,
   ) {
     return iterate(googleBuildings).filter(building => (
       !cistResponse.university.buildings.some(
@@ -319,7 +319,7 @@ export class BuildingsService {
 }
 
 function cistBuildingToGoogleBuildingPatch(
-  cistBuilding: DeepReadonly<ApiBuilding>,
+  cistBuilding: DeepReadonly<CistBuilding>,
   googleBuilding: DeepReadonly<Schema$Building>,
 ) {
   let hasChanges = false;

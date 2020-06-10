@@ -20,7 +20,7 @@ import {
   exitGracefully,
   unbindOnExitHandler,
 } from '../services/exit-handler.service';
-import { toGroupIds } from '../utils/common';
+import { toGroupIds } from '../utils/cist';
 import { getCistCachedClientTypesForArgs } from '../utils/jobs';
 
 export async function handleCistCacheExtend(

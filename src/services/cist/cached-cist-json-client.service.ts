@@ -31,9 +31,9 @@ import { CistJsonHttpEventsCachedValue } from './cist-json-http-events-cached-va
 import { CistJsonHttpGroupsCachedValue } from './cist-json-http-groups-cached-value';
 import { CistJsonHttpRoomsCachedValue } from './cist-json-http-rooms-cached-value';
 import {
-  ApiRoomsResponse,
-  ApiEventsResponse,
-  ApiGroupsResponse,
+  CistRoomsResponse,
+  CistEventsResponse,
+  CistGroupsResponse,
   ICistJsonClient,
   IDateLimits,
   IEventsQueryParams,
@@ -57,13 +57,13 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
   private readonly _baseDirectory: string;
   private readonly _http: Nullable<CistJsonHttpClient>;
   // tslint:disable-next-line:max-line-length
-  private readonly _eventsCachedValues: Map<string, CachedValue<ApiEventsResponse>>;
+  private readonly _eventsCachedValues: Map<string, CachedValue<CistEventsResponse>>;
   private readonly _eventsCacheSemaphores: Map<string, Sema>;
   // tslint:disable-next-line:max-line-length
-  private _groupsCachedValue: Nullable<CachedValue<ApiGroupsResponse>>;
+  private _groupsCachedValue: Nullable<CachedValue<CistGroupsResponse>>;
   private _groupsCacheSemaphore: Nullable<Sema>;
   // tslint:disable-next-line:max-line-length
-  private _roomsCachedValue: Nullable<CachedValue<ApiRoomsResponse>>;
+  private _roomsCachedValue: Nullable<CachedValue<CistRoomsResponse>>;
   private _roomsCacheSemaphore: Nullable<Sema>;
 
   constructor(
@@ -126,7 +126,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
     type: TimetableType,
     entityId: number | string,
     dateLimits?: DeepReadonly<IDateLimits>
-  ): Promise<ApiEventsResponse> {
+  ): Promise<CistEventsResponse> {
     const cachedValue = await this.getEventsCachedValue(
       type,
       entityId,
@@ -139,7 +139,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
     return response;
   }
 
-  async getGroupsResponse(): Promise<ApiGroupsResponse> {
+  async getGroupsResponse(): Promise<CistGroupsResponse> {
     const response = await (await this.getGroupsCachedValue()).loadValue();
     if (!response) {
       throw new TypeError(g('failed to find value in cache chain!'));
@@ -147,7 +147,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
     return response;
   }
 
-  async getRoomsResponse(): Promise<ApiRoomsResponse> {
+  async getRoomsResponse(): Promise<CistRoomsResponse> {
     const response = await (await this.getRoomsCachedValue()).loadValue();
     if (!response) {
       throw new TypeError(r('failed to find value in cache chain!'));
@@ -237,7 +237,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
   }
 
   private async createGroupsCachedValue() {
-    let cachedValue: Nullable<CachedValue<ApiGroupsResponse>> = null;
+    let cachedValue: Nullable<CachedValue<CistGroupsResponse>> = null;
     for (
       let i = this._cacheConfig.priorities.groups.length - 1,
         type = this._cacheConfig.priorities.groups[i];
@@ -263,7 +263,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
           break;
 
         case CacheType.File:
-          cachedValue = new FileCachedValue<ApiGroupsResponse>(
+          cachedValue = new FileCachedValue<CistGroupsResponse>(
             this._cacheUtils,
             path.join(
               this._baseDirectory,
@@ -301,7 +301,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
   }
 
   private async createRoomsCachedValue() {
-    let cachedValue: Nullable<CachedValue<ApiRoomsResponse>> = null;
+    let cachedValue: Nullable<CachedValue<CistRoomsResponse>> = null;
     for (
       let i = this._cacheConfig.priorities.auditories.length - 1,
         type = this._cacheConfig.priorities.auditories[i];
@@ -311,7 +311,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
       const oldCachedValue = cachedValue;
       switch (type) {
         case CacheType.Http:
-          // cachedValue = new FileCachedValue<ApiRoomsResponse>(
+          // cachedValue = new FileCachedValue<CistRoomsResponse>(
           //   this._cacheUtils,
           //   '/var/tmp/ncgc/cache/cist/rooms.tmp.tmp',
           // );
@@ -335,7 +335,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
           break;
 
         case CacheType.File:
-          cachedValue = new FileCachedValue<ApiRoomsResponse>(
+          cachedValue = new FileCachedValue<CistRoomsResponse>(
             this._cacheUtils,
             path.join(this._baseDirectory, getCacheFileName(EntityType.Rooms)),
           );
@@ -382,7 +382,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
   private async createEventsCachedValue(
     params: DeepReadonly<IEventsQueryParams>
   ) {
-    let cachedValue: Nullable<CachedValue<ApiEventsResponse>> = null;
+    let cachedValue: Nullable<CachedValue<CistEventsResponse>> = null;
     for (
       let i = this._cacheConfig.priorities.events.length - 1,
         type = this._cacheConfig.priorities.events[i];
@@ -409,7 +409,7 @@ export class CachedCistJsonClientService extends Disposer implements ICistJsonCl
           break;
 
         case CacheType.File:
-          cachedValue = new FileCachedValue<ApiEventsResponse>(
+          cachedValue = new FileCachedValue<CistEventsResponse>(
             this._cacheUtils,
             path.join(
               this._baseDirectory,

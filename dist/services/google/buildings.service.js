@@ -80,7 +80,6 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         this._patch = this._quotaLimiter.limiter.wrap(this._buildings.patch.bind(this._buildings));
         this._delete = this._quotaLimiter.limiter.wrap(this._buildings.delete.bind(this._buildings));
         this._list = this._quotaLimiter.limiter.wrap(this._buildings.list.bind(this._buildings));
-        // this._list = this._buildings.list.bind(this._buildings);
     }
     /**
      * Doesn't handle errors properly
@@ -114,7 +113,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
     async ensureBuilding(cistBuildingId, context) {
         const cistBuilding = context.cistBuildingsMap.get(cistBuildingId);
         if (!cistBuilding) {
-            throw new errors_1.FatalError(`Building ${cistBuildingId} is not found in context`);
+            throw new errors_1.FatalError(`Building ${cistBuildingId} is not found in the context`);
         }
         const googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding);
         await this.doEnsureBuilding(cistBuilding, context.googleBuildingsMap.get(googleBuildingId), googleBuildingId);
@@ -144,9 +143,9 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
     createDeleteIrrelevantTask(context) {
         return {
             taskType: tasks_1.TaskType.DeleteIrrelevantBuildings,
-            steps: iterare_1.iterate(context.cistBuildingsMap.values())
-                .map(cistBuilding => this._utils.getGoogleBuildingId(cistBuilding))
-                .filter(googleBuildingId => context.googleBuildingsMap.has(googleBuildingId))
+            steps: iterare_1.iterate(context.googleBuildingsMap.keys())
+                .filter(googleBuildingId => !context.cistBuildingsMap.has(this._utils.getCistBuildingId(googleBuildingId)))
+                .map(id => id)
                 .toArray(),
         };
     }

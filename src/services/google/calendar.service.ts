@@ -4,8 +4,8 @@ import { GuardedMap, IReadonlyGuardedMap, Nullable } from '../../@types';
 import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
 import {
-  ApiRoomsResponse, ApiRoom, ApiGroup,
-  ApiGroupsResponse,
+  CistRoomsResponse, CistRoom, CistGroup,
+  CistGroupsResponse,
 } from '../../@types/cist';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { GoogleApiCalendar } from './google-api-calendar';
@@ -71,8 +71,8 @@ export class CalendarService {
   }
 
   async getEnsuredCalendars(
-    groupsResponse: ApiGroupsResponse,
-    roomsResponse: ApiRoomsResponse,
+    groupsResponse: CistGroupsResponse,
+    roomsResponse: CistRoomsResponse,
     newToOldGroupNames: Nullable<IReadonlyGuardedMap<string, string>>,
     newToOldRoomNames: Nullable<IReadonlyGuardedMap<string, string>>,
   ) {
@@ -172,7 +172,7 @@ export class CalendarService {
 
   private async getEnsuredGroupCalendar(
     calendars: ReadonlyArray<Schema$Calendar | Schema$CalendarListEntry>,
-    cistGroup: ApiGroup,
+    cistGroup: CistGroup,
     calendarMap: Map<string, Schema$Calendar | Schema$CalendarListEntry>,
     newToOldGroupNames: Nullable<IReadonlyGuardedMap<string, string>>,
   ) {
@@ -212,7 +212,7 @@ export class CalendarService {
 
   private async getEnsuredRoomCalendar(
     calendars: ReadonlyArray<Schema$Calendar | Schema$CalendarListEntry>,
-    cistRoom: ApiRoom,
+    cistRoom: CistRoom,
     calendarMap: Map<string, Schema$Calendar | Schema$CalendarListEntry>,
     newToOldRoomNames: Nullable<IReadonlyGuardedMap<string, string>>,
   ) {

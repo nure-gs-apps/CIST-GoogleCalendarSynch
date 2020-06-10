@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const change_case_1 = require("change-case");
-const iterare_1 = require("iterare");
 const lodash_1 = require("lodash");
 const moment = require("moment");
 function arrayContentEqual(first, second) {
@@ -12,6 +11,10 @@ function toBase64(value) {
     return Buffer.from(value).toString('base64');
 }
 exports.toBase64 = toBase64;
+function fromBase64(value) {
+    return Buffer.from(value, 'base64').toString('utf8');
+}
+exports.fromBase64 = fromBase64;
 function dateToSeconds(date) {
     return Math.round(date.getTime() / 1000);
 }
@@ -130,16 +133,6 @@ function makePropertyEnumerable(object, property) {
     }
 }
 exports.makePropertyEnumerable = makePropertyEnumerable;
-function toGroupIds(groupsResponse) {
-    return iterare_1.default(groupsResponse.university.faculties)
-        .map(f => f.directions)
-        .flatten()
-        .filter(d => !!d.groups)
-        .map(d => d.groups)
-        .flatten()
-        .map(g => g.id);
-}
-exports.toGroupIds = toGroupIds;
 function isIterable(value) {
     return isObjectLike(value)
         && typeof value[Symbol.iterator] === 'function';

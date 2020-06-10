@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { inject, injectable } from 'inversify';
 import { DeepReadonly, Nullable, Optional } from '../@types';
-import { ApiRoomsResponse, ICistJsonClient } from '../@types/cist';
+import { CistRoomsResponse, ICistJsonClient } from '../@types/cist';
 import { ILogger } from '../@types/logging';
 import { Disposer, IDisposable, isDisposable } from '../@types/object';
 import { ITaskDefinition, ITaskStepExecutor, TaskType } from '../@types/tasks';
@@ -156,7 +156,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   }
 
   private async saveAndGetBuildingsContext(
-    roomsResponse: DeepReadonly<ApiRoomsResponse>
+    roomsResponse: DeepReadonly<CistRoomsResponse>
   ) {
     if (!this._buildingsContext) {
       this._buildingsContext = await this.getBuildingsService()

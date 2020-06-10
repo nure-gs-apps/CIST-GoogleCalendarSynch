@@ -1,14 +1,14 @@
 import {
-  ApiRoomsResponse, ApiEventsResponse, ApiGroup,
-  ApiGroupsResponse,
+  CistRoomsResponse, CistEventsResponse, CistGroup,
+  CistGroupsResponse,
 } from '../@types/cist';
 import { IInfoLogger } from '../@types/logging';
 
 export function assertRoomsResponse(
   body: any,
   logger: IInfoLogger,
-): body is ApiRoomsResponse {
-  const response = body as ApiRoomsResponse;
+): body is CistRoomsResponse {
+  const response = body as CistRoomsResponse;
   const responseOk = typeof response === 'object'
     && Object.keys(response).length === 1
     && typeof response.university === 'object';
@@ -81,8 +81,8 @@ export function assertRoomsResponse(
 export function assertGroupsResponse(
   body: any,
   logger: IInfoLogger,
-): body is ApiGroupsResponse {
-  const response = body as ApiGroupsResponse;
+): body is CistGroupsResponse {
+  const response = body as CistGroupsResponse;
 
   const responseOk = typeof response === 'object'
     && Object.keys(response).length === 1
@@ -170,8 +170,8 @@ export function assertGroupsResponse(
 export function assertEventsResponse(
   body: any,
   logger: IInfoLogger,
-): body is ApiEventsResponse {
-  const response = body as ApiEventsResponse;
+): body is CistEventsResponse {
+  const response = body as CistEventsResponse;
 
   const responseOk = typeof response === 'object'
     && Object.keys(response).length === 6
@@ -279,8 +279,8 @@ export function assertEventsResponse(
 function assertGroup(
   obj: any,
   logger: IInfoLogger,
-): obj is ApiGroup {
-  const group = obj as ApiGroup;
+): obj is CistGroup {
+  const group = obj as CistGroup;
   const groupOk = typeof group === 'object'
     && Object.keys(group).length === 2
     && typeof group.id === 'number'

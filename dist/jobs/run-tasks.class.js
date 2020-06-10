@@ -11,7 +11,7 @@ const file_1 = require("../tasks/progress/file");
 const runner_1 = require("../tasks/runner");
 const task_step_executor_1 = require("../tasks/task-step-executor");
 const jobs_1 = require("../utils/jobs");
-class SyncJob {
+class RunTasksJob {
     constructor(config, logger, args) {
         Object.defineProperty(this, "_config", {
             enumerable: true,
@@ -208,7 +208,7 @@ class SyncJob {
         return types;
     }
 }
-exports.SyncJob = SyncJob;
+exports.RunTasksJob = RunTasksJob;
 function getTasksFromArgs(args) {
     const tasks = [];
     if (args.auditories) {
@@ -223,4 +223,4 @@ function getTasksFromArgs(args) {
     }
     return tasks;
 }
-//# sourceMappingURL=sync.class.js.map
+//# sourceMappingURL=run-tasks.class.js.map

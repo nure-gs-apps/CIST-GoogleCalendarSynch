@@ -5,8 +5,8 @@ import { DeepReadonly, DeepReadonlyMap, Maybe, t } from '../../@types';
 import { ILogger } from '../../@types/logging';
 import { ITaskDefinition, TaskType } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
-import { ApiGroup, ApiGroupsResponse } from '../../@types/cist';
-import { toIdGroupMap } from '../../utils/common';
+import { CistGroup, CistGroupsResponse } from '../../@types/cist';
+import { toGroupsMap } from '../../utils/cist';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { customer } from './constants';
 import { FatalError } from './errors';
@@ -16,7 +16,7 @@ import Resource$Groups = admin_directory_v1.Resource$Groups;
 import { isSameGroupIdentity, GoogleUtilsService } from './google-utils.service';
 
 export interface IGroupsTaskContext {
-  readonly cistGroupsMap: DeepReadonlyMap<number, ApiGroup>;
+  readonly cistGroupsMap: DeepReadonlyMap<number, CistGroup>;
   readonly googleGroupsMap: DeepReadonlyMap<string, Schema$Group>;
 }
 
@@ -69,20 +69,20 @@ export class GroupsService {
   /**
    * Doesn't handle errors properly
    */
-  async ensureGroups(cistResponse: DeepReadonly<ApiGroupsResponse>) {
+  async ensureGroups(cistResponse: DeepReadonly<CistGroupsResponse>) {
     const groups = await this.getAllGroups();
 
-    await Promise.all(iterate(toIdGroupMap(cistResponse).values())
+    await Promise.all(iterate(toGroupsMap(cistResponse).values())
       .map(cistGroup => this.doEnsureGroup(cistGroup, groups.find(
         g => isSameGroupIdentity(cistGroup, g),
       ))));
   }
 
   async createGroupsTaskContext(
-    cistResponse: DeepReadonly<ApiGroupsResponse>
+    cistResponse: DeepReadonly<CistGroupsResponse>
   ): Promise<IGroupsTaskContext> {
     return {
-      cistGroupsMap: toIdGroupMap(cistResponse),
+      cistGroupsMap: toGroupsMap(cistResponse),
       googleGroupsMap: iterate(await this.getAllGroups())
         .filter(g => typeof g.email === 'string')
         .map(g => t(g.email as string, g))
@@ -91,11 +91,11 @@ export class GroupsService {
   }
 
   createEnsureGroupsTask(
-    cistResponse: DeepReadonly<ApiGroupsResponse>
+    cistResponse: DeepReadonly<CistGroupsResponse>
   ): ITaskDefinition<number> {
     return {
       taskType: TaskType.EnsureGroups,
-      steps: Array.from(toIdGroupMap(cistResponse).keys())
+      steps: Array.from(toGroupsMap(cistResponse).keys())
     };
   }
 
@@ -130,7 +130,7 @@ export class GroupsService {
   /**
    * Doesn't handle errors properly
    */
-  async deleteIrrelevant(cistResponse: DeepReadonly<ApiGroupsResponse>) {
+  async deleteIrrelevant(cistResponse: DeepReadonly<CistGroupsResponse>) {
     const groups = await this.getAllGroups();
     return this.doDeleteByIds(
       groups,
@@ -181,7 +181,7 @@ export class GroupsService {
   /**
    * Doesn't handle errors properly
    */
-  async deleteRelevant(cistResponse: DeepReadonly<ApiGroupsResponse>) {
+  async deleteRelevant(cistResponse: DeepReadonly<CistGroupsResponse>) {
     const groups = await this.getAllGroups();
     return this.doDeleteByIds(
       groups,
@@ -229,7 +229,7 @@ export class GroupsService {
   }
 
   private doEnsureGroup(
-    cistGroup: DeepReadonly<ApiGroup>,
+    cistGroup: DeepReadonly<CistGroup>,
     googleGroup: Maybe<DeepReadonly<Schema$Group>>,
   ) {
     if (googleGroup) {
@@ -274,7 +274,7 @@ export class GroupsService {
   }
 
   private cistGroupToInsertGoogleGroup(
-    cistGroup: DeepReadonly<ApiGroup>,
+    cistGroup: DeepReadonly<CistGroup>,
     email = this._utils.getGroupEmail(cistGroup),
   ): Schema$Group {
     return {
@@ -285,7 +285,7 @@ export class GroupsService {
   }
 
   private cistGroupToGoogleGroupPatch(
-    cistGroup: DeepReadonly<ApiGroup>,
+    cistGroup: DeepReadonly<CistGroup>,
     googleGroup: DeepReadonly<Schema$Group>,
   ) {
     let hasChanges = false;

@@ -14,7 +14,7 @@ import {
   getSharedCachedCistJsonClientInstance,
 } from '../services/cist/cached-cist-json-client.service';
 import {
-  ApiGroupsResponse,
+  CistGroupsResponse,
   EntityType, TimetableType,
 } from '../@types/cist';
 import {
@@ -26,7 +26,8 @@ import {
   assertGroupsResponse,
   assertRoomsResponse,
 } from '../utils/assert-responses';
-import { toGroupIds, toPrintString } from '../utils/common';
+import { toGroupIds } from '../utils/cist';
+import { toPrintString } from '../utils/common';
 import { getCistCachedClientTypesForArgs } from '../utils/jobs';
 
 export async function handleCistAssert(
@@ -35,7 +36,10 @@ export async function handleCistAssert(
   logger: IInfoLogger,
 ) {
   const container = createContainer({
-    types: getCistCachedClientTypesForArgs(args, config.ncgc.caching.cist.priorities),
+    types: getCistCachedClientTypesForArgs(
+      args,
+      config.ncgc.caching.cist.priorities,
+    ),
     forceNew: true,
   });
   bindOnExitHandler(disposeContainer);
@@ -58,7 +62,7 @@ export async function handleCistAssert(
         : [0],
     );
   }
-  let groupsResponse: Nullable<ApiGroupsResponse> = null;
+  let groupsResponse: Nullable<CistGroupsResponse> = null;
   if (args.groups) {
     groupsResponse = await cistClient.getGroupsResponse();
     failures.set(

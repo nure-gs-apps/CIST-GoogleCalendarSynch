@@ -1,9 +1,6 @@
 import { camelCase, camelCaseTransformMerge } from 'change-case';
-import iterate from 'iterare';
 import { isObjectLike as _isObjectLike } from 'lodash';
 import { ReadonlyDate } from 'readonly-date';
-import { DeepReadonly, t } from '../@types';
-import { ApiGroupsResponse } from '../@types/cist';
 import { ICrossPlatformFilePath } from '../@types/utils';
 import moment = require('moment');
 
@@ -150,25 +147,6 @@ export function makePropertyEnumerable<T extends object = object>(object: T, pro
     descriptor.enumerable = true;
     Object.defineProperty(object, property, descriptor);
   }
-}
-
-export function toGroupIds(groupsResponse: DeepReadonly<ApiGroupsResponse>) {
-  return toIdGroupMap(groupsResponse).keys();
-}
-
-export function toIdGroupMap(groupsResponse: DeepReadonly<ApiGroupsResponse>) {
-  return iterate(groupsResponse.university.faculties)
-    .map(f => f.directions)
-    .flatten()
-    .map(d => {
-      const iterator = iterate(d.specialities)
-        .map(s => s.groups)
-        .flatten();
-      return d.groups ? iterator.concat(d.groups) : iterator;
-    })
-    .flatten()
-    .map(g => t(g.id, g))
-    .toMap();
 }
 
 export function isIterable(value: any): value is Iterable<any> {

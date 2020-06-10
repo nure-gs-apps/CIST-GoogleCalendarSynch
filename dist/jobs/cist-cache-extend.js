@@ -7,7 +7,7 @@ const types_1 = require("../di/types");
 const cache_utils_service_1 = require("../services/caching/cache-utils.service");
 const cached_cist_json_client_service_1 = require("../services/cist/cached-cist-json-client.service");
 const exit_handler_service_1 = require("../services/exit-handler.service");
-const common_1 = require("../utils/common");
+const cist_2 = require("../utils/cist");
 const jobs_1 = require("../utils/jobs");
 async function handleCistCacheExtend(args, newExpiration, config) {
     const types = jobs_1.getCistCachedClientTypesForArgs(args, config.ncgc.caching.cist.priorities);
@@ -38,7 +38,7 @@ async function handleCistCacheExtend(args, newExpiration, config) {
         let groupIds;
         if (args.events.length === 0) {
             const groupsResponse = await cistClient.getGroupsResponse();
-            groupIds = common_1.toGroupIds(groupsResponse);
+            groupIds = cist_2.toGroupIds(groupsResponse);
         }
         else {
             groupIds = args.events;
