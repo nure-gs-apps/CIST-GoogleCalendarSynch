@@ -255,10 +255,32 @@ export class RunTasksJob {
     }
 
     if (tasks.some(({ taskType }) => (
+      taskType === TaskType.DeferredEnsureRooms
+      || taskType === TaskType.DeferredDeleteIrrelevantRooms
+      || taskType === TaskType.EnsureRooms
+      || taskType === TaskType.DeleteIrrelevantRooms
+    ))) {
+      types.push(TYPES.RoomsService);
+    }
+
+    if (tasks.some(({ taskType }) => (
+      taskType === TaskType.DeferredEnsureGroups
+      || taskType === TaskType.DeferredDeleteIrrelevantGroups
+      || taskType === TaskType.EnsureGroups
+      || taskType === TaskType.DeleteIrrelevantGroups
+    ))) {
+      types.push(TYPES.GroupsService);
+    }
+
+    if (tasks.some(({ taskType }) => (
       taskType === TaskType.DeferredEnsureBuildings
       || taskType === TaskType.DeferredDeleteIrrelevantBuildings
       || taskType === TaskType.EnsureBuildings
       || taskType === TaskType.DeleteIrrelevantBuildings
+      || taskType === TaskType.EnsureRooms
+      || taskType === TaskType.DeleteIrrelevantRooms
+      || taskType === TaskType.EnsureGroups
+      || taskType === TaskType.DeleteIrrelevantGroups
     ))) {
       types.push(...(
         this._args
@@ -282,11 +304,25 @@ function getTasksFromArgs(
   if (args.auditories) {
     tasks.push({
       taskType: TaskType.DeferredEnsureBuildings
+    }, {
+      taskType: TaskType.DeferredEnsureRooms
     });
   }
   if (args.deleteIrrelevantAuditories) {
     tasks.push({
+      taskType: TaskType.DeferredDeleteIrrelevantRooms
+    }, {
       taskType: TaskType.DeferredDeleteIrrelevantBuildings
+    });
+  }
+  if (args.groups) {
+    tasks.push({
+      taskType: TaskType.DeferredEnsureGroups
+    });
+  }
+  if (args.deleteIrrelevantGroups) {
+    tasks.push({
+      taskType: TaskType.DeferredDeleteIrrelevantGroups
     });
   }
   return tasks;
