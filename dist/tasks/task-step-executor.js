@@ -39,6 +39,18 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "_roomsService", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_groupsService", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "_cistClient", {
             enumerable: true,
             configurable: true,
@@ -51,12 +63,28 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
             writable: true,
             value: void 0
         }); // FIXME: probably, use cached value with expiration
+        Object.defineProperty(this, "_roomsContext", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        }); // FIXME: probably, use cached value with expiration
+        Object.defineProperty(this, "_groupsContext", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        }); // FIXME: probably, use cached value with expiration
         this._container = container;
         this._logger = logger;
         this._disposer = new object_1.Disposer(this.doDispose.bind(this));
         this._buildingsService = null;
+        this._roomsService = null;
+        this._groupsService = null;
         this._cistClient = null;
         this._buildingsContext = null;
+        this._roomsContext = null;
+        this._groupsContext = null;
     }
     get isDisposed() {
         return this._disposer.isDisposed;
@@ -117,7 +145,7 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
         return this.run(taskType, step);
     }
     async run(taskType, step) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e, _f;
         switch (taskType) {
             case tasks_1.TaskType.DeferredEnsureBuildings:
                 {
@@ -132,19 +160,66 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
                     this.emit(TaskStepExecutorEventNames.NewTask, this.getBuildingsService().createDeleteIrrelevantTask((_a = this._buildingsContext) !== null && _a !== void 0 ? _a : await this.saveAndGetBuildingsContext(await this.getCistClient().getRoomsResponse())));
                 }
                 break;
+            case tasks_1.TaskType.DeferredEnsureRooms:
+                {
+                    assertNoStep(step);
+                    const roomsResponse = await this.getCistClient().getRoomsResponse();
+                    this.emit(TaskStepExecutorEventNames.NewTask, this.getRoomsService().createEnsureRoomsTask(roomsResponse));
+                }
+                break;
+            case tasks_1.TaskType.DeferredDeleteIrrelevantRooms:
+                {
+                    assertNoStep(step);
+                    this.emit(TaskStepExecutorEventNames.NewTask, this.getRoomsService().createDeleteIrrelevantTask((_b = this._roomsContext) !== null && _b !== void 0 ? _b : await this.saveAndGetRoomsContext(await this.getCistClient().getRoomsResponse())));
+                }
+                break;
+            case tasks_1.TaskType.DeferredEnsureGroups:
+                {
+                    assertNoStep(step);
+                    const groupsResponse = await this.getCistClient().getGroupsResponse();
+                    this.emit(TaskStepExecutorEventNames.NewTask, this.getGroupsService().createGroupsTaskContext(groupsResponse));
+                }
+                break;
+            case tasks_1.TaskType.DeferredDeleteIrrelevantGroups:
+                {
+                    assertNoStep(step);
+                    this.emit(TaskStepExecutorEventNames.NewTask, this.getGroupsService().createDeleteIrrelevantTask((_c = this._groupsContext) !== null && _c !== void 0 ? _c : await this.saveAndGetGroupsContext(await this.getCistClient().getGroupsResponse())));
+                }
+                break;
             case tasks_1.TaskType.EnsureBuildings:
                 {
-                    assertTaskStep(step);
-                    if (typeof step !== 'string') {
-                        throw new errors_1.FatalError(l('Google Building ID must be string'));
-                    }
-                    await this.getBuildingsService().ensureBuilding(step, ((_b = this._buildingsContext) !== null && _b !== void 0 ? _b : await this.saveAndGetBuildingsContext(await this.getCistClient().getRoomsResponse())));
+                    assertCistBuildingId(step);
+                    await this.getBuildingsService().ensureBuilding(step, (_d = this._buildingsContext) !== null && _d !== void 0 ? _d : await this.saveAndGetBuildingsContext(await this.getCistClient().getRoomsResponse()));
                 }
                 break;
             case tasks_1.TaskType.DeleteIrrelevantBuildings:
                 {
                     assertGoogleBuildingId(step);
                     await this.getBuildingsService().deleteBuildingById(step);
+                }
+                break;
+            case tasks_1.TaskType.EnsureRooms:
+                {
+                    assertCistRoomId(step);
+                    await this.getRoomsService().ensureRoom(step, (_e = this._roomsContext) !== null && _e !== void 0 ? _e : await this.saveAndGetRoomsContext(await this.getCistClient().getRoomsResponse()));
+                }
+                break;
+            case tasks_1.TaskType.DeleteIrrelevantRooms:
+                {
+                    assertGoogleRoomId(step);
+                    await this.getRoomsService().deleteRoomById(step);
+                }
+                break;
+            case tasks_1.TaskType.EnsureGroups:
+                {
+                    assertCistGroupId(step);
+                    await this.getGroupsService().ensureGroup(step, (_f = this._groupsContext) !== null && _f !== void 0 ? _f : await this.saveAndGetGroupsContext(await this.getCistClient().getGroupsResponse()));
+                }
+                break;
+            case tasks_1.TaskType.DeleteIrrelevantGroups:
+                {
+                    assertGoogleGroupIdOrEmail(step);
+                    await this.getGroupsService().deleteGroupById(step);
                 }
                 break;
         }
@@ -163,11 +238,37 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
         }
         return this._buildingsContext;
     }
+    async saveAndGetRoomsContext(roomsResponse) {
+        if (!this._roomsContext) {
+            this._roomsContext = await this.getRoomsService()
+                .createRoomsContext(roomsResponse);
+        }
+        return this._roomsContext;
+    }
+    async saveAndGetGroupsContext(groupsResponse) {
+        if (!this._groupsContext) {
+            this._groupsContext = await this.getGroupsService()
+                .createGroupsTaskContext(groupsResponse);
+        }
+        return this._groupsContext;
+    }
     getBuildingsService() {
         if (!this._buildingsService) {
             this._buildingsService = this._container.get(types_1.TYPES.BuildingsService);
         }
         return this._buildingsService;
+    }
+    getRoomsService() {
+        if (!this._roomsService) {
+            this._roomsService = this._container.get(types_1.TYPES.RoomsService);
+        }
+        return this._roomsService;
+    }
+    getGroupsService() {
+        if (!this._groupsService) {
+            this._groupsService = this._container.get(types_1.TYPES.GroupsService);
+        }
+        return this._groupsService;
     }
     dispose() {
         return this._disposer.dispose();
@@ -194,6 +295,36 @@ function assertGoogleBuildingId(step) {
     assertTaskStep(step);
     if (typeof step !== 'string') {
         throw new errors_1.FatalError(l('Google Building ID must be string'));
+    }
+}
+function assertCistBuildingId(step) {
+    assertTaskStep(step);
+    if (typeof step !== 'string') {
+        throw new errors_1.FatalError(l('CIST Building ID must be string'));
+    }
+}
+function assertGoogleRoomId(step) {
+    assertTaskStep(step);
+    if (typeof step !== 'string') {
+        throw new errors_1.FatalError(l('Google Room (resource) ID must be string'));
+    }
+}
+function assertCistRoomId(step) {
+    assertTaskStep(step);
+    if (typeof step !== 'string') {
+        throw new errors_1.FatalError(l('CIST Room ID must be string'));
+    }
+}
+function assertGoogleGroupIdOrEmail(step) {
+    assertTaskStep(step);
+    if (typeof step !== 'string') {
+        throw new errors_1.FatalError(l('Google Group ID must be string'));
+    }
+}
+function assertCistGroupId(step) {
+    assertTaskStep(step);
+    if (typeof step !== 'number') {
+        throw new errors_1.FatalError(l('CIST Group ID must be number'));
     }
 }
 function assertTaskStep(step) {

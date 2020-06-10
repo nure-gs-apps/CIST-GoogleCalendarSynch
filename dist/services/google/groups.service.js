@@ -156,8 +156,8 @@ let GroupsService = GroupsService_1 = class GroupsService {
                 .toArray()
         };
     }
-    async deleteGroupById(groupEmail) {
-        return this.doDeleteById(groupEmail);
+    async deleteGroupById(groupIdOrEmail) {
+        return this.doDeleteById(groupIdOrEmail);
     }
     /**
      * Doesn't handle errors properly

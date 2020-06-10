@@ -200,6 +200,9 @@ function addTypesToContainer(options) {
     if ((allRequired || types.has(types_1.TYPES.Container)) && !skip.has(types_1.TYPES.Container)) {
         container.bind(types_1.TYPES.Container).toConstantValue(container);
     }
+    if ((allRequired || types.has(types_1.TYPES.Config)) && !skip.has(types_1.TYPES.Config)) {
+        container.bind(types_1.TYPES.Config).to(config_service_1.ConfigService);
+    }
     if ((allRequired || types.has(types_1.TYPES.Logger)) && !skip.has(types_1.TYPES.Logger)) {
         container.bind(types_1.TYPES.Logger).toConstantValue(logger_service_1.logger);
     }
@@ -243,11 +246,8 @@ function addTypesToContainer(options) {
     container.bind(types_1.TYPES.GoogleCalendarConfig).toConstantValue(config_1.getConfig().google.calendar);
     container.bind(types_1.TYPES.GoogleApiCalendar)
         .to(google_api_calendar_1.GoogleApiCalendar);
-    container.bind(types_1.TYPES.RoomsService).to(rooms_service_1.RoomsService);
-    container.bind(types_1.TYPES.GroupsService).to(groups_service_1.GroupsService);
     container.bind(types_1.TYPES.CalendarService).to(calendar_service_1.CalendarService);
     container.bind(types_1.TYPES.EventsService).to(events_service_1.EventsService);
-    container.bind(types_1.TYPES.Config).to(config_service_1.ConfigService);
     if (boundTypes) {
         for (const type of types) {
             boundTypes.add(type);

@@ -305,6 +305,12 @@ export function addTypesToContainer(
   }
 
   if ((
+    allRequired || types.has(TYPES.Config)
+  ) && !skip.has(TYPES.Config)) {
+    container.bind<ConfigService>(TYPES.Config).to(ConfigService);
+  }
+
+  if ((
     allRequired || types.has(TYPES.Logger)
   ) && !skip.has(TYPES.Logger)) {
     container.bind<ILogger>(TYPES.Logger).toConstantValue(logger);
@@ -399,13 +405,9 @@ export function addTypesToContainer(
   container.bind<GoogleApiCalendar>(TYPES.GoogleApiCalendar)
     .to(GoogleApiCalendar);
 
-  container.bind<RoomsService>(TYPES.RoomsService).to(RoomsService);
-  container.bind<GroupsService>(TYPES.GroupsService).to(GroupsService);
-
   container.bind<CalendarService>(TYPES.CalendarService).to(CalendarService);
   container.bind<EventsService>(TYPES.EventsService).to(EventsService);
 
-  container.bind<ConfigService>(TYPES.Config).to(ConfigService);
 
   if (boundTypes) {
     for (const type of types) {

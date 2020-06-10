@@ -174,8 +174,8 @@ export class GroupsService {
     };
   }
 
-  async deleteGroupById(groupEmail: string) {
-    return this.doDeleteById(groupEmail);
+  async deleteGroupById(groupIdOrEmail: string) {
+    return this.doDeleteById(groupIdOrEmail);
   }
 
   /**
