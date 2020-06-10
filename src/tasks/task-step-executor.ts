@@ -68,6 +68,53 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     }
   }
 
+  taskComparator(
+    first: ITaskDefinition<any>,
+    other: ITaskDefinition<any>,
+  ) {
+    if (
+      (
+        first.taskType === TaskType.EnsureBuildings
+        && other.taskType === TaskType.EnsureRooms
+      )
+      || (
+        first.taskType === TaskType.DeferredEnsureBuildings
+        && other.taskType === TaskType.DeferredEnsureRooms
+      )
+      || (
+        first.taskType === TaskType.DeleteIrrelevantRooms
+        && other.taskType === TaskType.DeleteIrrelevantBuildings
+      )
+      || (
+        first.taskType === TaskType.DeferredDeleteIrrelevantRooms
+        && other.taskType === TaskType.DeferredDeleteIrrelevantBuildings
+      )
+    ) {
+      return 1;
+    }
+    if (
+      (
+        first.taskType === TaskType.EnsureRooms
+        && other.taskType === TaskType.EnsureBuildings
+      )
+      || (
+        first.taskType === TaskType.DeferredEnsureRooms
+        && other.taskType === TaskType.DeferredEnsureBuildings
+      )
+      || (
+        first.taskType === TaskType.DeleteIrrelevantBuildings
+        && other.taskType === TaskType.DeleteIrrelevantRooms
+      )
+      || (
+        first.taskType === TaskType.DeferredDeleteIrrelevantBuildings
+        && other.taskType === TaskType.DeferredDeleteIrrelevantRooms
+      )
+    ) {
+      return -1;
+    }
+    return 0;
+  }
+
   rerunFailed<T>(taskType: string, error: any): Promise<any>;
   rerunFailed<T>(taskType: string, step: T, error: any): Promise<any>;
   rerunFailed<T>(

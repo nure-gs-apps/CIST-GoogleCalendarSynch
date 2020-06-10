@@ -79,29 +79,22 @@ class TaskRunner {
         var _a;
         return (_a = this._runningPromise) !== null && _a !== void 0 ? _a : Promise.resolve([]);
     }
-    enqueueTask(task, clone = true) {
-        if ((!task.steps || task.steps.length === 0)
-            && (!task.failedSteps
-                || task.failedSteps.length === 0
-                || !('value' in task.failedSteps[0]))) {
-            if (this._taskStepExecutor.requiresSteps(task.taskType)) {
-                throw new TypeError(l(`Task with type "${task.taskType}" requires steps`));
-            }
+    enqueueTasks(clone, ...tasks) {
+        if (this._runningPromise && this._taskStepExecutor.taskComparator) {
+            throwReorderTasks();
         }
-        const newTask = clone ? { taskType: task.taskType } : task;
-        if (task.steps && task.steps.length > 0) {
-            newTask.steps = Array.from(new Set(task.steps));
+        for (const task of tasks) {
+            this.doEnqueueTask(task, clone);
         }
-        if (task.failedSteps && task.failedSteps.length > 0) {
-            newTask.failedSteps = task.failedSteps;
-        }
-        this._tasks.push(newTask);
+        this.ensureTaskOrder();
         return this;
     }
-    enqueueTasks(clone, ...tasks) {
-        for (const task of tasks) {
-            this.enqueueTask(task, clone);
+    enqueueTask(task, clone = true) {
+        if (this._runningPromise && this._taskStepExecutor.taskComparator) {
+            throwReorderTasks();
         }
+        this.doEnqueueTask(task, clone);
+        this.ensureTaskOrder();
         return this;
     }
     removeTask(task) {
@@ -118,6 +111,14 @@ class TaskRunner {
     }
     clearTwiceFailedTasks() {
         this._failedTasks.length = 0;
+    }
+    ensureTaskOrder() {
+        if (this._runningPromise) {
+            throwReorderTasks();
+        }
+        if (this._taskStepExecutor) {
+            this._tasks.sort(this._taskStepExecutor.taskComparator);
+        }
     }
     hasAnyTasks() {
         return this.hasEnqueuedTasks()
@@ -300,6 +301,24 @@ class TaskRunner {
         this._tasks.push(...this._failedTasks);
         this.clearTwiceFailedTasks();
     }
+    doEnqueueTask(task, clone) {
+        if ((!task.steps || task.steps.length === 0)
+            && (!task.failedSteps
+                || task.failedSteps.length === 0
+                || !('value' in task.failedSteps[0]))) {
+            if (this._taskStepExecutor.requiresSteps(task.taskType)) {
+                throw new TypeError(l(`Task with type "${task.taskType}" requires steps`));
+            }
+        }
+        const newTask = clone ? { taskType: task.taskType } : task;
+        if (task.steps && task.steps.length > 0) {
+            newTask.steps = Array.from(new Set(task.steps));
+        }
+        if (task.failedSteps && task.failedSteps.length > 0) {
+            newTask.failedSteps = task.failedSteps;
+        }
+        this._tasks.push(newTask);
+    }
     doRemoveTask(task) {
         const i = this._tasks.indexOf(task);
         if (i >= 0) {
@@ -317,6 +336,9 @@ class TaskRunner {
     }
 }
 exports.TaskRunner = TaskRunner;
+function throwReorderTasks() {
+    throw new TypeError(l('cannot reorder tasks while running'));
+}
 function l(message) {
     return `${TaskRunner.name}: ${message}`;
 }

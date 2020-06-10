@@ -74,6 +74,29 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
                 return true;
         }
     }
+    taskComparator(first, other) {
+        if ((first.taskType === tasks_1.TaskType.EnsureBuildings
+            && other.taskType === tasks_1.TaskType.EnsureRooms)
+            || (first.taskType === tasks_1.TaskType.DeferredEnsureBuildings
+                && other.taskType === tasks_1.TaskType.DeferredEnsureRooms)
+            || (first.taskType === tasks_1.TaskType.DeleteIrrelevantRooms
+                && other.taskType === tasks_1.TaskType.DeleteIrrelevantBuildings)
+            || (first.taskType === tasks_1.TaskType.DeferredDeleteIrrelevantRooms
+                && other.taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings)) {
+            return 1;
+        }
+        if ((first.taskType === tasks_1.TaskType.EnsureRooms
+            && other.taskType === tasks_1.TaskType.EnsureBuildings)
+            || (first.taskType === tasks_1.TaskType.DeferredEnsureRooms
+                && other.taskType === tasks_1.TaskType.DeferredEnsureBuildings)
+            || (first.taskType === tasks_1.TaskType.DeleteIrrelevantBuildings
+                && other.taskType === tasks_1.TaskType.DeleteIrrelevantRooms)
+            || (first.taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
+                && other.taskType === tasks_1.TaskType.DeferredDeleteIrrelevantRooms)) {
+            return -1;
+        }
+        return 0;
+    }
     rerunFailed(taskType, errorOrStep, errorParam) {
         let step;
         let error;

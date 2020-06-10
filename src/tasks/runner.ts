@@ -10,8 +10,8 @@ import { cloneDeep } from 'lodash';
 // FIXME: possibly add `isError` monad in run steps
 export class TaskRunner {
   protected readonly _taskStepExecutor: ITaskStepExecutor;
-  protected _tasks: ITaskDefinition<any>[];
-  protected _failedTasks: ITaskDefinition<any>[];
+  protected readonly _tasks: ITaskDefinition<any>[];
+  protected readonly _failedTasks: ITaskDefinition<any>[];
   protected _runningTask: Nullable<ITaskDefinition<any>>;
   protected _twiceFailedTask: Nullable<ITaskDefinition<any>>;
   protected _runningFailedTask: Nullable<ITaskDefinition<any>>;
@@ -47,34 +47,23 @@ export class TaskRunner {
     this._runningPromise = null;
   }
 
-  enqueueTask(task: ITaskDefinition<any>, clone = true) {
-    if (
-      (!task.steps || task.steps.length === 0)
-      && (
-        !task.failedSteps
-        || task.failedSteps.length === 0
-        || !('value' in task.failedSteps[0])
-      )
-    ) {
-      if (this._taskStepExecutor.requiresSteps(task.taskType)) {
-        throw new TypeError(l(`Task with type "${task.taskType}" requires steps`));
-      }
+  enqueueTasks(clone: boolean, ...tasks: ITaskDefinition<any>[]) {
+    if (this._runningPromise && this._taskStepExecutor.taskComparator) {
+      throwReorderTasks();
     }
-    const newTask = clone ? { taskType: task.taskType } : task;
-    if (task.steps && task.steps.length > 0) {
-      newTask.steps = Array.from(new Set(task.steps));
+    for (const task of tasks) {
+      this.doEnqueueTask(task, clone);
     }
-    if (task.failedSteps && task.failedSteps.length > 0) {
-      newTask.failedSteps = task.failedSteps;
-    }
-    this._tasks.push(newTask);
+    this.ensureTaskOrder();
     return this;
   }
 
-  enqueueTasks(clone: boolean, ...tasks: ITaskDefinition<any>[]) {
-    for (const task of tasks) {
-      this.enqueueTask(task, clone);
+  enqueueTask(task: ITaskDefinition<any>, clone = true) {
+    if (this._runningPromise && this._taskStepExecutor.taskComparator) {
+      throwReorderTasks();
     }
+    this.doEnqueueTask(task, clone);
+    this.ensureTaskOrder();
     return this;
   }
 
@@ -94,6 +83,15 @@ export class TaskRunner {
 
   clearTwiceFailedTasks() {
     this._failedTasks.length = 0;
+  }
+
+  ensureTaskOrder() {
+    if (this._runningPromise) {
+      throwReorderTasks();
+    }
+    if (this._taskStepExecutor) {
+      this._tasks.sort(this._taskStepExecutor.taskComparator);
+    }
   }
 
   hasAnyTasks() {
@@ -317,6 +315,29 @@ export class TaskRunner {
     this.clearTwiceFailedTasks();
   }
 
+  protected doEnqueueTask(task: ITaskDefinition<any>, clone: boolean) {
+    if (
+      (!task.steps || task.steps.length === 0)
+      && (
+        !task.failedSteps
+        || task.failedSteps.length === 0
+        || !('value' in task.failedSteps[0])
+      )
+    ) {
+      if (this._taskStepExecutor.requiresSteps(task.taskType)) {
+        throw new TypeError(l(`Task with type "${task.taskType}" requires steps`));
+      }
+    }
+    const newTask = clone ? { taskType: task.taskType } : task;
+    if (task.steps && task.steps.length > 0) {
+      newTask.steps = Array.from(new Set(task.steps));
+    }
+    if (task.failedSteps && task.failedSteps.length > 0) {
+      newTask.failedSteps = task.failedSteps;
+    }
+    this._tasks.push(newTask);
+  }
+
   protected doRemoveTask(task: ITaskDefinition<any>) {
     const i = this._tasks.indexOf(task);
     if (i >= 0) {
@@ -333,6 +354,10 @@ export class TaskRunner {
     this._runningFailedTask = null;
     this._twiceFailedTask = null;
   }
+}
+
+function throwReorderTasks(): never {
+  throw new TypeError(l('cannot reorder tasks while running'));
 }
 
 function l(message: string) {

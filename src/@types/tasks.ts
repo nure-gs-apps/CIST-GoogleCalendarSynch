@@ -60,6 +60,14 @@ export function isTaskDefinition<T = any>(
 }
 
 export interface ITaskStepExecutor {
+  /**
+   * If present, used after every enqueuing as a Array.sort() callback
+   */
+  taskComparator?(
+    first: ITaskDefinition<any>,
+    other: ITaskDefinition<any>,
+  ): number;
+
   requiresSteps(taskType: string): boolean;
 
   /**
