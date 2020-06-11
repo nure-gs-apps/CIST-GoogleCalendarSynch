@@ -106,7 +106,10 @@ export class RunTasksJob {
     }
     this._container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
       .toDynamicValue(getSharedCachedCistJsonClientInstance);
-    await getContainerAsyncInitializer();
+    let init: Nullable<Promise<any>> = getContainerAsyncInitializer().finally(
+      () => init = null
+    );
+    await init;
 
     const executor = this._container.get<TaskStepExecutor>(
       TYPES.TaskStepExecutor
@@ -122,6 +125,10 @@ export class RunTasksJob {
           throw new TypeError('Unknown state');
         }
         this._taskRunner.enqueueTask(task);
+        addTypesToContainer({
+          types: this.getRequiredServicesFromTasks([task])
+        });
+        init = getContainerAsyncInitializer();
       },
     );
     const dispose = async () => {
@@ -153,6 +160,9 @@ export class RunTasksJob {
       if (this._interrupted) {
         break;
       }
+      if (init) {
+        await init;
+      }
     }
     let deleteProgressFile = true;
     if (!this._interrupted && this._taskRunner.hasFailedTasks()) {
@@ -160,6 +170,9 @@ export class RunTasksJob {
       for await (const _ of this._taskRunner.asFailedRunnableGenerator()) {
         if (this._interrupted) {
           break;
+        }
+        if (init) {
+          await init;
         }
       }
       if (!this._interrupted && this._taskRunner.hasTwiceFailedTasks()) {
