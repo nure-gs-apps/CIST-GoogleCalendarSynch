@@ -27,6 +27,7 @@ import { GoogleApiAdminDirectory } from '../services/google/google-api-admin-dir
 import { GoogleApiCalendar } from '../services/google/google-api-calendar';
 import { IGoogleAuth } from '../services/google/google-auth';
 import { GoogleAuthAdminDirectory } from '../services/google/google-auth-admin-directory';
+import { GoogleAuthCalendar } from '../services/google/google-auth-calendar';
 import { GoogleUtilsService } from '../services/google/google-utils.service';
 import { GroupsService } from '../services/google/groups.service';
 import { RoomsService } from '../services/google/rooms.service';
@@ -239,6 +240,21 @@ export function addTypesToContainer(
 
   if (
     (allRequired
+      || types.has(TYPES.EventsService)
+      || types.has(EventsService))
+    && !skip.has(EventsService)
+    && !skip.has(TYPES.EventsService)
+  ) {
+    container.bind<EventsService>(TYPES.EventsService)
+      .to(EventsService);
+    types.add(TYPES.GoogleApiCalendar);
+    types.add(TYPES.GoogleCalendarQuotaLimiterConfig);
+    types.add(TYPES.GoogleUtils);
+    types.add(TYPES.Logger);
+  }
+
+  if (
+    (allRequired
       || types.has(TYPES.GoogleApiAdminDirectory)
       || types.has(GoogleApiAdminDirectory))
     && !skip.has(GoogleApiAdminDirectory)
@@ -247,6 +263,18 @@ export function addTypesToContainer(
     container.bind<GoogleApiAdminDirectory>(TYPES.GoogleApiAdminDirectory)
       .to(GoogleApiAdminDirectory);
     types.add(TYPES.GoogleAuthAdminDirectory);
+  }
+
+  if (
+    (allRequired
+      || types.has(TYPES.GoogleApiCalendar)
+      || types.has(GoogleApiCalendar))
+    && !skip.has(GoogleApiCalendar)
+    && !skip.has(TYPES.GoogleApiCalendar)
+  ) {
+    container.bind<GoogleApiCalendar>(TYPES.GoogleApiCalendar)
+      .to(GoogleApiCalendar);
+    types.add(TYPES.GoogleAuthCalendar);
   }
 
   if (
@@ -260,6 +288,19 @@ export function addTypesToContainer(
       .to(GoogleAuthAdminDirectory);
     types.add(TYPES.Logger);
     types.add(TYPES.GoogleAuthAdminDirectoryKey);
+  }
+
+  if (
+    (allRequired
+      || types.has(TYPES.GoogleAuthCalendar)
+      || types.has(GoogleAuthCalendar))
+    && !skip.has(GoogleAuthCalendar)
+    && !skip.has(TYPES.GoogleAuthCalendar)
+  ) {
+    container.bind<IGoogleAuth>(TYPES.GoogleAuthCalendar)
+      .to(GoogleAuthCalendar);
+    types.add(TYPES.Logger);
+    types.add(TYPES.GoogleAuthCalendarKey);
   }
 
   if ((
@@ -364,6 +405,13 @@ export function addTypesToContainer(
   ) && !skip.has(TYPES.GoogleAuthAdminDirectoryKey)) {
     container.bind<GoogleAuthConfigKey>(TYPES.GoogleAuthAdminDirectoryKey)
       .toConstantValue(getConfig().google.auth.adminDirectoryKey);
+  }
+
+  if ((
+    allRequired || types.has(TYPES.GoogleAuthCalendarKey)
+  ) && !skip.has(TYPES.GoogleAuthCalendarKey)) {
+    container.bind<GoogleAuthConfigKey>(TYPES.GoogleAuthCalendarKey)
+      .toConstantValue(getConfig().google.auth.calendarKey);
   }
 
   if ((
