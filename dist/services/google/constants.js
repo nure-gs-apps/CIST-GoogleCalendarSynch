@@ -5,7 +5,7 @@ exports.adminDirectoryAuthScopes = [
     'https://www.googleapis.com/auth/admin.directory.resource.calendar',
     'https://www.googleapis.com/auth/admin.directory.group',
 ];
-exports.calenderAuthScopes = [
+exports.calendarAuthScopes = [
     'https://www.googleapis.com/auth/calendar',
     'https://www.googleapis.com/auth/calendar.events',
 ];

@@ -312,6 +312,7 @@ export class TaskRunner {
 
   enqueueAllTwiceFailedTasksAndClear() {
     this._tasks.push(...this._failedTasks);
+    this.ensureTaskOrder();
     this.clearTwiceFailedTasks();
   }
 

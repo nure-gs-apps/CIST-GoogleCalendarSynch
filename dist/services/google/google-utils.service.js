@@ -8,10 +8,15 @@ const translit_1 = require("../../utils/translit");
 const errors_1 = require("./errors");
 exports.buildingIdPrefix = 'b';
 exports.roomIdPrefix = 'r';
-exports.groupEmailPrefix = 'g';
 let GoogleUtilsService = class GoogleUtilsService {
-    constructor(subject, idPrefix) {
+    constructor(subject, idPrefix, groupEmailPrefix) {
         Object.defineProperty(this, "_idPrefix", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_groupEmailPrefix", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -35,6 +40,12 @@ let GoogleUtilsService = class GoogleUtilsService {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "prependGroupEmailPrefix", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.domainName = subject.slice(subject.indexOf('@') + 1, subject.length)
             .toLowerCase();
         if (!idPrefix) {
@@ -45,6 +56,13 @@ let GoogleUtilsService = class GoogleUtilsService {
             this._idPrefix = idPrefix;
             this.prependIdPrefix = id => `${this._idPrefix}.${id}`;
             this.removeIdPrefix = id => id.slice(id.indexOf('.') + 1);
+        }
+        if (!groupEmailPrefix) {
+            this.prependGroupEmailPrefix = email => email;
+        }
+        else {
+            this._groupEmailPrefix = groupEmailPrefix;
+            this.prependGroupEmailPrefix = email => `${this._groupEmailPrefix}_${email}`;
         }
     }
     isSameBuildingIdentity(cistBuilding, googleBuilding) {
@@ -65,7 +83,7 @@ let GoogleUtilsService = class GoogleUtilsService {
     }
     getGroupEmail(cistGroup) {
         const uniqueHash = cistGroup.id.toString();
-        const localPartTemplate = [`${exports.groupEmailPrefix}_`, `_${uniqueHash}`];
+        const localPartTemplate = [this.prependGroupEmailPrefix(''), `_${uniqueHash}`];
         // is OK for google email, but causes collisions
         const groupName = translit_1.toTranslit(cistGroup.name, 64 - (localPartTemplate[0].length + localPartTemplate[1].length))
             .replace(/["(),:;<>@[\]\s]|[^\x00-\x7F]/g, '_')
@@ -94,7 +112,8 @@ GoogleUtilsService = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuthSubject)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleEntityIdPrefix)),
-    tslib_1.__metadata("design:paramtypes", [String, Object])
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleGroupEmailPrefix)),
+    tslib_1.__metadata("design:paramtypes", [String, Object, Object])
 ], GoogleUtilsService);
 exports.GoogleUtilsService = GoogleUtilsService;
 const emptyFloorName = /^\s*$/;

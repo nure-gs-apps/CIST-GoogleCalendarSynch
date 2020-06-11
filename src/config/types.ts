@@ -52,12 +52,12 @@ export interface IFullAppConfig {
     };
     google: {
       idPrefix: Nullable<string>;
+      groupEmailPrefix: Nullable<string>;
       calendar: ICalendarConfig;
       auth: {
         adminDirectoryKey: Nullable<string | JWTInput>;
         calendarKey: Nullable<string | JWTInput>
-        subjectEmail: string;
-        keyFilepath: string;
+        adminSubjectEmail: string;
       };
       quotas: {
         adminDirectoryApi: IApiQuota;
@@ -122,19 +122,20 @@ export function getBasicCliConfiguration(
       }
     )
     .option(
-      o(nameof.full<IFullAppConfig>(c => c.ncgc.google.auth.subjectEmail)),
+      o(nameof.full<IFullAppConfig>(c => c.ncgc.google.auth.adminSubjectEmail)),
       {
         type: 'string',
         description: 'Google G-Suite\'s user email on behalf of which manipulations are done',  // TODO: add regex for email
       }
     )
-    .option(
-      o(nameof.full<IFullAppConfig>(c => c.ncgc.google.auth.keyFilepath)),
-      {
-        type: 'string',
-        description: 'Google G-Suite\'s path to file with JSON key', // TODO: add regex for path
-      }
-    );
+    // .option(
+    //   o(nameof.full<IFullAppConfig>(c => c.ncgc.google.auth.keyFilepath)),
+    //   {
+    //     type: 'string',
+    //     description: 'Google G-Suite\'s path to file with JSON key', // TODO: add regex for path
+    //   }
+    // )
+    ;
 }
 
 export function assertConfigPrefixId() {

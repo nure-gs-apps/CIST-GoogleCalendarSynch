@@ -16,18 +16,20 @@ import Schema$Group = admin_directory_v1.Schema$Group;
 
 export const buildingIdPrefix = 'b';
 export const roomIdPrefix = 'r';
-export const groupEmailPrefix = 'g';
 
 @injectable()
 export class GoogleUtilsService {
   private readonly _idPrefix: Optional<string>;
+  private readonly _groupEmailPrefix: Optional<string>;
   public readonly domainName: string;
   public readonly prependIdPrefix: (id: string) => string;
   public readonly removeIdPrefix: (id: string) => string;
+  public readonly prependGroupEmailPrefix: (email: string) => string;
 
   constructor(
     @inject(TYPES.GoogleAuthSubject) subject: string,
     @inject(TYPES.GoogleEntityIdPrefix) idPrefix: Nullable<string>,
+    @inject(TYPES.GoogleGroupEmailPrefix) groupEmailPrefix: Nullable<string>,
   ) {
     this.domainName = subject.slice(subject.indexOf('@') + 1, subject.length)
       .toLowerCase();
@@ -38,6 +40,12 @@ export class GoogleUtilsService {
       this._idPrefix = idPrefix;
       this.prependIdPrefix = id => `${this._idPrefix}.${id}`;
       this.removeIdPrefix = id => id.slice(id.indexOf('.') + 1);
+    }
+    if (!groupEmailPrefix) {
+      this.prependGroupEmailPrefix = email => email;
+    } else {
+      this._groupEmailPrefix = groupEmailPrefix;
+      this.prependGroupEmailPrefix = email => `${this._groupEmailPrefix}_${email}`;
     }
   }
 
@@ -74,7 +82,7 @@ export class GoogleUtilsService {
 
   getGroupEmail(cistGroup: DeepReadonly<CistGroup>) {
     const uniqueHash = cistGroup.id.toString();
-    const localPartTemplate = [`${groupEmailPrefix}_`, `_${uniqueHash}`];
+    const localPartTemplate = [this.prependGroupEmailPrefix(''), `_${uniqueHash}`];
     // is OK for google email, but causes collisions
     const groupName = toTranslit(
       cistGroup.name,

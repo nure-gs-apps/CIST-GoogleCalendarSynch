@@ -196,6 +196,7 @@ function addTypesToContainer(options) {
             .to(google_utils_service_1.GoogleUtilsService);
         types.add(types_1.TYPES.GoogleAuthSubject);
         types.add(types_1.TYPES.GoogleEntityIdPrefix);
+        types.add(types_1.TYPES.GoogleGroupEmailPrefix);
     }
     if ((allRequired || types.has(types_1.TYPES.Container)) && !skip.has(types_1.TYPES.Container)) {
         container.bind(types_1.TYPES.Container).toConstantValue(container);
@@ -231,10 +232,13 @@ function addTypesToContainer(options) {
             .toConstantValue(config_1.getConfig().google.auth.adminDirectoryKey);
     }
     if ((allRequired || types.has(types_1.TYPES.GoogleAuthSubject)) && !skip.has(types_1.TYPES.GoogleAuthSubject)) {
-        container.bind(types_1.TYPES.GoogleAuthSubject).toConstantValue(config_1.getConfig().google.auth.subjectEmail);
+        container.bind(types_1.TYPES.GoogleAuthSubject).toConstantValue(config_1.getConfig().google.auth.adminSubjectEmail);
     }
     if ((allRequired || types.has(types_1.TYPES.GoogleEntityIdPrefix)) && !skip.has(types_1.TYPES.GoogleEntityIdPrefix)) {
         container.bind(types_1.TYPES.GoogleEntityIdPrefix).toConstantValue(config_1.getConfig().google.idPrefix);
+    }
+    if ((allRequired || types.has(types_1.TYPES.GoogleGroupEmailPrefix)) && !skip.has(types_1.TYPES.GoogleGroupEmailPrefix)) {
+        container.bind(types_1.TYPES.GoogleGroupEmailPrefix).toConstantValue(config_1.getConfig().google.groupEmailPrefix);
     }
     if ((allRequired || types.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig)) && !skip.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig)) {
         container.bind(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig).toConstantValue(config_1.getConfig().google.quotas.adminDirectoryApi);

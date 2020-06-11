@@ -296,6 +296,7 @@ export function addTypesToContainer(
       .to(GoogleUtilsService);
     types.add(TYPES.GoogleAuthSubject);
     types.add(TYPES.GoogleEntityIdPrefix);
+    types.add(TYPES.GoogleGroupEmailPrefix);
   }
 
   if ((
@@ -369,7 +370,7 @@ export function addTypesToContainer(
     allRequired || types.has(TYPES.GoogleAuthSubject)
   ) && !skip.has(TYPES.GoogleAuthSubject)) {
     container.bind<string>(TYPES.GoogleAuthSubject).toConstantValue(
-      getConfig().google.auth.subjectEmail,
+      getConfig().google.auth.adminSubjectEmail,
     );
   }
 
@@ -379,6 +380,14 @@ export function addTypesToContainer(
     container.bind<Nullable<string>>(
       TYPES.GoogleEntityIdPrefix
     ).toConstantValue(getConfig().google.idPrefix);
+  }
+
+  if ((
+    allRequired || types.has(TYPES.GoogleGroupEmailPrefix)
+  ) && !skip.has(TYPES.GoogleGroupEmailPrefix)) {
+    container.bind<Nullable<string>>(
+      TYPES.GoogleGroupEmailPrefix
+    ).toConstantValue(getConfig().google.groupEmailPrefix);
   }
 
   if ((

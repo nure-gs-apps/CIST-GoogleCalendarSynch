@@ -56,13 +56,9 @@ function getBasicCliConfiguration() {
         type: 'string',
         description: 'Google Calendar\'s timezone',
     })
-        .option(o("ncgc.google.auth.subjectEmail"), {
+        .option(o("ncgc.google.auth.adminSubjectEmail"), {
         type: 'string',
         description: 'Google G-Suite\'s user email on behalf of which manipulations are done',
-    })
-        .option(o("ncgc.google.auth.keyFilepath"), {
-        type: 'string',
-        description: 'Google G-Suite\'s path to file with JSON key',
     });
 }
 exports.getBasicCliConfiguration = getBasicCliConfiguration;

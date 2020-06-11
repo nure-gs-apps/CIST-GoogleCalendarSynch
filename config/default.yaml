@@ -28,15 +28,14 @@ ncgc:
             win: %SystemRoot%\Temp\ncgc\cache\cist
   google:
     idPrefix: cist
+    groupEmailPrefix: g
     calendar:
       prefix: 'CIST ' # basically name for calendar. Can be used for searching if id is not overriden
       timeZone: Europe/Kiev # timezone for calendar creation
     auth:
       adminDirectoryKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
       calendarKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
-      subjectEmail: yourEmail # Required for admin. email of user belonging to the domain of G Suite.
-      keyFilepath: ./keys/cist-calendar.json
-      directoryKeyFilepath: ./keys/cist-calendar.json
+      adminSubjectEmail: yourEmail@nure.ua # Required for admin. email of user belonging to the domain of G Suite.
     quotas:
       adminDirectoryApi:
         daily: 150000 # daily limit

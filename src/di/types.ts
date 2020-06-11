@@ -10,10 +10,12 @@ export const TYPES = {
   CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
   CistApiKey: Symbol.for('CistApiKey'),
   GoogleAuthAdminDirectoryKey: Symbol.for('GoogleAuthAdminDirectoryKey'),
+  GoogleAuthCalendarKey: Symbol.for('GoogleAuthCalendarKey'),
   GoogleAdminDirectoryQuotaLimiterConfig: Symbol.for('GoogleAdminDirectoryQuotaLimiterConfig'),
   GoogleCalendarQuotaLimiterConfig: Symbol.for('GoogleCalendarQuotaLimiterConfig'),
   GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
   GoogleEntityIdPrefix: Symbol.for('GoogleEntityIdPrefix'),
+  GoogleGroupEmailPrefix: Symbol.for('GoogleGroupEmailPrefix'),
   GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
 
   CacheMaxExpiration: Symbol.for('CacheMaxExpiration'),
@@ -37,6 +39,7 @@ export const TYPES = {
   CacheUtils: Symbol.for('CacheUtils'),
 
   GoogleAuthAdminDirectory: Symbol.for('GoogleAuthAdminDirectory'),
+  GoogleAuthCalendar: Symbol.for('GoogleAuthCalendar'),
   GoogleUtils: Symbol.for('GoogleUtils'),
   GoogleAdminDirectoryQuotaLimiter: Symbol.for('GoogleAdminDirectoryQuotaLimiter'),
   GoogleCalendarQuotaLimiter: Symbol.for('GoogleCalendarQuotaLimiter'),
