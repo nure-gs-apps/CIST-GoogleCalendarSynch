@@ -22,5 +22,3 @@ TODO:
     - check with other groups in upper case 
 
 FIX:
-- group & room sync
-- add room feature: is have power
