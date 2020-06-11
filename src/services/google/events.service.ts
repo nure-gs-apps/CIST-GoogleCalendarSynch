@@ -1,11 +1,27 @@
 import { calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
+import { Mutable } from '../../@types';
 import { ILogger } from '../../@types/logging';
 import { TYPES } from '../../di/types';
 import { QuotaLimiterService } from '../quota-limiter.service';
+import { FatalError } from './errors';
 import { GoogleApiCalendar } from './google-api-calendar';
 import { GoogleUtilsService } from './google-utils.service';
 import Resource$Events = calendar_v3.Resource$Events;
+import Schema$Event = calendar_v3.Schema$Event;
+
+export interface IEnsureEventsTaskContext extends IEventsTaskContextBase {
+  readonly insertEvents: Map<string, Schema$Event>;
+  readonly updateEvents: Map<string, Schema$Event>;
+}
+
+export interface IDeleteIrrelevantEventsTaskContext extends IEventsTaskContextBase {
+  readonly removeEventIds: Set<string>;
+}
+
+export interface IEventsTaskContextBase {
+  continuationToken?: string;
+}
 
 @injectable()
 export class EventsService {
@@ -48,4 +64,29 @@ export class EventsService {
       this._events.list.bind(this._events),
     ) as any;
   }
+
+  createEventsTaskContext(
+    ensure: boolean,
+    deleteIrrelevant: boolean,
+  ): IEventsTaskContextBase {
+    if (!ensure && !deleteIrrelevant) {
+      throw new FatalError(l('no tasks requested'));
+    }
+    const context: IEventsTaskContextBase = {};
+    if (ensure) {
+      const ensureContext: Mutable<Partial<IEnsureEventsTaskContext>> = context;
+      ensureContext.insertEvents = new Map();
+      ensureContext.updateEvents = new Map();
+    }
+    if (deleteIrrelevant) {
+      // tslint:disable-next-line:max-line-length
+      const deleteContext: Mutable<Partial<IDeleteIrrelevantEventsTaskContext>> = context;
+      deleteContext.removeEventIds = new Set();
+    }
+    return context;
+  }
+}
+
+function l(message: string) {
+  return `${EventsService.name}: ${message}`;
 }

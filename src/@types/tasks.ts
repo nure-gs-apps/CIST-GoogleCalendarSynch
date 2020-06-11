@@ -5,18 +5,26 @@ export enum TaskType {
   DeferredEnsureBuildings= 'deferredEnsureBuildings',
   DeferredEnsureRooms = 'deferredEnsureRooms',
   DeferredEnsureGroups = 'deferredEnsureGroups',
+  DeferredEnsureEvents = 'deferredEnsureEvents',
 
   DeferredDeleteIrrelevantBuildings = 'deferredDeleteIrrelevantBuildings',
   DeferredDeleteIrrelevantRooms = 'deferredDeleteIrrelevantRooms',
   DeferredDeleteIrrelevantGroups = 'deferredDeleteIrrelevantGroups',
+  DeferredDeleteIrrelevantEvents = 'deferredDeleteIrrelevantEvents',
 
-  EnsureBuildings= 'ensureBuildings',
+  CreateEventsContext = 'createEventsContext',
+  CreateEnsureEventsContext = 'createEnsureEventsContext',
+  CreateDeleteIrrelevantEventsContext = 'createDeleteIrrelevantEventsContext',
+
+  EnsureBuildings = 'ensureBuildings',
   EnsureRooms = 'ensureRooms',
   EnsureGroups = 'ensureGroups',
+  EnsureEvents = 'ensureEvents',
 
   DeleteIrrelevantBuildings = 'deleteIrrelevantBuildings',
   DeleteIrrelevantRooms = 'deleteIrrelevantRooms',
-  DeleteIrrelevantGroups = 'deleteIrrelevantGroups'
+  DeleteIrrelevantGroups = 'deleteIrrelevantGroups',
+  DeleteIrrelevantEvents = 'deleteIrrelevantEvents',
 }
 
 /**
