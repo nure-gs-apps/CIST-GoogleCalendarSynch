@@ -1,14 +1,18 @@
 import { calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
-import { Mutable } from '../../@types';
+import { DeepReadonly, Mutable } from '../../@types';
 import { ILogger } from '../../@types/logging';
+import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
 import { QuotaLimiterService } from '../quota-limiter.service';
+import { customer } from './constants';
 import { FatalError } from './errors';
 import { GoogleApiCalendar } from './google-api-calendar';
 import { GoogleUtilsService } from './google-utils.service';
 import Resource$Events = calendar_v3.Resource$Events;
 import Schema$Event = calendar_v3.Schema$Event;
+
+const calendarId = 'primary';
 
 export interface IEnsureEventsTaskContext extends IEventsTaskContextBase {
   readonly insertEvents: Map<string, Schema$Event>;
@@ -21,6 +25,7 @@ export interface IDeleteIrrelevantEventsTaskContext extends IEventsTaskContextBa
 
 export interface IEventsTaskContextBase {
   continuationToken?: string;
+  readonly events: Schema$Event[];
 }
 
 @injectable()
@@ -30,6 +35,8 @@ export class EventsService {
   private readonly _quotaLimiter: QuotaLimiterService;
   private readonly _utils: GoogleUtilsService;
   private readonly _logger: ILogger;
+
+  private readonly _calendarConfig: DeepReadonly<ICalendarConfig>;
 
   private readonly _events: Resource$Events;
 
@@ -43,9 +50,13 @@ export class EventsService {
     @inject(TYPES.GoogleCalendarQuotaLimiter) quotaLimiter: QuotaLimiterService,
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
     @inject(TYPES.Logger) logger: ILogger,
+    @inject(
+      TYPES.GoogleCalendarConfig
+    ) calendarConfig: DeepReadonly<ICalendarConfig>,
   ) {
     this._utils = utils;
     this._logger = logger;
+    this._calendarConfig = calendarConfig;
 
     this._calendar = googleApiCalendar;
     this._events = this._calendar.googleCalendar.events;
@@ -72,7 +83,9 @@ export class EventsService {
     if (!ensure && !deleteIrrelevant) {
       throw new FatalError(l('no tasks requested'));
     }
-    const context: IEventsTaskContextBase = {};
+    const context: IEventsTaskContextBase = {
+      events: []
+    };
     if (ensure) {
       const ensureContext: Mutable<Partial<IEnsureEventsTaskContext>> = context;
       ensureContext.insertEvents = new Map();
@@ -84,6 +97,28 @@ export class EventsService {
       deleteContext.removeEventIds = new Set();
     }
     return context;
+  }
+
+  async *loadEventsByChunks(
+    context: IEventsTaskContextBase
+  ): AsyncGenerator<IEventsTaskContextBase> {
+    let eventsPage = null;
+    do {
+      eventsPage = await this._list({
+        calendarId,
+        maxResults: EventsService.ROOMS_PAGE_SIZE,
+        singleEvents: true,
+        timeZone: this._calendarConfig.timeZone,
+        pageToken: eventsPage ? eventsPage.data.nextPageToken : undefined, // BUG in typedefs
+      });
+      context.continuationToken = eventsPage.data.nextPageToken
+        ?? eventsPage.data.nextSyncToken;
+      if (eventsPage.data.items) {
+        context.events.push(...eventsPage.data.items);
+        this._logger.info(`Loaded ${context.events.length} events...`);
+      }
+    } while (context.continuationToken);
+    this._logger.info('All events are loaded!');
   }
 }
 
