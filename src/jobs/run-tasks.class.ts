@@ -258,8 +258,8 @@ export class RunTasksJob {
   ): ServiceIdentifier<any>[] {
     const types = [TYPES.TaskStepExecutor] as ServiceIdentifier<any>[];
     if (tasks.some(({ taskType }) => (
-      taskType === TaskType.DeferredEnsureBuildings
-      || taskType === TaskType.DeferredDeleteIrrelevantBuildings
+      taskType === TaskType.DeferredDeleteIrrelevantBuildings
+      // || taskType === TaskType.DeferredEnsureBuildings
       || taskType === TaskType.EnsureBuildings
       || taskType === TaskType.DeleteIrrelevantBuildings
     ))) {
@@ -267,8 +267,8 @@ export class RunTasksJob {
     }
 
     if (tasks.some(({ taskType }) => (
-      taskType === TaskType.DeferredEnsureRooms
-      || taskType === TaskType.DeferredDeleteIrrelevantRooms
+      taskType === TaskType.DeferredDeleteIrrelevantRooms
+      // || taskType === TaskType.DeferredEnsureRooms
       || taskType === TaskType.EnsureRooms
       || taskType === TaskType.DeleteIrrelevantRooms
     ))) {
@@ -276,8 +276,8 @@ export class RunTasksJob {
     }
 
     if (tasks.some(({ taskType }) => (
-      taskType === TaskType.DeferredEnsureGroups
-      || taskType === TaskType.DeferredDeleteIrrelevantGroups
+      taskType === TaskType.DeferredDeleteIrrelevantGroups
+      // || taskType === TaskType.DeferredEnsureGroups
       || taskType === TaskType.EnsureGroups
       || taskType === TaskType.DeleteIrrelevantGroups
     ))) {
@@ -288,15 +288,15 @@ export class RunTasksJob {
       taskType === TaskType.DeferredEnsureBuildings
       || taskType === TaskType.DeferredDeleteIrrelevantBuildings
       || taskType === TaskType.EnsureBuildings
-      || taskType === TaskType.DeleteIrrelevantBuildings
+      // || taskType === TaskType.DeleteIrrelevantBuildings
       || taskType === TaskType.DeferredEnsureRooms
       || taskType === TaskType.DeferredDeleteIrrelevantRooms
       || taskType === TaskType.EnsureRooms
-      || taskType === TaskType.DeleteIrrelevantRooms
+      // || taskType === TaskType.DeleteIrrelevantRooms
       || taskType === TaskType.DeferredEnsureGroups
       || taskType === TaskType.DeferredDeleteIrrelevantGroups
       || taskType === TaskType.EnsureGroups
-      || taskType === TaskType.DeleteIrrelevantGroups
+      // || taskType === TaskType.DeleteIrrelevantGroups
     ))) {
       types.push(...(
         this._args
