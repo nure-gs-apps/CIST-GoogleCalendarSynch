@@ -14,38 +14,13 @@ scopes: https://www.googleapis.com/auth/admin.directory.resource.calendar,https:
 client id from enabled delegation in service account
 
 TODO:
-- move common code for sync and task-finish tasks
-- process errors: https://developers.google.com/admin-sdk/directory/v1/limits
-- handle backendError
 - add path transformer https://www.npmjs.com/package/@zerollup/ts-transform-paths
+- `FIXME:` and `TODO:` in code
+- create group hierarchy:
+    - check if has `+`
+    - split by `+` and transform each to upper case
+    - check with other groups in upper case 
 
 FIX:
 - group & room sync
 - add room feature: is have power
-
-БМІ-15-1+ЕПС-15-1
-БМІу-14-1+БМІу-14-2
-ЛОЕТМ-19-1+ФТОІМ-19-1
-МНТМН-16-1+МТОТ-16-1
-МН-15-1+ОТ-15-1
-ОТ-14-1+ОТУ-15-1
-ОТ-15-1+МТОТУ-16-1
-МІВТУ-14+МСС14-1
-МІВТУ-15-1+МІВТУ-14-1
-МІВТУ-15-1+МСС-15-1
-МСС-15-1+МТМВТУ-16-1
-МСС-14-1+МІВТУ-15-1
-ЯССМ-19-1+МВТМ-19-1
-МТМВТ-16-1+МТМСС-16-1
-МТМВТУ-16-1+МСС-15-1
-МТМСС-16-1+ТРТК-16-2
-МТМСС-16-1+МТТЕУ-18-1
-ТК-14-1+МСС14-1
-ТК-15-1+МСС-15-1
-ІКІМ-19-1+ТСММ-19-1
-ММЗМ-19-1+ІМІМ-19-1
-УІБ-14-1+МСС14-1
-
-
-
-
