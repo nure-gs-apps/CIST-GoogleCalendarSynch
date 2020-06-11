@@ -213,8 +213,12 @@ class RunTasksJob {
             || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
             || taskType === tasks_1.TaskType.EnsureBuildings
             || taskType === tasks_1.TaskType.DeleteIrrelevantBuildings
+            || taskType === tasks_1.TaskType.DeferredEnsureRooms
+            || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantRooms
             || taskType === tasks_1.TaskType.EnsureRooms
             || taskType === tasks_1.TaskType.DeleteIrrelevantRooms
+            || taskType === tasks_1.TaskType.DeferredEnsureGroups
+            || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantGroups
             || taskType === tasks_1.TaskType.EnsureGroups
             || taskType === tasks_1.TaskType.DeleteIrrelevantGroups))) {
             types.push(...(this._args

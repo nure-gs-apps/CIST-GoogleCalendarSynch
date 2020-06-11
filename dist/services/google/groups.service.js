@@ -84,12 +84,12 @@ let GroupsService = GroupsService_1 = class GroupsService {
      */
     async ensureGroups(cistResponse) {
         const groups = await this.getAllGroups();
-        await Promise.all(iterare_1.iterate(cist_1.toGroupsMap(cistResponse).values())
-            .map(cistGroup => this.doEnsureGroup(cistGroup, groups.find(g => google_utils_service_1.isSameGroupIdentity(cistGroup, g)))));
+        await Promise.all(iterare_1.iterate(cist_1.toGroupDataMap(cistResponse).values())
+            .map(cistGroupData => this.doEnsureGroup(cistGroupData, groups.find(g => google_utils_service_1.isSameGroupIdentity(cistGroupData.group, g)))));
     }
     async createGroupsTaskContext(cistResponse) {
         return {
-            cistGroupsMap: cist_1.toGroupsMap(cistResponse),
+            cistGroupsMap: cist_1.toGroupDataMap(cistResponse),
             googleGroupsMap: iterare_1.iterate(await this.getAllGroups())
                 .filter(g => typeof g.email === 'string')
                 .map(g => _types_1.t(g.email, g))
@@ -103,11 +103,11 @@ let GroupsService = GroupsService_1 = class GroupsService {
         };
     }
     async ensureGroup(cistGroupId, context) {
-        const cistGroup = context.cistGroupsMap.get(cistGroupId);
-        if (!cistGroup) {
+        const cistGroupData = context.cistGroupsMap.get(cistGroupId);
+        if (!cistGroupData) {
             throw new errors_1.FatalError(`Group ${cistGroupId} is not found in the context`);
         }
-        await this.doEnsureGroup(cistGroup, context.googleGroupsMap.get(this._utils.getGroupEmail(cistGroup)));
+        await this.doEnsureGroup(cistGroupData, context.googleGroupsMap.get(this._utils.getGroupEmail(cistGroupData.group)));
     }
     /**
      * Doesn't handle errors properly
@@ -196,24 +196,28 @@ let GroupsService = GroupsService_1 = class GroupsService {
             });
             if (groupsPage.data.groups) {
                 groups = groups.concat(groupsPage.data.groups);
+                this._logger.info(`Loaded ${groups.length} groups...`);
             }
         } while (groupsPage.data.nextPageToken);
+        this._logger.info(`All ${groups.length} groups loaded!`);
         return groups;
     }
-    doEnsureGroup(cistGroup, googleGroup) {
+    doEnsureGroup(cistGroupData, googleGroup) {
         if (googleGroup) {
-            const groupPatch = this.cistGroupToGoogleGroupPatch(cistGroup, googleGroup);
+            const groupPatch = this.cistGroupToGoogleGroupPatch(cistGroupData, googleGroup);
             if (groupPatch) {
                 return Promise.resolve(this._patch({
                     customer: constants_1.customer,
-                    groupKey: this._utils.getGroupEmail(cistGroup),
+                    groupKey: this._utils.getGroupEmail(cistGroupData.group),
                     requestBody: groupPatch,
-                })).tap(() => this._logger.info(`Patched group ${cistGroup.name}`));
+                })).tap(() => this._logger.info(`Patched group ${cistGroupData.group.name}`));
             }
+            this._logger.info(`No changes in group ${cistGroupData.group.name}`);
+            return Promise.resolve(null);
         }
         return Promise.resolve(this._insert({
-            requestBody: this.cistGroupToInsertGoogleGroup(cistGroup),
-        })).tap(() => `Inserted group ${cistGroup.name}`);
+            requestBody: this.cistGroupToInsertGoogleGroup(cistGroupData),
+        })).tap(() => this._logger.info(`Inserted group ${cistGroupData.group.name}`));
     }
     doDeleteByIds(groups, ids) {
         const promises = [];
@@ -231,25 +235,26 @@ let GroupsService = GroupsService_1 = class GroupsService {
             groupKey: groupEmailOrId,
         });
     }
-    cistGroupToInsertGoogleGroup(cistGroup, email = this._utils.getGroupEmail(cistGroup)) {
+    cistGroupToInsertGoogleGroup(cistGroupData, email = this._utils.getGroupEmail(cistGroupData.group)) {
         return {
             email,
-            name: cistGroup.name,
-            description: cistGroup.name,
+            name: cistGroupData.group.name,
+            description: getDescription(cistGroupData),
         };
     }
-    cistGroupToGoogleGroupPatch(cistGroup, googleGroup) {
+    cistGroupToGoogleGroupPatch(cistGroupData, googleGroup) {
         let hasChanges = false;
         const groupPatch = {};
-        if (cistGroup.name !== googleGroup.name) {
-            groupPatch.name = cistGroup.name;
+        if (cistGroupData.group.name !== googleGroup.name) {
+            groupPatch.name = cistGroupData.group.name;
             hasChanges = true;
         }
-        if (cistGroup.name !== googleGroup.description) {
-            groupPatch.name = cistGroup.name;
+        const description = getDescription(cistGroupData);
+        if (description !== googleGroup.description) {
+            groupPatch.description = description;
             hasChanges = true;
         }
-        const email = this._utils.getGroupEmail(cistGroup);
+        const email = this._utils.getGroupEmail(cistGroupData.group);
         if (email !== googleGroup.email) {
             groupPatch.email = email;
             hasChanges = true;
@@ -274,4 +279,11 @@ GroupsService = GroupsService_1 = tslib_1.__decorate([
         google_utils_service_1.GoogleUtilsService, Object])
 ], GroupsService);
 exports.GroupsService = GroupsService;
+function getDescription(cistGroupData) {
+    let description = `${cistGroupData.group.name}, faculty "${cistGroupData.faculty.full_name}" (${cistGroupData.faculty.short_name}), direction "${cistGroupData.direction.full_name}" (${cistGroupData.direction.short_name})`;
+    if (cistGroupData.speciality) {
+        description += `, speciality "${cistGroupData.speciality.full_name}" (${cistGroupData.speciality.short_name})`;
+    }
+    return description;
+}
 //# sourceMappingURL=groups.service.js.map

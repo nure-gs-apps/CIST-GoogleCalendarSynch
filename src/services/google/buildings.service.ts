@@ -30,7 +30,7 @@ export interface IBuildingsTaskContext {
 
 @injectable()
 export class BuildingsService {
-  static readonly BUILDING_PAGE_SIZE = 100;
+  static readonly BUILDING_PAGE_SIZE = 500;
   private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
   private readonly _utils: GoogleUtilsService;
@@ -252,6 +252,8 @@ export class BuildingsService {
           });
         }
         this._logger.info(`Patched building ${cistBuilding.short_name}`);
+      } else {
+        this._logger.info(`No changes in building ${cistBuilding.short_name}`);
       }
       return Promise.resolve(null);
     }

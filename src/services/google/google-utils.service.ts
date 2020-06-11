@@ -29,7 +29,7 @@ export class GoogleUtilsService {
     @inject(TYPES.GoogleAuthSubject) subject: string,
     @inject(TYPES.GoogleEntityIdPrefix) idPrefix: Nullable<string>,
   ) {
-    this.domainName = subject.slice(subject.indexOf('@'), subject.length)
+    this.domainName = subject.slice(subject.indexOf('@') + 1, subject.length)
       .toLowerCase();
     if (!idPrefix) {
       this.prependIdPrefix = id => id;

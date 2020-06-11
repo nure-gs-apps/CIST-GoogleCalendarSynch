@@ -5,7 +5,7 @@ import {
   DeepReadonly,
   DeepReadonlyArray,
   DeepReadonlyMap,
-  Maybe,
+  Maybe, Nullable,
   t,
 } from '../../@types';
 import { ILogger } from '../../@types/logging';
@@ -20,12 +20,17 @@ import { customer } from './constants';
 import { FatalError } from './errors';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
-import { GaxiosPromise } from 'gaxios';
+import { GaxiosPromise, GaxiosResponse } from 'gaxios';
 import { transformFloorName, GoogleUtilsService } from './google-utils.service';
 
 export interface IRoomsTaskContext {
-  readonly cistRoomsMap: DeepReadonlyMap<string, [CistRoom, CistBuilding]>;
+  readonly cistRoomsMap: DeepReadonlyMap<string, ICistRoomData>;
   readonly googleRoomsMap: DeepReadonlyMap<string, Schema$CalendarResource>;
+}
+
+export interface ICistRoomData {
+  readonly room: DeepReadonly<CistRoom>;
+  readonly building: DeepReadonly<CistBuilding>;
 }
 
 @injectable()
@@ -81,7 +86,8 @@ export class RoomsService {
   async ensureRooms(cistResponse: DeepReadonly<CistRoomsResponse>) {
     const rooms = await this.getAllRooms();
 
-    const promises = [] as GaxiosPromise[];
+    // tslint:disable-next-line:max-line-length
+    const promises: Promise<Nullable<GaxiosResponse<Schema$CalendarResource>>>[] = [];
     for (const cistBuilding of cistResponse.university.buildings) {
       const buildingId = this._utils.getGoogleBuildingId(cistBuilding);
       for (const cistRoom of cistBuilding.auditories) {
@@ -105,11 +111,14 @@ export class RoomsService {
   ): Promise<IRoomsTaskContext> {
     return {
       cistRoomsMap: toRoomsWithBuildings(cistResponse)
-        .map(([a, b]) => t(this._utils.getRoomId(a, b), t(a, b)))
+        .map(([a, b]) => t(this._utils.getRoomId(a, b), {
+          room: a,
+          building: b
+        }))
         .toMap(),
       googleRoomsMap: iterate(await this.getAllRooms())
-        .filter(b => typeof b.buildingId === 'string')
-        .map(b => t(b.buildingId as string, b))
+        .filter(b => typeof b.resourceId === 'string')
+        .map(b => t(b.resourceId as string, b))
         .toMap()
     };
   }
@@ -134,10 +143,9 @@ export class RoomsService {
       throw new FatalError(`Room ${cistRoomId} is not found in the context`);
     }
     await this.doEnsureRoom(
-      cistData[0] as DeepReadonly<CistRoom>,
-      cistData[1] as DeepReadonly<CistBuilding>,
+      cistData.room,
+      cistData.building,
       context.googleRoomsMap.get(cistRoomId),
-      cistData[1].id,
       cistRoomId
     );
   }
@@ -240,8 +248,8 @@ export class RoomsService {
     cistRoom: DeepReadonly<CistRoom>,
     cistBuilding: DeepReadonly<CistBuilding>,
     googleRoom: Maybe<DeepReadonly<Schema$CalendarResource>>,
+    cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding),
     buildingId = this._utils.getGoogleBuildingId(cistBuilding),
-    cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding)
   ) {
     if (googleRoom) {
       const roomPatch = this.cistRoomToGoogleRoomPatch(
@@ -256,11 +264,14 @@ export class RoomsService {
           requestBody: roomPatch,
         })).tap(() => this._logger.info(`Patched room ${cistRoom.short_name}, building ${cistBuilding.short_name}`));
       }
+      this._logger.info(`No changes in room ${cistRoom.short_name}, building ${cistBuilding.short_name}`);
+      return Promise.resolve(null);
     }
     return Promise.resolve(this._insert({
       customer,
       requestBody: this.cistRoomToInsertGoogleRoom(
         cistRoom,
+        cistBuilding,
         buildingId,
         cistRoomId,
       ),
@@ -303,15 +314,15 @@ export class RoomsService {
       roomPatch.resourceName = cistRoom.short_name;
       hasChanges = true;
     }
-    const description = `${cistBuilding.short_name}\n${JSON.stringify(cistRoom)}`;
+    const description = getResourceDescription(cistBuilding, cistRoom);
     if (description !== googleRoom.resourceDescription) {
       roomPatch.resourceDescription = description;
       hasChanges = true;
     }
-    let userVisibleDescription = `${cistRoom.short_name}, ${cistBuilding.full_name}`;
-    if (cistRoom.is_have_power === '1') {
-      userVisibleDescription += ', has power';
-    }
+    const userVisibleDescription = getUserVisibleDescription(
+      cistBuilding,
+      cistRoom,
+    );
     if (userVisibleDescription !== googleRoom.userVisibleDescription) {
       roomPatch.userVisibleDescription = userVisibleDescription;
       hasChanges = true;
@@ -326,16 +337,17 @@ export class RoomsService {
 
   private cistRoomToInsertGoogleRoom(
     cistRoom: DeepReadonly<CistRoom>,
-    googleBuildingId: string,
-    roomId: string,
+    cistBuilding: DeepReadonly<CistBuilding>,
+    googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding),
+    roomId = this._utils.getRoomId(cistRoom, cistBuilding),
   ) {
     const room: Schema$CalendarResource = { // TODO: add cist room types and is_have_power as features resources
       resourceId: roomId,
       buildingId: googleBuildingId,
       resourceName: cistRoom.short_name,
       capacity: 999, // unlimited
-      resourceDescription: cistRoom.short_name, // FIXME: whether add info about buildings or not
-      userVisibleDescription: cistRoom.short_name,
+      resourceDescription: getResourceDescription(cistBuilding, cistRoom),
+      userVisibleDescription: getUserVisibleDescription(cistBuilding, cistRoom),
       floorName: transformFloorName(cistRoom.floor),
       resourceCategory: 'CONFERENCE_ROOM',
     };
@@ -347,4 +359,22 @@ function toRoomsWithBuildings(cistResponse: DeepReadonly<CistRoomsResponse>) {
   return iterate(cistResponse.university.buildings)
     .map(b => iterate(b.auditories).map(a => t(a, b)))
     .flatten();
+}
+
+function getResourceDescription(
+  cistBuilding: DeepReadonly<CistBuilding>,
+  cistRoom: DeepReadonly<CistRoom>,
+) {
+  return `${cistBuilding.short_name}\n${JSON.stringify(cistRoom)}`;
+}
+
+function getUserVisibleDescription(
+  cistBuilding: DeepReadonly<CistBuilding>,
+  cistRoom: DeepReadonly<CistRoom>,
+) {
+  let userVisibleDescription = `${cistRoom.short_name}, ${cistBuilding.full_name}`;
+  if (cistRoom.is_have_power === '1') {
+    userVisibleDescription += ', has power';
+  }
+  return userVisibleDescription;
 }

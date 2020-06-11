@@ -44,7 +44,6 @@ import {
 import ServiceIdentifier = interfaces.ServiceIdentifier;
 
 export interface IEntitiesToRemove {
-  deleteIrrelevantBuildings: boolean;
   deleteIrrelevantAuditories: boolean;
   deleteIrrelevantGroups: boolean;
   deleteIrrelevantEvents: boolean;
@@ -277,8 +276,12 @@ export class RunTasksJob {
       || taskType === TaskType.DeferredDeleteIrrelevantBuildings
       || taskType === TaskType.EnsureBuildings
       || taskType === TaskType.DeleteIrrelevantBuildings
+      || taskType === TaskType.DeferredEnsureRooms
+      || taskType === TaskType.DeferredDeleteIrrelevantRooms
       || taskType === TaskType.EnsureRooms
       || taskType === TaskType.DeleteIrrelevantRooms
+      || taskType === TaskType.DeferredEnsureGroups
+      || taskType === TaskType.DeferredDeleteIrrelevantGroups
       || taskType === TaskType.EnsureGroups
       || taskType === TaskType.DeleteIrrelevantGroups
     ))) {

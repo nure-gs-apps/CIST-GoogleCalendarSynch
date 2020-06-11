@@ -205,6 +205,9 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
                 }
                 this._logger.info(`Patched building ${cistBuilding.short_name}`);
             }
+            else {
+                this._logger.info(`No changes in building ${cistBuilding.short_name}`);
+            }
             return Promise.resolve(null);
         }
         return this._insert({
@@ -252,7 +255,7 @@ Object.defineProperty(BuildingsService, "BUILDING_PAGE_SIZE", {
     enumerable: true,
     configurable: true,
     writable: true,
-    value: 100
+    value: 500
 });
 BuildingsService = BuildingsService_1 = tslib_1.__decorate([
     inversify_1.injectable(),

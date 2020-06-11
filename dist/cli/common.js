@@ -58,15 +58,10 @@ function addEntitiesOptions(yargs, demand = true, logger = console) {
 }
 exports.addEntitiesOptions = addEntitiesOptions;
 function addEntitiesToRemoveOptions(yargs) {
-    const buildingsName = "deleteIrrelevantBuildings";
     const auditoriesName = "deleteIrrelevantAuditories";
     const groupsName = "deleteIrrelevantGroups";
     const eventsName = "deleteIrrelevantEvents";
     return yargs
-        .option(buildingsName, {
-        description: 'Delete irrelevant buildings, that are not found in current CIST Auditories response',
-        type: 'boolean',
-    })
         .option(auditoriesName, {
         description: 'Delete irrelevant auditories, that are not found in current CIST Auditories response',
         type: 'boolean',

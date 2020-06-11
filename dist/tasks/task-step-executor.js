@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
+const lib_1 = require("async-sema/lib");
 const events_1 = require("events");
 const inversify_1 = require("inversify");
 const object_1 = require("../@types/object");
@@ -63,18 +64,36 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
             writable: true,
             value: void 0
         }); // FIXME: probably, use cached value with expiration
+        Object.defineProperty(this, "_buildingsContextSemaphore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "_roomsContext", {
             enumerable: true,
             configurable: true,
             writable: true,
             value: void 0
         }); // FIXME: probably, use cached value with expiration
+        Object.defineProperty(this, "_roomsContextSemaphore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "_groupsContext", {
             enumerable: true,
             configurable: true,
             writable: true,
             value: void 0
         }); // FIXME: probably, use cached value with expiration
+        Object.defineProperty(this, "_groupsContextSemaphore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this._container = container;
         this._logger = logger;
         this._disposer = new object_1.Disposer(this.doDispose.bind(this));
@@ -85,6 +104,9 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
         this._buildingsContext = null;
         this._roomsContext = null;
         this._groupsContext = null;
+        this._buildingsContextSemaphore = null;
+        this._roomsContextSemaphore = null;
+        this._groupsContextSemaphore = null;
     }
     get isDisposed() {
         return this._disposer.isDisposed;
@@ -232,25 +254,52 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
         return this._cistClient;
     }
     async saveAndGetBuildingsContext(roomsResponse) {
-        if (!this._buildingsContext) {
-            this._buildingsContext = await this.getBuildingsService()
-                .createBuildingsContext(roomsResponse);
+        if (!this._buildingsContextSemaphore) {
+            this._buildingsContextSemaphore = new lib_1.Sema(1);
         }
-        return this._buildingsContext;
+        try {
+            await this._buildingsContextSemaphore.acquire();
+            if (!this._buildingsContext) {
+                this._buildingsContext = await this.getBuildingsService()
+                    .createBuildingsContext(roomsResponse);
+            }
+            return this._buildingsContext;
+        }
+        finally {
+            this._buildingsContextSemaphore.release();
+        }
     }
     async saveAndGetRoomsContext(roomsResponse) {
-        if (!this._roomsContext) {
-            this._roomsContext = await this.getRoomsService()
-                .createRoomsContext(roomsResponse);
+        if (!this._roomsContextSemaphore) {
+            this._roomsContextSemaphore = new lib_1.Sema(1);
         }
-        return this._roomsContext;
+        try {
+            await this._roomsContextSemaphore.acquire();
+            if (!this._roomsContext) {
+                this._roomsContext = await this.getRoomsService()
+                    .createRoomsContext(roomsResponse);
+            }
+            return this._roomsContext;
+        }
+        finally {
+            this._roomsContextSemaphore.release();
+        }
     }
     async saveAndGetGroupsContext(groupsResponse) {
-        if (!this._groupsContext) {
-            this._groupsContext = await this.getGroupsService()
-                .createGroupsTaskContext(groupsResponse);
+        if (!this._groupsContextSemaphore) {
+            this._groupsContextSemaphore = new lib_1.Sema(1);
         }
-        return this._groupsContext;
+        try {
+            await this._groupsContextSemaphore.acquire();
+            if (!this._groupsContext) {
+                this._groupsContext = await this.getGroupsService()
+                    .createGroupsTaskContext(groupsResponse);
+            }
+            return this._groupsContext;
+        }
+        finally {
+            this._groupsContextSemaphore.release();
+        }
     }
     getBuildingsService() {
         if (!this._buildingsService) {

@@ -1,3 +1,4 @@
+import { Sema } from 'async-sema/lib';
 import { EventEmitter } from 'events';
 import { inject, injectable } from 'inversify';
 import { DeepReadonly, Nullable, Optional } from '../@types';
@@ -47,8 +48,11 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   protected _cistClient: Nullable<ICistJsonClient>;
 
   protected _buildingsContext: Nullable<IBuildingsTaskContext>; // FIXME: probably, use cached value with expiration
+  protected _buildingsContextSemaphore: Nullable<Sema>;
   protected _roomsContext: Nullable<IRoomsTaskContext>; // FIXME: probably, use cached value with expiration
+  protected _roomsContextSemaphore: Nullable<Sema>;
   protected _groupsContext: Nullable<IGroupsTaskContext>; // FIXME: probably, use cached value with expiration
+  protected _groupsContextSemaphore: Nullable<Sema>;
 
   get isDisposed() {
     return this._disposer.isDisposed;
@@ -71,6 +75,10 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     this._buildingsContext = null;
     this._roomsContext = null;
     this._groupsContext = null;
+
+    this._buildingsContextSemaphore = null;
+    this._roomsContextSemaphore = null;
+    this._groupsContextSemaphore = null;
   }
 
   requiresSteps(taskType: string): boolean {
@@ -298,31 +306,55 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   private async saveAndGetBuildingsContext(
     roomsResponse: DeepReadonly<CistRoomsResponse>
   ) {
-    if (!this._buildingsContext) {
-      this._buildingsContext = await this.getBuildingsService()
-        .createBuildingsContext(roomsResponse);
+    if (!this._buildingsContextSemaphore) {
+      this._buildingsContextSemaphore = new Sema(1);
     }
-    return this._buildingsContext;
+    try {
+      await this._buildingsContextSemaphore.acquire();
+      if (!this._buildingsContext) {
+        this._buildingsContext = await this.getBuildingsService()
+          .createBuildingsContext(roomsResponse);
+      }
+      return this._buildingsContext;
+    } finally {
+      this._buildingsContextSemaphore.release();
+    }
   }
 
   private async saveAndGetRoomsContext(
     roomsResponse: DeepReadonly<CistRoomsResponse>
   ) {
-    if (!this._roomsContext) {
-      this._roomsContext = await this.getRoomsService()
-        .createRoomsContext(roomsResponse);
+    if (!this._roomsContextSemaphore) {
+      this._roomsContextSemaphore = new Sema(1);
     }
-    return this._roomsContext;
+    try {
+      await this._roomsContextSemaphore.acquire();
+      if (!this._roomsContext) {
+        this._roomsContext = await this.getRoomsService()
+          .createRoomsContext(roomsResponse);
+      }
+      return this._roomsContext;
+    } finally {
+      this._roomsContextSemaphore.release();
+    }
   }
 
   private async saveAndGetGroupsContext(
     groupsResponse: DeepReadonly<CistGroupsResponse>
   ) {
-    if (!this._groupsContext) {
-      this._groupsContext = await this.getGroupsService()
-        .createGroupsTaskContext(groupsResponse);
+    if (!this._groupsContextSemaphore) {
+      this._groupsContextSemaphore = new Sema(1);
     }
-    return this._groupsContext;
+    try {
+      await this._groupsContextSemaphore.acquire();
+      if (!this._groupsContext) {
+        this._groupsContext = await this.getGroupsService()
+          .createGroupsTaskContext(groupsResponse);
+      }
+      return this._groupsContext;
+    } finally {
+      this._groupsContextSemaphore.release();
+    }
   }
 
   private getBuildingsService() {

@@ -35,4 +35,33 @@ function toGroupsMap(groupsResponse) {
         .toMap();
 }
 exports.toGroupsMap = toGroupsMap;
+function toGroupDataMap(groupsResponse) {
+    return iterare_1.default(groupsResponse.university.faculties)
+        .map(f => iterare_1.default(f.directions).map(d => ({
+        faculty: f,
+        direction: d
+    })))
+        .flatten()
+        .map(data => {
+        const iterator = iterare_1.default(data.direction.specialities)
+            .map(s => iterare_1.default(s.groups).map(g => ({
+            faculty: data.faculty,
+            direction: data.direction,
+            speciality: s,
+            group: g
+        })))
+            .flatten();
+        return data.direction.groups
+            ? iterare_1.default(data.direction.groups).map(g => ({
+                faculty: data.faculty,
+                direction: data.direction,
+                group: g
+            })).concat(iterator)
+            : iterator;
+    })
+        .flatten()
+        .map(d => _types_1.t(d.group.id, d))
+        .toMap();
+}
+exports.toGroupDataMap = toGroupDataMap;
 //# sourceMappingURL=cist.js.map

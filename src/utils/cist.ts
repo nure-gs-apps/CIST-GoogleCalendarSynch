@@ -1,6 +1,7 @@
 import iterate from 'iterare';
 import { DeepReadonly, t } from '../@types';
 import { CistBuilding, CistGroupsResponse } from '../@types/cist';
+import { ICistGroupData } from '../@types/google';
 import { CacheType, CistCacheConfig } from '../config/types';
 import { transformFloorName } from '../services/google/google-utils.service';
 
@@ -38,5 +39,36 @@ export function toGroupsMap(groupsResponse: DeepReadonly<CistGroupsResponse>) {
     })
     .flatten()
     .map(g => t(g.id, g))
+    .toMap();
+}
+
+export function toGroupDataMap(
+  groupsResponse: DeepReadonly<CistGroupsResponse>
+) {
+  return iterate(groupsResponse.university.faculties)
+    .map(f => iterate(f.directions).map(d => ({
+      faculty: f,
+      direction: d
+    })))
+    .flatten()
+    .map(data => {
+      const iterator = iterate(data.direction.specialities)
+        .map(s => iterate(s.groups).map(g => ({
+          faculty: data.faculty,
+          direction: data.direction,
+          speciality: s,
+          group: g
+        })))
+        .flatten();
+      return data.direction.groups
+        ? iterate(data.direction.groups).map(g => ({
+          faculty: data.faculty,
+          direction: data.direction,
+          group: g
+        })).concat(iterator)
+        : iterator;
+    })
+    .flatten()
+    .map(d => t(d.group.id, d as ICistGroupData))
     .toMap();
 }

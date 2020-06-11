@@ -35,7 +35,7 @@ let GoogleUtilsService = class GoogleUtilsService {
             writable: true,
             value: void 0
         });
-        this.domainName = subject.slice(subject.indexOf('@'), subject.length)
+        this.domainName = subject.slice(subject.indexOf('@') + 1, subject.length)
             .toLowerCase();
         if (!idPrefix) {
             this.prependIdPrefix = id => id;
