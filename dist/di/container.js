@@ -15,6 +15,7 @@ const events_service_1 = require("../services/google/events.service");
 const google_api_admin_directory_1 = require("../services/google/google-api-admin-directory");
 const google_api_calendar_1 = require("../services/google/google-api-calendar");
 const google_auth_admin_directory_1 = require("../services/google/google-auth-admin-directory");
+const google_auth_calendar_1 = require("../services/google/google-auth-calendar");
 const google_utils_service_1 = require("../services/google/google-utils.service");
 const groups_service_1 = require("../services/google/groups.service");
 const rooms_service_1 = require("../services/google/rooms.service");
@@ -158,6 +159,18 @@ function addTypesToContainer(options) {
         types.add(types_1.TYPES.Logger);
     }
     if ((allRequired
+        || types.has(types_1.TYPES.EventsService)
+        || types.has(events_service_1.EventsService))
+        && !skip.has(events_service_1.EventsService)
+        && !skip.has(types_1.TYPES.EventsService)) {
+        container.bind(types_1.TYPES.EventsService)
+            .to(events_service_1.EventsService);
+        types.add(types_1.TYPES.GoogleApiCalendar);
+        types.add(types_1.TYPES.GoogleCalendarQuotaLimiterConfig);
+        types.add(types_1.TYPES.GoogleUtils);
+        types.add(types_1.TYPES.Logger);
+    }
+    if ((allRequired
         || types.has(types_1.TYPES.GoogleApiAdminDirectory)
         || types.has(google_api_admin_directory_1.GoogleApiAdminDirectory))
         && !skip.has(google_api_admin_directory_1.GoogleApiAdminDirectory)
@@ -165,6 +178,15 @@ function addTypesToContainer(options) {
         container.bind(types_1.TYPES.GoogleApiAdminDirectory)
             .to(google_api_admin_directory_1.GoogleApiAdminDirectory);
         types.add(types_1.TYPES.GoogleAuthAdminDirectory);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.GoogleApiCalendar)
+        || types.has(google_api_calendar_1.GoogleApiCalendar))
+        && !skip.has(google_api_calendar_1.GoogleApiCalendar)
+        && !skip.has(types_1.TYPES.GoogleApiCalendar)) {
+        container.bind(types_1.TYPES.GoogleApiCalendar)
+            .to(google_api_calendar_1.GoogleApiCalendar);
+        types.add(types_1.TYPES.GoogleAuthCalendar);
     }
     if ((allRequired
         || types.has(types_1.TYPES.GoogleAuthAdminDirectory)
@@ -175,6 +197,16 @@ function addTypesToContainer(options) {
             .to(google_auth_admin_directory_1.GoogleAuthAdminDirectory);
         types.add(types_1.TYPES.Logger);
         types.add(types_1.TYPES.GoogleAuthAdminDirectoryKey);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.GoogleAuthCalendar)
+        || types.has(google_auth_calendar_1.GoogleAuthCalendar))
+        && !skip.has(google_auth_calendar_1.GoogleAuthCalendar)
+        && !skip.has(types_1.TYPES.GoogleAuthCalendar)) {
+        container.bind(types_1.TYPES.GoogleAuthCalendar)
+            .to(google_auth_calendar_1.GoogleAuthCalendar);
+        types.add(types_1.TYPES.Logger);
+        types.add(types_1.TYPES.GoogleAuthCalendarKey);
     }
     if ((allRequired || types.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)) && !skip.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)) {
         container.bind(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)
@@ -230,6 +262,10 @@ function addTypesToContainer(options) {
     if ((allRequired || types.has(types_1.TYPES.GoogleAuthAdminDirectoryKey)) && !skip.has(types_1.TYPES.GoogleAuthAdminDirectoryKey)) {
         container.bind(types_1.TYPES.GoogleAuthAdminDirectoryKey)
             .toConstantValue(config_1.getConfig().google.auth.adminDirectoryKey);
+    }
+    if ((allRequired || types.has(types_1.TYPES.GoogleAuthCalendarKey)) && !skip.has(types_1.TYPES.GoogleAuthCalendarKey)) {
+        container.bind(types_1.TYPES.GoogleAuthCalendarKey)
+            .toConstantValue(config_1.getConfig().google.auth.calendarKey);
     }
     if ((allRequired || types.has(types_1.TYPES.GoogleAuthSubject)) && !skip.has(types_1.TYPES.GoogleAuthSubject)) {
         container.bind(types_1.TYPES.GoogleAuthSubject).toConstantValue(config_1.getConfig().google.auth.adminSubjectEmail);

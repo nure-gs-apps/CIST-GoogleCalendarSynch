@@ -30,7 +30,7 @@ let GoogleApiCalendar = class GoogleApiCalendar {
 };
 GoogleApiCalendar = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuthAdminDirectory)),
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuthCalendar)),
     tslib_1.__metadata("design:paramtypes", [Object])
 ], GoogleApiCalendar);
 exports.GoogleApiCalendar = GoogleApiCalendar;

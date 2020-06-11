@@ -89,7 +89,6 @@ class RunTasksJob {
         this._container.bind(types_2.TYPES.CistJsonClient)
             .toDynamicValue(cached_cist_json_client_service_1.getSharedCachedCistJsonClientInstance);
         await container_1.getContainerAsyncInitializer();
-        return;
         const executor = this._container.get(types_2.TYPES.TaskStepExecutor);
         this._taskRunner = new runner_1.TaskRunner(executor, this._config.ncgc.tasks.concurrency);
         executor.on(task_step_executor_1.TaskStepExecutorEventNames.NewTask, (task) => {

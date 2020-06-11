@@ -19,6 +19,7 @@ TODO:
 - create group hierarchy:
     - check if has `+`
     - split by `+` and transform each to upper case
-    - check with other groups in upper case 
+    - check with other groups in upper case
+- ensure autoInject & Symbols return the same instance
 
 FIX:
