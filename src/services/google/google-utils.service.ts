@@ -7,7 +7,7 @@ import { toTranslit } from '../../utils/translit';
 import {
   CistRoom,
   CistBuilding,
-  CistGroup,
+  CistGroup, CistEvent,
 } from '../../@types/cist';
 import { FatalError } from './errors';
 import Schema$Building = admin_directory_v1.Schema$Building;
@@ -128,6 +128,10 @@ export function isSameGroupIdentity(
   const emailParts = googleGroup.email!.split('@');
   const parts = emailParts[emailParts.length - 2].split('.');
   return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
+}
+
+export function hashCistEvent(cistEvent: CistEvent) {
+  return `${cistEvent.subject_id}.${cistEvent.type}.${cistEvent.start_time}.${cistEvent.end_time}`;
 }
 
 function throwInvalidGroupEmailError(email: string): never {

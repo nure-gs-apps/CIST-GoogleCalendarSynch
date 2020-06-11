@@ -5,7 +5,6 @@ import { ILogger } from '../../@types/logging';
 import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
 import { QuotaLimiterService } from '../quota-limiter.service';
-import { customer } from './constants';
 import { FatalError } from './errors';
 import { GoogleApiCalendar } from './google-api-calendar';
 import { GoogleUtilsService } from './google-utils.service';
@@ -25,7 +24,7 @@ export interface IDeleteIrrelevantEventsTaskContext extends IEventsTaskContextBa
 
 export interface IEventsTaskContextBase {
   continuationToken?: string;
-  readonly events: Schema$Event[];
+  readonly events: Map<string, Schema$Event>;
 }
 
 @injectable()
@@ -84,7 +83,7 @@ export class EventsService {
       throw new FatalError(l('no tasks requested'));
     }
     const context: IEventsTaskContextBase = {
-      events: []
+      events: new Map()
     };
     if (ensure) {
       const ensureContext: Mutable<Partial<IEnsureEventsTaskContext>> = context;
@@ -115,8 +114,9 @@ export class EventsService {
         ?? eventsPage.data.nextSyncToken;
       if (eventsPage.data.items) {
         context.events.push(...eventsPage.data.items);
-        this._logger.info(`Loaded ${context.events.length} events...`);
+        this._logger.info(`Loaded ${context.events.size} events...`);
       }
+      yield context;
     } while (context.continuationToken);
     this._logger.info('All events are loaded!');
   }

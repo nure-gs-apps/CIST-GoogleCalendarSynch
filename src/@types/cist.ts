@@ -129,7 +129,7 @@ export interface CistEvent {
   subject_id: number;
   start_time: number;
   end_time: number;
-  type: number;
+  type: EventType;
   number_pair: number;
   auditory: string;
   teachers: number[];
@@ -161,6 +161,37 @@ export interface CistEventType { // for course work: #BFC9CA
   full_name: string;
   id_base: number;
   type: string;
+}
+
+export enum EventType {
+  Lecture = 0,
+  ExtramuralInitialLecture = 1,
+  TermInitialLecture = 2,
+
+  Practice = 10,
+  Seminar = 11,
+  ExtramuralPractice = 12,
+
+  LabWork = 20,
+  ComputerCenterLabWork = 21,
+  DirectionLabWork = 22,
+  InitialLabWork = 23,
+  InitialDirectionLabWork = 24,
+
+  Consultation = 30,
+  VoluntaryConsultation = 31,
+
+  Test = 40,
+  DifferentiatedTest = 41,
+
+  Exam = 50,
+  WrittenExam = 51,
+  OralExam = 52,
+  CompositeExam = 53,
+  TestExam = 54,
+  ModularExam = 55,
+
+  CourseWork = 60,
 }
 
 export interface IEventsQueryParams {
