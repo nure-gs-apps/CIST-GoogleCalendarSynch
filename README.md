@@ -21,5 +21,6 @@ TODO:
     - split by `+` and transform each to upper case
     - check with other groups in upper case
 - ensure autoInject & Symbols return the same instance
+- resource id/email parsing & check for prefixes
 
 FIX:

@@ -7,7 +7,7 @@ import { TYPES } from '../../di/types';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { FatalError } from './errors';
 import { GoogleApiCalendar } from './google-api-calendar';
-import { GoogleUtilsService } from './google-utils.service';
+import { GoogleUtilsService, hashGoogleEvent } from './google-utils.service';
 import Resource$Events = calendar_v3.Resource$Events;
 import Schema$Event = calendar_v3.Schema$Event;
 
@@ -113,7 +113,7 @@ export class EventsService {
       context.continuationToken = eventsPage.data.nextPageToken;
       if (eventsPage.data.items) {
         for (const item of eventsPage.data.items) {
-          const hash = ''
+          const hash = hashGoogleEvent(item);
           if (context.events.has(hash)) {
             this._logger.debug(l('has duplicate events, from context, from response'), context.events.get(hash), item);
           }
