@@ -81,6 +81,10 @@ export function t(...args: any[]): any[] {
   return args;
 }
 
+export function as<T>(value: any): value is T {
+  return true;
+}
+
 export interface IReadonlyGuardedMap<K, V> extends ReadonlyMap<K, NonOptional<V>> {
   get(key: K): NonOptional<V>;
   forEach(

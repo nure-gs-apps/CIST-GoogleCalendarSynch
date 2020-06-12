@@ -1,16 +1,17 @@
 import { isEqual } from 'lodash';
+import { encode } from '@januswel/base32';
 import { admin_directory_v1, calendar_v3 } from 'googleapis';
 import { inject, injectable, optional } from 'inversify';
 import { iterate } from 'iterare';
 import {
-  DeepReadonly,
-  GuardedMap,
+  DeepReadonly, DeepReadonlyGuardedMap,
+  IGuardedMap, IReadonlyGuardedMap,
   Nullable,
   Optional,
 } from '../../@types';
 import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
-import { fromBase64, toBase64 } from '../../utils/common';
+import { fromBase64, isObjectLike, toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
 import {
   CistRoom,
@@ -34,14 +35,15 @@ export const buildingIdPrefix = 'b';
 export const roomIdPrefix = 'r';
 
 export interface IEventContext {
-  subjects: GuardedMap<number, CistSubject>;
-  googleGroups: GuardedMap<number, Schema$Group>;
-  teachers: GuardedMap<number, CistTeacher>;
-  roomEmailsByNames: GuardedMap<string, string>;
-  types: GuardedMap<EventType, CistEventType>;
+  subjects: IGuardedMap<number, CistSubject>;
+  googleGroups: IGuardedMap<number, Schema$Group>;
+  teachers: IGuardedMap<number, CistTeacher>;
+  roomEmailsByNames: IGuardedMap<string, string>;
+  types: IGuardedMap<EventType, CistEventType>;
 }
 
 export interface IEventSharedExtendedProperties {
+  [key: string]: string;
   subjectId: string;
   subject: string;
   type: string;
@@ -165,7 +167,7 @@ export class GoogleUtilsService {
     return id;
   }
 
-  toGoogleEvent(
+  createGoogleEvent(
     cistEvent: DeepReadonly<CistEvent>,
     context: DeepReadonly<IEventContext>,
   ): Schema$Event {
@@ -186,22 +188,7 @@ export class GoogleUtilsService {
         type,
       ),
       extendedProperties: {
-        shared: {
-          subjectId: cistEvent.subject_id.toString(),
-          subject: JSON.stringify(subject),
-          type: cistEvent.type.toString(),
-          typeString: EventType[cistEvent.type],
-          teacherIds: cistEvent.teachers.join(','),
-          teachers: JSON.stringify(
-            cistEvent.teachers.map(t => context.teachers.get(t))
-          ),
-          groupIds: cistEvent.groups.join(','),
-          groups: iterate(cistEvent.groups)
-            .map(g => context.googleGroups.get(g).name)
-            .join(','),
-          classNumber: cistEvent.number_pair.toString(),
-          roomShortName: cistEvent.auditory,
-        }
+        shared: getEventSharedExtendedProperties(cistEvent, context, subject)
       },
       gadget: {
         title,
@@ -210,7 +197,7 @@ export class GoogleUtilsService {
       guestsCanInviteOthers: false,
       guestsCanModify: false,
       guestsCanSeeOtherGuests: true,
-      id: hashBase32HexCistEvent(cistEvent),
+      id: encode(hashCistEvent(cistEvent)),
       reminders: {
         useDefault: true, // FIXME: check if this is enough for reminders
       },
@@ -229,7 +216,7 @@ export class GoogleUtilsService {
       },
       endTimeUnspecified: false,
       status: 'confirmed',
-      summary: `${title}, ${iterate(cistEvent.groups).map(g => context.googleGroups.get(g).name).join(', ')}`,
+      summary: getEventSummary(title, cistEvent, context.googleGroups),
       transparency: 'opaque',
       visibility: 'public',
     };
@@ -247,7 +234,7 @@ export class GoogleUtilsService {
   }
 
   createEventPatch(
-    event: Schema$Event,
+    event: DeepReadonly<Schema$Event>,
     cistEvent: DeepReadonly<CistEvent>,
     context: DeepReadonly<IEventContext>,
   ) {
@@ -273,6 +260,70 @@ export class GoogleUtilsService {
       eventPatch.description = description;
       hasChanges = true;
     }
+    if (!event.extendedProperties?.shared) {
+      eventPatch.extendedProperties = {
+        shared: getEventSharedExtendedProperties(cistEvent, context, subject)
+      };
+    } else if (isObjectLike<IEventSharedExtendedProperties>(
+      event.extendedProperties.shared
+    )) {
+      const patch = getEventSharedExtendedPropertiesPatch(
+        cistEvent,
+        event.extendedProperties.shared,
+        context,
+        subject
+      );
+      if (patch) {
+        eventPatch.extendedProperties = {
+          shared: patch as Record<string, string>
+        };
+      }
+    }
+    const gadgetType = cistEvent.type.toString();
+    const title = `${subject.brief} ${cistEvent.auditory} ${type.short_name}`;
+    if (!event.gadget) {
+      eventPatch.gadget = {
+        title,
+        type: gadgetType, // TODO: check if allowed
+      };
+      hasChanges = true;
+    } else {
+      const gadget = {} as Record<string, string>;
+      let gadgetChanged = false;
+      if (title !== event.gadget.title) {
+        gadget.title = title;
+        gadgetChanged = true;
+      }
+      if (gadgetType !== event.gadget.type) {
+        gadget.type = gadgetType;
+        gadgetChanged = true;
+      }
+      if (gadgetChanged) {
+        eventPatch.gadget = gadget;
+        hasChanges = true;
+      }
+    }
+    const id = encode(hashCistEvent(cistEvent));
+    if (id !== event.id) {
+      eventPatch.id = id;
+      hasChanges = true;
+    }
+    // FIXME: add start & end check
+    const summary = getEventSummary(title, cistEvent, context.googleGroups);
+    if (summary !== event.summary) {
+      eventPatch.summary = summary;
+      hasChanges = true;
+    }
+    const colorId = this.getGoogleEventColorId(cistEvent.type);
+    if (colorId !== event.colorId) {
+      eventPatch.colorId = colorId;
+      hasChanges = true;
+    }
+    if (this.nureAddress !== event.location) {
+      eventPatch.location = this.nureAddress;
+      hasChanges = true;
+    }
+
     return hasChanges ? eventPatch : null;
   }
 
@@ -346,8 +397,150 @@ export function isSameGroupIdentity(
   return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
 }
 
-export function hashBase32HexCistEvent(cistEvent: DeepReadonly<CistEvent>) {
-  return `${cistEvent.subject_id}T${cistEvent.teachers.join('S')}T${cistEvent.type}T${cistEvent.start_time}T${cistEvent.end_time}`;
+export function getEventSharedExtendedProperties(
+  cistEvent: DeepReadonly<CistEvent>,
+  context: DeepReadonly<IEventContext>,
+  subject = context.subjects.get(cistEvent.subject_id),
+) {
+  const object: IEventSharedExtendedProperties = {
+    subjectId: getEventSubjectId(cistEvent),
+    subject: getEventSubject(subject),
+    type: getEventType(cistEvent),
+    typeString: getEventTypeString(cistEvent),
+    teacherIds: getEventTeacherIds(cistEvent),
+    teachers: getEventTeachers(cistEvent, context.teachers),
+    groupIds: getEventGroupIds(cistEvent),
+    groups: getEventGroups(cistEvent, context.googleGroups),
+    classNumber: getEventClassNumber(cistEvent),
+    roomShortName: getEventRoomShortName(cistEvent),
+  };
+  return object;
+}
+export function getEventSharedExtendedPropertiesPatch(
+  cistEvent: DeepReadonly<CistEvent>,
+  // tslint:disable-next-line:max-line-length
+  eventSharedExtendedProperties: Partial<DeepReadonly<IEventSharedExtendedProperties>>,
+  context: DeepReadonly<IEventContext>,
+  subject = context.subjects.get(cistEvent.subject_id),
+) {
+  const props = eventSharedExtendedProperties;
+  let hasChanges = false;
+  const patch: Partial<IEventSharedExtendedProperties> = {};
+  const subjectId = getEventSubjectId(cistEvent);
+  if (subjectId !== props.subjectId) {
+    patch.subjectId = subjectId;
+    hasChanges = true;
+  }
+  const subjectProp = getEventSubject(subject);
+  if (subjectProp !== props.subject) {
+    patch.subject = subjectProp;
+    hasChanges = true;
+  }
+  const type = getEventType(cistEvent);
+  if (type !== props.type) {
+    patch.type = props.type;
+    hasChanges = true;
+  }
+  const typeString = getEventTypeString(cistEvent);
+  if (typeString !== props.type) {
+    patch.typeString = typeString;
+    hasChanges = true;
+  }
+  const teacherIds = getEventTeacherIds(cistEvent);
+  if (teacherIds !== props.teacherIds) {
+    patch.teacherIds = teacherIds;
+    hasChanges = true;
+  }
+  const teachers = getEventTeachers(cistEvent, context.teachers);
+  if (teachers !== props.teachers) {
+    patch.teachers = teachers;
+    hasChanges = true;
+  }
+  const groupIds = getEventGroupIds(cistEvent);
+  if (groupIds !== props.groupIds) {
+    patch.groupIds = groupIds;
+    hasChanges = true;
+  }
+  const groups = getEventGroups(cistEvent, context.googleGroups);
+  if (groups !== props.groups) {
+    patch.groups = groups;
+    hasChanges = true;
+  }
+  const classNumber = getEventClassNumber(cistEvent);
+  if (classNumber !== props.classNumber) {
+    patch.classNumber = classNumber;
+    hasChanges = true;
+  }
+  const roomShortNames = getEventRoomShortName(cistEvent);
+  if (roomShortNames !== props.roomShortName) {
+    patch.roomShortName = roomShortNames;
+    hasChanges = true;
+  }
+  return hasChanges ? patch : null;
+}
+export function getEventSubjectId(cistEvent: DeepReadonly<CistEvent>) {
+  return cistEvent.subject_id.toString();
+}
+export function getEventSubject(subject: DeepReadonly<CistSubject>) {
+  return JSON.stringify(subject);
+}
+export function getEventType(cistEvent: DeepReadonly<CistEvent>) {
+  return cistEvent.type.toString();
+}
+export function getEventTypeString(cistEvent: DeepReadonly<CistEvent>) {
+  return EventType[cistEvent.type];
+}
+export function getEventTeacherIds(cistEvent: DeepReadonly<CistEvent>) {
+  return cistEvent.teachers.join(',');
+}
+export function getEventTeachers(
+  cistEvent: DeepReadonly<CistEvent>,
+  teachers: IReadonlyGuardedMap<number, CistTeacher>,
+) {
+  return JSON.stringify(cistEvent.teachers.map(t => teachers.get(t)));
+}
+export function getEventGroupIds(cistEvent: DeepReadonly<CistEvent>) {
+  return cistEvent.groups.join(',');
+}
+export function getEventGroups(
+  cistEvent: DeepReadonly<CistEvent>,
+  googleGroups: DeepReadonlyGuardedMap<number, Schema$Group>,
+) {
+  return iterate(cistEvent.groups).map(g => googleGroups.get(g).name).join(',');
+}
+export function getEventClassNumber(cistEvent: DeepReadonly<CistEvent>) {
+  return cistEvent.auditory;
+}
+export function getEventRoomShortName(cistEvent: DeepReadonly<CistEvent>) {
+  return cistEvent.groups.join(',');
+}
+
+export function getEventSummary(
+  title: string,
+  cistEvent: DeepReadonly<CistEvent>,
+  googleGroups: DeepReadonlyGuardedMap<number, Schema$Group>,
+) {
+  return `${title}, ${iterate(cistEvent.groups).map(g => googleGroups.get(g).name).join(', ')}`;
+}
+
+export function hashCistEvent(cistEvent: DeepReadonly<CistEvent>) {
+  return `${cistEvent.subject_id}t${cistEvent.type}t${cistEvent.start_time}t${cistEvent.end_time}`;
+} // t${cistEvent.teachers.join('s')} - FIXME: add if needed
+
+export function hashGoogleEvent(googleEvent: DeepReadonly<Schema$Event>) { // FIXME: add check for google event hash
+  if (
+    !googleEvent?.extendedProperties?.shared
+    || !googleEvent.start?.dateTime
+    || !googleEvent.end?.dateTime
+  ) {
+    throw new TypeError('Shared extended properties or start & end dates are not found in Google Event');
+  }
+  // tslint:disable-next-line:max-line-length
+  const sharedProperties = googleEvent.extendedProperties.shared as Partial<IEventSharedExtendedProperties>;
+  if (!sharedProperties.type || !sharedProperties.subjectId) {
+    throw new TypeError('Required shared extended properties are not found in Google Event');
+  }
+  return `${sharedProperties.subjectId}t${sharedProperties.type}t${moment(googleEvent.start.dateTime).unix()}t${moment(googleEvent.start.dateTime).unix()}`;
 }
 
 export function getGoogleEventColor(eventType: EventType) {
