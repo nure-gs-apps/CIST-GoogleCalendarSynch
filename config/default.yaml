@@ -1,4 +1,5 @@
 ncgc:
+  nureAddress: Nauky Ave. 14, Kharkiv
   cist:
     baseUrl: http://cist.nure.ua/ias/app/tt/
     apiKey: yourKey # Required if classes are loaded
@@ -31,7 +32,7 @@ ncgc:
     groupEmailPrefix: g
     calendar:
       prefix: 'CIST ' # basically name for calendar. Can be used for searching if id is not overriden
-      timeZone: Europe/Kiev # timezone for calendar creation
+      timeZone: Europe/Kiev # timezone for event creation
     auth:
       adminDirectoryKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
       calendarKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file

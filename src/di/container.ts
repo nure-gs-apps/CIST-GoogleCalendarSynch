@@ -251,6 +251,7 @@ export function addTypesToContainer(
     types.add(TYPES.GoogleCalendarQuotaLimiterConfig);
     types.add(TYPES.GoogleUtils);
     types.add(TYPES.Logger);
+    types.add(TYPES.GoogleCalendarConfig);
   }
 
   if (
@@ -338,6 +339,9 @@ export function addTypesToContainer(
     types.add(TYPES.GoogleAuthSubject);
     types.add(TYPES.GoogleEntityIdPrefix);
     types.add(TYPES.GoogleGroupEmailPrefix);
+    types.add(TYPES.CistBaseApiUrl);
+    types.add(TYPES.GoogleCalendarConfig);
+    types.add(TYPES.NureAddress);
   }
 
   if ((
@@ -454,16 +458,24 @@ export function addTypesToContainer(
     ).toConstantValue(getConfig().google.quotas.calendarApi);
   }
 
-  // Unchecked
-  container.bind<ICalendarConfig>(TYPES.GoogleCalendarConfig).toConstantValue(
-    getConfig().google.calendar,
-  );
+  if ((
+    allRequired || types.has(TYPES.GoogleCalendarConfig)
+  ) && !skip.has(TYPES.GoogleCalendarConfig)) {
+    container.bind<ICalendarConfig>(TYPES.GoogleCalendarConfig).toConstantValue(
+      getConfig().google.calendar,
+    );
+  }
 
-  container.bind<GoogleApiCalendar>(TYPES.GoogleApiCalendar)
-    .to(GoogleApiCalendar);
+  if ((
+    allRequired || types.has(TYPES.NureAddress)
+  ) && !skip.has(TYPES.NureAddress)) {
+    container.bind<string>(TYPES.NureAddress)
+      .toConstantValue(getConfig().nureAddress);
+  }
+
+  // Unchecked
 
   container.bind<CalendarService>(TYPES.CalendarService).to(CalendarService);
-  container.bind<EventsService>(TYPES.EventsService).to(EventsService);
 
 
   if (boundTypes) {

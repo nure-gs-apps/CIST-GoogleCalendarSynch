@@ -7,6 +7,7 @@ export const TYPES = {
   TaskProgressFileBackendFileName: Symbol.for('TaskProgressFileBackendFileName'),
   TaskProgressBackendType: Symbol.for('TaskProgressBackendType'),
 
+  NureAddress: Symbol.for('NureAddress'),
   CistBaseApiUrl: Symbol.for('CistBaseApiUrl'),
   CistApiKey: Symbol.for('CistApiKey'),
   GoogleAuthAdminDirectoryKey: Symbol.for('GoogleAuthAdminDirectoryKey'),

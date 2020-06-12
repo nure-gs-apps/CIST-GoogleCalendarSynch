@@ -1,4 +1,5 @@
 import { AxiosResponse } from 'axios';
+import { capitalCase } from 'change-case';
 import { DeepReadonly, Nullable } from './index';
 
 export enum EntityType {
@@ -149,7 +150,7 @@ export interface CistSubject {
   hours: CistSubjectHour[];
 }
 
-export interface CistSubjectHour {
+export interface CistSubjectHour { // TODO: check, how to use
   type: number;
   val: number;
   teachers: number[];
@@ -192,6 +193,10 @@ export enum EventType {
   ModularExam = 55,
 
   CourseWork = 60,
+}
+
+export function asReadableType(type: EventType) {
+  return capitalCase(EventType[type]);
 }
 
 export interface IEventsQueryParams {
