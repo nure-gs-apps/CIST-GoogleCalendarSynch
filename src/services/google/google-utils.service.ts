@@ -1,5 +1,6 @@
-import { admin_directory_v1 } from 'googleapis';
+import { admin_directory_v1, calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
+import { iterate } from 'iterare';
 import { DeepReadonly, Nullable, Optional } from '../../@types';
 import { TYPES } from '../../di/types';
 import { fromBase64, toBase64 } from '../../utils/common';
@@ -7,12 +8,13 @@ import { toTranslit } from '../../utils/translit';
 import {
   CistRoom,
   CistBuilding,
-  CistGroup, CistEvent,
+  CistGroup, CistEvent, EventType,
 } from '../../@types/cist';
 import { FatalError } from './errors';
 import Schema$Building = admin_directory_v1.Schema$Building;
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import Schema$Group = admin_directory_v1.Schema$Group;
+import Schema$Event = calendar_v3.Schema$Event;
 
 export const buildingIdPrefix = 'b';
 export const roomIdPrefix = 'r';
@@ -21,10 +23,12 @@ export const roomIdPrefix = 'r';
 export class GoogleUtilsService {
   private readonly _idPrefix: Optional<string>;
   private readonly _groupEmailPrefix: Optional<string>;
-  public readonly domainName: string;
-  public readonly prependIdPrefix: (id: string) => string;
-  public readonly removeIdPrefix: (id: string) => string;
-  public readonly prependGroupEmailPrefix: (email: string) => string;
+  readonly domainName: string;
+  readonly prependIdPrefix: (id: string) => string;
+  readonly removeIdPrefix: (id: string) => string;
+  readonly prependGroupEmailPrefix: (email: string) => string;
+
+  eventColorToId: Map<string, string>;
 
   constructor(
     @inject(TYPES.GoogleAuthSubject) subject: string,
@@ -47,6 +51,7 @@ export class GoogleUtilsService {
       this._groupEmailPrefix = groupEmailPrefix;
       this.prependGroupEmailPrefix = email => `${this._groupEmailPrefix}_${email}`;
     }
+    this.eventColorToId = new Map();
   }
 
   isSameBuildingIdentity(
@@ -113,6 +118,70 @@ export class GoogleUtilsService {
     }
     return id;
   }
+
+  toGoogleEvent(cistEvent: CistEvent): Schema$Event { // TODO: get names for shit
+    const event: Schema$Event = {
+      anyoneCanAddSelf: false,
+      attendees: [], // TODO: add groups, room, teachers
+      attendeesOmitted: false,
+      description: '',
+      extendedProperties: {
+        shared: { // TODO: add names
+          subjectId: cistEvent.subject_id.toString(),
+          type: cistEvent.type.toString(),
+          teacherIds: cistEvent.teachers.join(','),
+          groupIds: cistEvent.groups.join(','),
+          classNumber: cistEvent.number_pair.toString(),
+          roomShortName: cistEvent.auditory,
+        }
+      },
+      gadget: {
+        type: cistEvent.type.toString(), // TODO: check if allowed
+        title: '', // TODO: as description, but maybe briefer
+      },
+      guestsCanInviteOthers: false,
+      guestsCanModify: false,
+      guestsCanSeeOtherGuests: true,
+      id: hashBase32HexCistEvent(cistEvent),
+      location: '', // TODO: set to nure address + building & room
+      reminders: {
+        useDefault: true, // FIXME: check if this is enough for reminders
+      },
+      source: {
+        title: 'NURE CIST',
+        url: '', // TODO: set CIST url from config
+      },
+      start: {
+        dateTime: '' // TODO: RFC3339
+      },
+      end: {
+        dateTime: '' // TODO: RFC3339
+      },
+      endTimeUnspecified: false,
+      status: 'confirmed',
+      summary: '', // TODO: title, maybe the same as for gadget
+      transparency: 'opaque',
+      visibility: 'public',
+    };
+    const colorId = getGoogleEventColor(cistEvent.type);
+    if (colorId) {
+      event.colorId = colorId;
+    }
+    return event;
+  }
+
+  getGoogleEventColorId(eventType: EventType): Optional<string> {
+    return this.eventColorToId.get(
+      getGoogleEventColor(eventType)
+    ) ?? iterate(
+      this.eventColorToId.entries()
+    ).find(([c, id]) => {
+      const first = c[0].toLowerCase();
+      const second = c[1].toLowerCase();
+      return first === c[2].toLowerCase() && first === c[4].toLowerCase()
+        && second === c[3].toLowerCase() && second === c[5].toLowerCase();
+    })?.[1];
+  }
 }
 
 const emptyFloorName = /^\s*$/;
@@ -130,8 +199,30 @@ export function isSameGroupIdentity(
   return cistGroup.id === Number.parseInt(parts[parts.length - 1], 10);
 }
 
-export function hashCistEvent(cistEvent: CistEvent) {
-  return `${cistEvent.subject_id}.${cistEvent.type}.${cistEvent.start_time}.${cistEvent.end_time}`;
+export function hashBase32HexCistEvent(cistEvent: CistEvent) {
+  return `${cistEvent.subject_id}e${cistEvent.teachers.join('s')}e${cistEvent.type}e${cistEvent.start_time}e${cistEvent.end_time}`;
+}
+
+export function getGoogleEventColor(eventType: EventType) {
+  if (eventType / 10 < 1) {
+    return 'fbd75b';
+  }
+  if (eventType / 10 < 2) {
+    return '7ae7bf';
+  }
+  if (eventType / 10 < 3) {
+    return 'dbadff';
+  }
+  if (eventType / 10 < 4) {
+    return 'a4bdfc';
+  }
+  if (eventType / 10 < 5) {
+    return 'ff887c';
+  }
+  if (eventType / 10 < 6) {
+    return '5484ed';
+  }
+  return 'e1e1e1';
 }
 
 function throwInvalidGroupEmailError(email: string): never {

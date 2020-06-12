@@ -110,10 +110,15 @@ export class EventsService {
         timeZone: this._calendarConfig.timeZone,
         pageToken: eventsPage ? eventsPage.data.nextPageToken : undefined, // BUG in typedefs
       });
-      context.continuationToken = eventsPage.data.nextPageToken
-        ?? eventsPage.data.nextSyncToken;
+      context.continuationToken = eventsPage.data.nextPageToken;
       if (eventsPage.data.items) {
-        context.events.push(...eventsPage.data.items);
+        for (const item of eventsPage.data.items) {
+          const hash = ''
+          if (context.events.has(hash)) {
+            this._logger.debug(l('has duplicate events, from context, from response'), context.events.get(hash), item);
+          }
+          context.events.set(hash, item);
+        }
         this._logger.info(`Loaded ${context.events.size} events...`);
       }
       yield context;
