@@ -7,6 +7,7 @@ import {
   CistRoomsResponse,
   ICistJsonClient,
 } from '../@types/cist';
+import { IEventsTaskContextStorage } from '../@types/google';
 import { ILogger } from '../@types/logging';
 import { Disposer, IDisposable, isDisposable } from '../@types/object';
 import { ITaskDefinition, ITaskStepExecutor, TaskType } from '../@types/tasks';
@@ -16,6 +17,10 @@ import {
   IBuildingsTaskContext,
 } from '../services/google/buildings.service';
 import { FatalError } from '../services/google/errors';
+import {
+  EventsService,
+  IEventsTaskContextBase,
+} from '../services/google/events.service';
 import {
   GroupsService,
   IGroupsTaskContext,
@@ -36,6 +41,35 @@ export interface ITaskStepExecutorWithEvents extends ITaskStepExecutor, EventEmi
   ): this;
 }
 
+const taskTypesOrder = [
+  [
+    TaskType.DeferredEnsureBuildings,
+    TaskType.DeferredDeleteIrrelevantBuildings,
+    TaskType.DeferredEnsureGroups,
+    TaskType.DeferredDeleteIrrelevantGroups,
+    TaskType.DeferredEnsureRooms,
+    TaskType.DeferredDeleteIrrelevantRooms,
+
+    TaskType.EnsureBuildings,
+    TaskType.DeleteIrrelevantRooms,
+    TaskType.EnsureGroups,
+    TaskType.DeleteIrrelevantGroups,
+  ],
+  [TaskType.EnsureRooms, TaskType.DeleteIrrelevantBuildings],
+  [
+    TaskType.DeferredEnsureEvents,
+    TaskType.DeferredDeleteIrrelevantEvents,
+    TaskType.DeferredEnsureAndDeleteIrrelevantEvents,
+  ],
+  [TaskType.CreateEventsBaseContext],
+  [
+    TaskType.CreateEnsureEventsContext,
+    TaskType.CreateDeleteIrrelevantEventsContext,
+    TaskType.CreateEnsureAndDeleteIrrelevantEventsContext,
+  ],
+  [TaskType.InsertEvents, TaskType.PatchEvents, TaskType.DeleteIrrelevantEvents]
+] as ReadonlyArray<ReadonlyArray<string>>;
+
 ensureInjectable(EventEmitter);
 @injectable()
 export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor, IDisposable {
@@ -45,6 +79,8 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   protected _buildingsService: Nullable<BuildingsService>;
   protected _roomsService: Nullable<RoomsService>;
   protected _groupsService: Nullable<GroupsService>;
+  protected _eventsService: Nullable<EventsService>;
+  protected _eventsContextStorage: Nullable<IEventsTaskContextStorage>;
   protected _cistClient: Nullable<ICistJsonClient>;
 
   protected _buildingsContext: Nullable<IBuildingsTaskContext>; // FIXME: probably, use cached value with expiration
@@ -53,6 +89,8 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   protected _roomsContextSemaphore: Nullable<Sema>;
   protected _groupsContext: Nullable<IGroupsTaskContext>; // FIXME: probably, use cached value with expiration
   protected _groupsContextSemaphore: Nullable<Sema>;
+  protected _eventsContext: Nullable<IEventsTaskContextBase>; // FIXME: probably, use cached value with expiration
+  protected _eventsContextSemaphore: Nullable<Sema>;
 
   get isDisposed() {
     return this._disposer.isDisposed;
@@ -70,15 +108,19 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     this._buildingsService = null;
     this._roomsService = null;
     this._groupsService = null;
+    this._eventsService = null;
     this._cistClient = null;
+    this._eventsContextStorage = null;
 
     this._buildingsContext = null;
     this._roomsContext = null;
     this._groupsContext = null;
+    this._eventsContext = null;
 
     this._buildingsContextSemaphore = null;
     this._roomsContextSemaphore = null;
     this._groupsContextSemaphore = null;
+    this._eventsContextSemaphore = null;
   }
 
   requiresSteps(taskType: string): boolean {
@@ -89,6 +131,9 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
       case TaskType.DeferredDeleteIrrelevantBuildings:
       case TaskType.DeferredDeleteIrrelevantRooms:
       case TaskType.DeferredDeleteIrrelevantGroups:
+      case TaskType.InsertEvents:
+      case TaskType.PatchEvents:
+      case TaskType.DeleteIrrelevantEvents:
         return false;
 
       default:
@@ -100,47 +145,13 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     first: ITaskDefinition<any>,
     other: ITaskDefinition<any>,
   ) {
-    if (
-      (
-        first.taskType === TaskType.EnsureBuildings
-        && other.taskType === TaskType.EnsureRooms
-      )
-      || (
-        first.taskType === TaskType.DeferredEnsureBuildings
-        && other.taskType === TaskType.DeferredEnsureRooms
-      )
-      || (
-        first.taskType === TaskType.DeleteIrrelevantRooms
-        && other.taskType === TaskType.DeleteIrrelevantBuildings
-      )
-      || (
-        first.taskType === TaskType.DeferredDeleteIrrelevantRooms
-        && other.taskType === TaskType.DeferredDeleteIrrelevantBuildings
-      )
-    ) {
-      return -1;
-    }
-    if (
-      (
-        first.taskType === TaskType.EnsureRooms
-        && other.taskType === TaskType.EnsureBuildings
-      )
-      || (
-        first.taskType === TaskType.DeferredEnsureRooms
-        && other.taskType === TaskType.DeferredEnsureBuildings
-      )
-      || (
-        first.taskType === TaskType.DeleteIrrelevantBuildings
-        && other.taskType === TaskType.DeleteIrrelevantRooms
-      )
-      || (
-        first.taskType === TaskType.DeferredDeleteIrrelevantBuildings
-        && other.taskType === TaskType.DeferredDeleteIrrelevantRooms
-      )
-    ) {
-      return 1;
-    }
-    return 0;
+    const firstIndex = taskTypesOrder.findIndex(
+      types => types.includes(first.taskType)
+    );
+    const otherIndex = taskTypesOrder.findIndex(
+      types => types.includes(other.taskType)
+    );
+    return firstIndex - otherIndex;
   }
 
   rerunFailed<T>(taskType: string, error: any): Promise<any>;
@@ -236,6 +247,21 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
               await this.getCistClient().getGroupsResponse(),
             )
           ),
+        );
+      }
+        break;
+
+      case TaskType.DeferredEnsureEvents:
+      case TaskType.DeferredDeleteIrrelevantEvents:
+      case TaskType.DeferredEnsureAndDeleteIrrelevantEvents: {
+        if (this._eventsContext) {
+          throw new TypeError('Usage error: events context is already created');
+        }
+        assertNoStep(step);
+        this._eventsContext = this.saveAndGetEventsContext(taskType);
+        this.emit(
+          TaskStepExecutorEventNames.NewTask,
+          this.getEventsService().createBaseContextTask()
         );
       }
         break;
@@ -357,6 +383,21 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     }
   }
 
+  saveAndGetEventsContext(taskType: TaskType) {
+    if (!this._eventsContext) {
+      this._eventsContext = this.getEventsService()
+        .createEventsTaskContext({
+          ensure: taskType === TaskType.DeferredEnsureEvents
+            || taskType === TaskType.DeferredEnsureAndDeleteIrrelevantEvents,
+          deleteIrrelevant: (
+            taskType === TaskType.DeferredDeleteIrrelevantEvents
+            || taskType === TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+          ),
+        });
+    }
+    return this._eventsContext;
+  }
+
   private getBuildingsService() {
     if (!this._buildingsService) {
       this._buildingsService = this._container.get<BuildingsService>(
@@ -384,6 +425,23 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     return this._groupsService;
   }
 
+  private getEventsService() {
+    if (!this._eventsService) {
+      this._eventsService = this._container.get<EventsService>(
+        TYPES.EventsService
+      );
+    }
+    return this._eventsService;
+  }
+
+  private getEventsContextStorage() {
+    if (!this._eventsContextStorage) {
+      this._eventsContextStorage = this._container
+        .get<IEventsTaskContextStorage>(TYPES.GoogleEventContextService);
+    }
+    return this._eventsContextStorage;
+  }
+
   dispose(): Promise<void> {
     return this._disposer.dispose();
   }
@@ -393,6 +451,9 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     this._buildingsContext = null;
     if (this._cistClient && isDisposable(this._cistClient)) {
       promises.push(this._cistClient.dispose());
+    }
+    if (this._eventsContext) {
+      promises.push(this.getEventsContextStorage().save(this._eventsContext));
     }
     this._cistClient = null;
     this._buildingsService = null;

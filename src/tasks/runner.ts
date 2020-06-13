@@ -94,6 +94,10 @@ export class TaskRunner {
     }
   }
 
+  includesTask(taskType: string) {
+    return this._tasks.some(t => t.taskType === taskType);
+  }
+
   hasAnyTasks() {
     return this.hasEnqueuedTasks()
       || this.hasTwiceFailedTasks();

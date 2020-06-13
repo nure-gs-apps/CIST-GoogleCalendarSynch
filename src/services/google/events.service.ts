@@ -377,7 +377,7 @@ export class EventsService {
       throw new FatalError(l('Wrong usage: no entities to delete'));
     }
     return {
-      taskType: TaskType.PatchEvents,
+      taskType: TaskType.DeleteIrrelevantEvents,
       steps: ids
     };
   }

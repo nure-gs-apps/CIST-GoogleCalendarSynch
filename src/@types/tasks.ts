@@ -5,12 +5,14 @@ export enum TaskType {
   DeferredEnsureBuildings= 'deferredEnsureBuildings',
   DeferredEnsureRooms = 'deferredEnsureRooms',
   DeferredEnsureGroups = 'deferredEnsureGroups',
-  DeferredEnsureEvents = 'deferredEnsureEvents',
+  DeferredEnsureEvents = 'deferredEvents.ensure',
 
   DeferredDeleteIrrelevantBuildings = 'deferredDeleteIrrelevantBuildings',
   DeferredDeleteIrrelevantRooms = 'deferredDeleteIrrelevantRooms',
   DeferredDeleteIrrelevantGroups = 'deferredDeleteIrrelevantGroups',
-  DeferredDeleteIrrelevantEvents = 'deferredDeleteIrrelevantEvents',
+  DeferredDeleteIrrelevantEvents = 'deferredEvents.deleteIrrelevant',
+
+  DeferredEnsureAndDeleteIrrelevantEvents = 'deferredEvents.ensure+deleteIrrelevant',
 
   CreateEventsBaseContext = 'createEventsContext.base',
   CreateEnsureEventsContext = 'createEventsContext.ensure',
