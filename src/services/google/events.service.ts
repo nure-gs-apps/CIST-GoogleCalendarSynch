@@ -1,6 +1,7 @@
 import { calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { DeepReadonly, Mutable } from '../../@types';
+import { CistEventsResponse } from '../../@types/cist';
 import { ILogger } from '../../@types/logging';
 import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
@@ -19,7 +20,7 @@ export interface IEnsureEventsTaskContext extends IEventsTaskContextBase {
 }
 
 export interface IDeleteIrrelevantEventsTaskContext extends IEventsTaskContextBase {
-  readonly removeEventIds: Set<string>;
+  readonly processedEventIds: Set<string>;
 }
 
 export interface IEventsTaskContextBase {
@@ -93,7 +94,7 @@ export class EventsService {
     if (deleteIrrelevant) {
       // tslint:disable-next-line:max-line-length
       const deleteContext: Mutable<Partial<IDeleteIrrelevantEventsTaskContext>> = context;
-      deleteContext.removeEventIds = new Set();
+      deleteContext.processedEventIds = new Set();
     }
     return context;
   }
@@ -124,6 +125,10 @@ export class EventsService {
       yield context;
     } while (context.continuationToken);
     this._logger.info('All events are loaded!');
+  }
+
+  updateContextTask(cistEventsResponse: CistEventsResponse) {
+
   }
 }
 

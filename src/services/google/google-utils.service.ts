@@ -167,7 +167,64 @@ export class GoogleUtilsService {
     return id;
   }
 
-  createGoogleEvent(
+  cistRoomToGoogleRoomPatch(
+    cistRoom: DeepReadonly<CistRoom>,
+    googleRoom: DeepReadonly<Schema$CalendarResource>,
+    cistBuilding: DeepReadonly<CistBuilding>,
+    googleBuildingId = this.getGoogleBuildingId(cistBuilding),
+  ) {
+    let hasChanges = false;
+    const roomPatch = {} as Schema$CalendarResource;
+    if (googleBuildingId !== googleRoom.buildingId) {
+      roomPatch.buildingId = googleBuildingId;
+      hasChanges = true;
+    }
+    if (cistRoom.short_name !== getGoogleRoomShortName(googleRoom)) {
+      roomPatch.resourceName = cistRoom.short_name;
+      hasChanges = true;
+    }
+    const description = getResourceDescription(cistBuilding, cistRoom);
+    if (description !== googleRoom.resourceDescription) {
+      roomPatch.resourceDescription = description;
+      hasChanges = true;
+    }
+    const userVisibleDescription = getUserVisibleDescription(
+      cistBuilding,
+      cistRoom,
+    );
+    if (userVisibleDescription !== googleRoom.userVisibleDescription) {
+      roomPatch.userVisibleDescription = userVisibleDescription;
+      hasChanges = true;
+    }
+    const floorName = transformFloorName(cistRoom.floor);
+    if (floorName !== googleRoom.floorName) {
+      roomPatch.floorName = floorName;
+      hasChanges = true;
+    }
+    return hasChanges ? roomPatch : null;
+  }
+
+  cistRoomToInsertGoogleRoom(
+    cistRoom: DeepReadonly<CistRoom>,
+    cistBuilding: DeepReadonly<CistBuilding>,
+    googleBuildingId = this.getGoogleBuildingId(cistBuilding),
+    roomId = this.getRoomId(cistRoom, cistBuilding),
+  ) {
+    const room: Schema$CalendarResource = { // TODO: add cist room types and is_have_power as features resources
+      resourceId: roomId,
+      buildingId: googleBuildingId,
+      resourceName: cistRoom.short_name,
+      capacity: 999, // unlimited
+      resourceDescription: getResourceDescription(cistBuilding, cistRoom),
+      userVisibleDescription: getUserVisibleDescription(cistBuilding, cistRoom),
+      floorName: transformFloorName(cistRoom.floor),
+      resourceCategory: 'CONFERENCE_ROOM',
+    };
+    return room;
+  }
+
+
+  cistEventToGoogleEvent(
     cistEvent: DeepReadonly<CistEvent>,
     context: DeepReadonly<IEventContext>,
   ): Schema$Event {
@@ -233,7 +290,7 @@ export class GoogleUtilsService {
     return event;
   }
 
-  createEventPatch(
+  cistEventToGoogleEventPatch(
     event: DeepReadonly<Schema$Event>,
     cistEvent: DeepReadonly<CistEvent>,
     context: DeepReadonly<IEventContext>,
@@ -563,6 +620,30 @@ export function getGoogleEventColor(eventType: EventType) {
     return '5484ed';
   }
   return 'e1e1e1';
+}
+
+export function getGoogleRoomShortName(
+  googleRoom: DeepReadonly<Schema$CalendarResource>
+) {
+  return googleRoom.resourceName;
+}
+
+export function getResourceDescription(
+  cistBuilding: DeepReadonly<CistBuilding>,
+  cistRoom: DeepReadonly<CistRoom>,
+) {
+  return `${cistBuilding.short_name}\n${JSON.stringify(cistRoom)}`;
+}
+
+export function getUserVisibleDescription(
+  cistBuilding: DeepReadonly<CistBuilding>,
+  cistRoom: DeepReadonly<CistRoom>,
+) {
+  let userVisibleDescription = `${cistRoom.short_name}, ${cistBuilding.full_name}`;
+  if (cistRoom.is_have_power === '1') {
+    userVisibleDescription += ', has power';
+  }
+  return userVisibleDescription;
 }
 
 function throwInvalidGroupEmailError(email: string): never {

@@ -21,7 +21,7 @@ import { FatalError } from './errors';
 import { GoogleApiAdminDirectory } from './google-api-admin-directory';
 import Schema$CalendarResource = admin_directory_v1.Schema$CalendarResource;
 import { GaxiosPromise, GaxiosResponse } from 'gaxios';
-import { transformFloorName, GoogleUtilsService } from './google-utils.service';
+import { GoogleUtilsService } from './google-utils.service';
 
 export interface IRoomsTaskContext {
   readonly cistRoomsMap: DeepReadonlyMap<string, ICistRoomData>;
@@ -252,7 +252,7 @@ export class RoomsService {
     buildingId = this._utils.getGoogleBuildingId(cistBuilding),
   ) {
     if (googleRoom) {
-      const roomPatch = this.cistRoomToGoogleRoomPatch(
+      const roomPatch = this._utils.cistRoomToGoogleRoomPatch(
         cistRoom,
         googleRoom,
         cistBuilding
@@ -269,7 +269,7 @@ export class RoomsService {
     }
     return Promise.resolve(this._insert({
       customer,
-      requestBody: this.cistRoomToInsertGoogleRoom(
+      requestBody: this._utils.cistRoomToInsertGoogleRoom(
         cistRoom,
         cistBuilding,
         buildingId,
@@ -297,84 +297,10 @@ export class RoomsService {
       calendarResourceId: roomId,
     });
   }
-
-  private cistRoomToGoogleRoomPatch(
-    cistRoom: DeepReadonly<CistRoom>,
-    googleRoom: DeepReadonly<Schema$CalendarResource>,
-    cistBuilding: DeepReadonly<CistBuilding>,
-    googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding),
-  ) {
-    let hasChanges = false;
-    const roomPatch = {} as Schema$CalendarResource;
-    if (googleBuildingId !== googleRoom.buildingId) {
-      roomPatch.buildingId = googleBuildingId;
-      hasChanges = true;
-    }
-    if (cistRoom.short_name !== googleRoom.resourceName) {
-      roomPatch.resourceName = cistRoom.short_name;
-      hasChanges = true;
-    }
-    const description = getResourceDescription(cistBuilding, cistRoom);
-    if (description !== googleRoom.resourceDescription) {
-      roomPatch.resourceDescription = description;
-      hasChanges = true;
-    }
-    const userVisibleDescription = getUserVisibleDescription(
-      cistBuilding,
-      cistRoom,
-    );
-    if (userVisibleDescription !== googleRoom.userVisibleDescription) {
-      roomPatch.userVisibleDescription = userVisibleDescription;
-      hasChanges = true;
-    }
-    const floorName = transformFloorName(cistRoom.floor);
-    if (floorName !== googleRoom.floorName) {
-      roomPatch.floorName = floorName;
-      hasChanges = true;
-    }
-    return hasChanges ? roomPatch : null;
-  }
-
-  private cistRoomToInsertGoogleRoom(
-    cistRoom: DeepReadonly<CistRoom>,
-    cistBuilding: DeepReadonly<CistBuilding>,
-    googleBuildingId = this._utils.getGoogleBuildingId(cistBuilding),
-    roomId = this._utils.getRoomId(cistRoom, cistBuilding),
-  ) {
-    const room: Schema$CalendarResource = { // TODO: add cist room types and is_have_power as features resources
-      resourceId: roomId,
-      buildingId: googleBuildingId,
-      resourceName: cistRoom.short_name,
-      capacity: 999, // unlimited
-      resourceDescription: getResourceDescription(cistBuilding, cistRoom),
-      userVisibleDescription: getUserVisibleDescription(cistBuilding, cistRoom),
-      floorName: transformFloorName(cistRoom.floor),
-      resourceCategory: 'CONFERENCE_ROOM',
-    };
-    return room;
-  }
 }
 
 function toRoomsWithBuildings(cistResponse: DeepReadonly<CistRoomsResponse>) {
   return iterate(cistResponse.university.buildings)
     .map(b => iterate(b.auditories).map(a => t(a, b)))
     .flatten();
-}
-
-function getResourceDescription(
-  cistBuilding: DeepReadonly<CistBuilding>,
-  cistRoom: DeepReadonly<CistRoom>,
-) {
-  return `${cistBuilding.short_name}\n${JSON.stringify(cistRoom)}`;
-}
-
-function getUserVisibleDescription(
-  cistBuilding: DeepReadonly<CistBuilding>,
-  cistRoom: DeepReadonly<CistRoom>,
-) {
-  let userVisibleDescription = `${cistRoom.short_name}, ${cistBuilding.full_name}`;
-  if (cistRoom.is_have_power === '1') {
-    userVisibleDescription += ', has power';
-  }
-  return userVisibleDescription;
 }
