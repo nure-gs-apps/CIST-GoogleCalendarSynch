@@ -1,9 +1,10 @@
 import { BindingScopeEnum, Container, interfaces } from 'inversify';
 import { DeepReadonly, Nullable } from '../@types';
 import { IMaxCacheExpiration } from '../@types/caching';
+import { IEventsTaskContextStorage } from '../@types/google';
 import { ILogger } from '../@types/logging';
 import { ASYNC_INIT, IDisposable } from '../@types/object';
-import { IApiQuota, ICalendarConfig } from '../@types/services';
+import { IApiQuota } from '../@types/services';
 import {
   ITaskProgressBackend,
   ITaskStepExecutor,
@@ -22,6 +23,12 @@ import { CistJsonHttpClient } from '../services/cist/cist-json-http-client.servi
 import { CistJsonHttpParserService } from '../services/cist/cist-json-http-parser.service';
 import { BuildingsService } from '../services/google/buildings.service';
 import { CalendarService } from '../services/google/calendar.service';
+import { EventContextService } from '../services/google/event-context.service';
+import {
+  getEventsTaskContextStorage,
+  getEventsTaskContextStorageSymbol,
+} from '../services/google/events-context-storage/di';
+import { FileEventsTaskContextStorage } from '../services/google/events-context-storage/file';
 import { EventsService } from '../services/google/events.service';
 import { GoogleApiAdminDirectory } from '../services/google/google-api-admin-directory';
 import { GoogleApiCalendar } from '../services/google/google-api-calendar';
@@ -210,6 +217,20 @@ export function addTypesToContainer(
 
   if (
     (allRequired
+      || types.has(TYPES.GoogleEventContextService)
+      || types.has(EventContextService))
+    && !skip.has(EventContextService)
+    && !skip.has(TYPES.GoogleEventContextService)
+  ) {
+    container.bind<EventContextService>(TYPES.GoogleEventContextService)
+      .to(EventContextService);
+    types.add(TYPES.RoomsService);
+    types.add(TYPES.GroupsService);
+    types.add(TYPES.GoogleUtils);
+  }
+
+  if (
+    (allRequired
       || types.has(TYPES.RoomsService)
       || types.has(RoomsService))
     && !skip.has(RoomsService)
@@ -251,7 +272,36 @@ export function addTypesToContainer(
     types.add(TYPES.GoogleCalendarQuotaLimiterConfig);
     types.add(TYPES.GoogleUtils);
     types.add(TYPES.Logger);
-    types.add(TYPES.GoogleCalendarConfig);
+    types.add(TYPES.GoogleCalendarTimeZone);
+  }
+
+  if ((
+    allRequired
+    || types.has(TYPES.GoogleEventContextService)
+  ) && !skip.has(TYPES.GoogleEventContextService)) {
+    container.bind<IEventsTaskContextStorage>(TYPES.GoogleEventContextService)
+      .toDynamicValue(getEventsTaskContextStorage);
+    types.add(TYPES.GoogleCalendarEventsTaskContextStorageType);
+  }
+
+  if ((
+    allRequired
+    || types.has(TYPES.GoogleCalendarEventsTaskContextStorageType)
+  ) && !skip.has(TYPES.GoogleCalendarEventsTaskContextStorageType)) {
+    const type = getConfig().google.calendar.eventsTaskContextStorage.backend;
+    container.bind<string>(TYPES.GoogleCalendarEventsTaskContextStorageType)
+      .toConstantValue(type);
+    types.add(getEventsTaskContextStorageSymbol(type));
+  }
+
+  if ((
+    allRequired
+    || types.has(TYPES.GoogleCalendarEventsFileTaskContextStorage)
+  ) && !skip.has(TYPES.GoogleCalendarEventsFileTaskContextStorage)) {
+    container.bind<IEventsTaskContextStorage>(
+      TYPES.GoogleCalendarEventsFileTaskContextStorage
+    ).to(FileEventsTaskContextStorage);
+    types.add(TYPES.GoogleCalendarEventsTaskContextStorageFileName);
   }
 
   if (
@@ -340,7 +390,7 @@ export function addTypesToContainer(
     types.add(TYPES.GoogleEntityIdPrefix);
     types.add(TYPES.GoogleGroupEmailPrefix);
     types.add(TYPES.CistBaseApiUrl);
-    types.add(TYPES.GoogleCalendarConfig);
+    types.add(TYPES.GoogleCalendarTimeZone);
     types.add(TYPES.NureAddress);
   }
 
@@ -443,6 +493,32 @@ export function addTypesToContainer(
   }
 
   if ((
+    allRequired
+    || types.has(TYPES.GoogleCalendarEventsTaskContextStorageFileName)
+  ) && !skip.has(TYPES.GoogleCalendarEventsTaskContextStorageFileName)) {
+    container.bind<string>(TYPES.GoogleCalendarEventsTaskContextStorageFileName)
+      .toConstantValue(PathUtils.getPath(
+        getConfig().google.calendar
+          .eventsTaskContextStorage.backendConfigs[TaskProgressBackend.File],
+      ));
+  }
+
+  if ((
+    allRequired || types.has(TYPES.GoogleCalendarTimeZone)
+  ) && !skip.has(TYPES.GoogleCalendarTimeZone)) {
+    container.bind<string>(TYPES.GoogleCalendarTimeZone).toConstantValue(
+      getConfig().google.calendar.timeZone,
+    );
+  }
+
+  if ((
+    allRequired || types.has(TYPES.NureAddress)
+  ) && !skip.has(TYPES.NureAddress)) {
+    container.bind<string>(TYPES.NureAddress)
+      .toConstantValue(getConfig().nureAddress);
+  }
+
+  if ((
     allRequired || types.has(TYPES.GoogleAdminDirectoryQuotaLimiterConfig)
   ) && !skip.has(TYPES.GoogleAdminDirectoryQuotaLimiterConfig)) {
     container.bind<IApiQuota>(
@@ -456,21 +532,6 @@ export function addTypesToContainer(
     container.bind<IApiQuota>(
       TYPES.GoogleCalendarQuotaLimiterConfig
     ).toConstantValue(getConfig().google.quotas.calendarApi);
-  }
-
-  if ((
-    allRequired || types.has(TYPES.GoogleCalendarConfig)
-  ) && !skip.has(TYPES.GoogleCalendarConfig)) {
-    container.bind<ICalendarConfig>(TYPES.GoogleCalendarConfig).toConstantValue(
-      getConfig().google.calendar,
-    );
-  }
-
-  if ((
-    allRequired || types.has(TYPES.NureAddress)
-  ) && !skip.has(TYPES.NureAddress)) {
-    container.bind<string>(TYPES.NureAddress)
-      .toConstantValue(getConfig().nureAddress);
   }
 
   // Unchecked

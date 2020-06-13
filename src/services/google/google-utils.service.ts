@@ -9,7 +9,6 @@ import {
   Nullable,
   Optional,
 } from '../../@types';
-import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
 import { fromBase64, isObjectLike, toBase64 } from '../../utils/common';
 import { toTranslit } from '../../utils/translit';
@@ -61,7 +60,7 @@ export class GoogleUtilsService {
   private readonly _idPrefix: Optional<string>;
   private readonly _groupEmailPrefix: Optional<string>;
   readonly cistBaseUrl: Optional<string>;
-  readonly calendarConfig: Optional<DeepReadonly<ICalendarConfig>>;
+  readonly calendarTimezone: Optional<string>;
   readonly nureAddress: Optional<string>;
   readonly domainName: string;
   readonly prependIdPrefix: (id: string) => string;
@@ -76,12 +75,12 @@ export class GoogleUtilsService {
     @inject(TYPES.GoogleGroupEmailPrefix) groupEmailPrefix: Nullable<string>,
     @inject(TYPES.CistBaseApiUrl) @optional() cistBaseUrl: Optional<string>,
     @inject(
-      TYPES.GoogleCalendarConfig
-    ) @optional() calendarConfig: Optional<DeepReadonly<ICalendarConfig>>,
+      TYPES.GoogleCalendarTimeZone
+    ) @optional() calendarTimeZone: Optional<string>,
     @inject(TYPES.NureAddress) @optional() nureAddress: Optional<string>
   ) {
     this.cistBaseUrl = cistBaseUrl;
-    this.calendarConfig = calendarConfig;
+    this.calendarTimezone = calendarTimeZone;
     this.nureAddress = nureAddress;
     this.domainName = subject.slice(subject.indexOf('@') + 1, subject.length)
       .toLowerCase();
@@ -228,7 +227,7 @@ export class GoogleUtilsService {
     context: DeepReadonly<IGoogleEventContext>,
     cistEventHash = hashCistEvent(cistEvent)
   ): Schema$Event {
-    if (!this.calendarConfig) {
+    if (!this.calendarTimezone) {
       throw new TypeError('Calendar config is required');
     }
     const type = context.types.get(cistEvent.type);
@@ -263,12 +262,12 @@ export class GoogleUtilsService {
       },
       start: {
         dateTime: moment.unix(cistEvent.start_time)
-          .tz(this.calendarConfig.timeZone)
+          .tz(this.calendarTimezone)
           .toISOString(true),
       },
       end: {
         dateTime: moment.unix(cistEvent.end_time)
-          .tz(this.calendarConfig.timeZone)
+          .tz(this.calendarTimezone)
           .toISOString(true)
       },
       endTimeUnspecified: false,
@@ -296,7 +295,7 @@ export class GoogleUtilsService {
     context: DeepReadonly<IGoogleEventContext>,
     cistEventHash = hashCistEvent(cistEvent)
   ) {
-    if (!this.calendarConfig) {
+    if (!this.calendarTimezone) {
       throw new TypeError('Calendar config is required');
     }
     let hasChanges = false;

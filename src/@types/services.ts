@@ -1,5 +1,3 @@
-import { Nullable } from './';
-
 export interface IApiQuota {
   daily: number;
   period: number;
@@ -7,9 +5,3 @@ export interface IApiQuota {
   perSecond?: number;
   burst: boolean;
 }
-
-export interface ICalendarConfig {
-  prefix: Nullable<string>;
-  timeZone: string;
-}
-

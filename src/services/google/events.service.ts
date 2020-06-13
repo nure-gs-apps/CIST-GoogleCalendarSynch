@@ -12,7 +12,6 @@ import {
 } from '../../@types';
 import { CistEventsResponse } from '../../@types/cist';
 import { ILogger } from '../../@types/logging';
-import { ICalendarConfig } from '../../@types/services';
 import { ITaskDefinition, TaskType } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
 import { objectEntries } from '../../utils/common';
@@ -46,7 +45,7 @@ export interface IEnsureEventsTaskContext extends IEventsTaskContextBase {
 }
 
 export function isEnsureEventsTaskContext(
-  value: IEventsTaskContextBase
+  value: DeepReadonly<IEventsTaskContextBase>
 ): value is IEnsureEventsTaskContext {
   return as<IEnsureEventsTaskContext>(value)
     && value.insertEvents instanceof GuardedMap
@@ -58,14 +57,14 @@ export interface IRelevantEventsTaskContext extends IEventsTaskContextBase {
 }
 
 export function isRelevantEventsTaskContext(
-  value: IEventsTaskContextBase
+  value: DeepReadonly<IEventsTaskContextBase>
 ): value is IRelevantEventsTaskContext {
   return as<IRelevantEventsTaskContext>(value)
     && value.relevantEventIds instanceof Set;
 }
 
 export interface IEventsTaskContextBase {
-  continuationToken?: string;
+  nextPageToken?: string;
   readonly events: Map<string, Schema$Event>;
 }
 
@@ -77,7 +76,7 @@ export class EventsService {
   private readonly _utils: GoogleUtilsService;
   private readonly _logger: ILogger;
 
-  private readonly _calendarConfig: DeepReadonly<ICalendarConfig>;
+  private readonly _calendarTimeZone: string;
 
   private readonly _events: Resource$Events;
   private readonly _colors: Resource$Colors;
@@ -97,12 +96,12 @@ export class EventsService {
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
     @inject(TYPES.Logger) logger: ILogger,
     @inject(
-      TYPES.GoogleCalendarConfig
-    ) calendarConfig: DeepReadonly<ICalendarConfig>,
+      TYPES.GoogleCalendarTimeZone
+    ) calendarTimeZone: string,
   ) {
     this._utils = utils;
     this._logger = logger;
-    this._calendarConfig = calendarConfig;
+    this._calendarTimeZone = calendarTimeZone;
 
     this._calendar = googleApiCalendar;
     this._events = this._calendar.googleCalendar.events;
@@ -144,10 +143,10 @@ export class EventsService {
         calendarId,
         maxResults: EventsService.ROOMS_PAGE_SIZE,
         singleEvents: true,
-        timeZone: this._calendarConfig.timeZone,
+        timeZone: this._calendarTimeZone,
         pageToken: eventsPage ? eventsPage.data.nextPageToken : undefined, // BUG in typedefs
       });
-      context.continuationToken = eventsPage.data.nextPageToken;
+      context.nextPageToken = eventsPage.data.nextPageToken;
       if (eventsPage.data.items) {
         for (const item of eventsPage.data.items) {
           const hash = tryGetGoogleEventHash(item) ?? hashGoogleEvent(item);
@@ -159,7 +158,7 @@ export class EventsService {
         this._logger.info(`Loaded ${context.events.size} events...`);
       }
       yield context;
-    } while (context.continuationToken);
+    } while (context.nextPageToken);
     this._logger.info('All events are loaded!');
   }
 
@@ -259,6 +258,7 @@ export class EventsService {
     );
     for (const cistEvent of cistEventsResponse.events) {
       const hash = hashCistEvent(cistEvent);
+      let hasLogged = false;
       if (
         isEnsureTaskContext
         && as<IEnsureEventsTaskContext>(context)
@@ -275,6 +275,7 @@ export class EventsService {
           if (patch) {
             context.patchEvents.set(hash, patch);
             this._logger.info(`Added event patch with hash ${hash}`);
+            hasLogged = true;
           }
         } else {
           context.insertEvents.set(
@@ -282,11 +283,16 @@ export class EventsService {
             this._utils.cistEventToGoogleEvent(cistEvent, eventContext, hash),
           );
           this._logger.info(`Added event insertion with hash ${hash}`);
+          hasLogged = true;
         }
       }
       if (isRelevantTaskContext) {
         cast<IRelevantEventsTaskContext>(context);
         context.relevantEventIds.add(hash);
+        if (!hasLogged) {
+          this._logger.info(`Marked event with hash ${hash} as processed`);
+          hasLogged = true;
+        }
       }
     }
     return context;

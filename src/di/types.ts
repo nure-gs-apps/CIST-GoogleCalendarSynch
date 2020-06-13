@@ -17,7 +17,10 @@ export const TYPES = {
   GoogleAuthSubject: Symbol.for('GoogleAuthSubject'),
   GoogleEntityIdPrefix: Symbol.for('GoogleEntityIdPrefix'),
   GoogleGroupEmailPrefix: Symbol.for('GoogleGroupEmailPrefix'),
-  GoogleCalendarConfig: Symbol.for('GoogleCalendarConfig'),
+  GoogleCalendarTimeZone: Symbol.for('GoogleCalendarTimeZone'),
+
+  GoogleCalendarEventsTaskContextStorageFileName: Symbol.for('GoogleCalendarEventsTaskContextStorageFileName'),
+  GoogleCalendarEventsTaskContextStorageType: Symbol.for('GoogleCalendarEventsTaskContextStorageType'),
 
   CacheMaxExpiration: Symbol.for('CacheMaxExpiration'),
 
@@ -46,6 +49,11 @@ export const TYPES = {
   GoogleCalendarQuotaLimiter: Symbol.for('GoogleCalendarQuotaLimiter'),
   GoogleApiAdminDirectory: Symbol.for('GoogleApiAdminDirectory'),
   GoogleApiCalendar: Symbol.for('GoogleApiCalendar'),
+
+  GoogleEventContextService: Symbol.for('GoogleEventContextService'),
+
+  GoogleCalendarEventsTaskContextStorage: Symbol.for('GoogleCalendarEventsTaskContextStorage'),
+  GoogleCalendarEventsFileTaskContextStorage: Symbol.for('GoogleCalendarEventsFileTaskContextStorage'),
 
   BuildingsService: Symbol.for('BuildingsService'),
   RoomsService: Symbol.for('RoomsService'),

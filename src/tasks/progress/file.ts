@@ -3,6 +3,7 @@ import { DeepReadonlyArray } from '../../@types';
 import { ITaskDefinition, ITaskProgressBackend } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
 import { promises as fs, writeFileSync } from 'fs';
+import * as path from 'path';
 
 export const encoding = 'utf8';
 
@@ -14,11 +15,12 @@ export class TaskProgressFileBackend implements ITaskProgressBackend {
     this.fileName = fileName;
   }
 
-  save(tasks: DeepReadonlyArray<ITaskDefinition<any>>): Promise<void> {
+  async save(tasks: DeepReadonlyArray<ITaskDefinition<any>>): Promise<void> {
+    await fs.mkdir(path.dirname(this.fileName), { recursive: true });
     writeFileSync(this.fileName, JSON.stringify(tasks), {
       encoding
     }); // No other way to write in async way from signal listener
-    return Promise.resolve();
+    // return Promise.resolve();
   }
 
   async loadAndClear(): Promise<ITaskDefinition<any>[]> {

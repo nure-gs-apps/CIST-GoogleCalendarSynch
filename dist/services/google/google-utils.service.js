@@ -76,7 +76,7 @@ let GoogleUtilsService = class GoogleUtilsService {
             value: void 0
         });
         this.cistBaseUrl = cistBaseUrl;
-        this.calendarConfig = calendarConfig;
+        this.calendarTimezone = calendarConfig;
         this.nureAddress = nureAddress;
         this.domainName = subject.slice(subject.indexOf('@') + 1, subject.length)
             .toLowerCase();
@@ -182,7 +182,7 @@ let GoogleUtilsService = class GoogleUtilsService {
         return room;
     }
     cistEventToGoogleEvent(cistEvent, context, cistEventHash = hashCistEvent(cistEvent)) {
-        if (!this.calendarConfig) {
+        if (!this.calendarTimezone) {
             throw new TypeError('Calendar config is required');
         }
         const type = context.types.get(cistEvent.type);
@@ -212,12 +212,12 @@ let GoogleUtilsService = class GoogleUtilsService {
             },
             start: {
                 dateTime: moment.unix(cistEvent.start_time)
-                    .tz(this.calendarConfig.timeZone)
+                    .tz(this.calendarTimezone.timeZone)
                     .toISOString(true),
             },
             end: {
                 dateTime: moment.unix(cistEvent.end_time)
-                    .tz(this.calendarConfig.timeZone)
+                    .tz(this.calendarTimezone.timeZone)
                     .toISOString(true)
             },
             endTimeUnspecified: false,
@@ -240,7 +240,7 @@ let GoogleUtilsService = class GoogleUtilsService {
     }
     cistEventToGoogleEventPatch(event, cistEvent, context, cistEventHash = hashCistEvent(cistEvent)) {
         var _a;
-        if (!this.calendarConfig) {
+        if (!this.calendarTimezone) {
             throw new TypeError('Calendar config is required');
         }
         let hasChanges = false;

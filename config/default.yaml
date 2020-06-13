@@ -31,8 +31,13 @@ ncgc:
     idPrefix: cist
     groupEmailPrefix: g
     calendar:
-      prefix: 'CIST ' # basically name for calendar. Can be used for searching if id is not overriden
       timeZone: Europe/Kiev # timezone for event creation
+      eventsTaskContextStorage:
+        backend: file
+        backendConfigs:
+          file:
+            unix: /var/tmp/ncgc/google/events-task-context.json
+            win: %SystemRoot%\Temp\ncgc\google\events-task-context.json
     auth:
       adminDirectoryKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
       calendarKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file

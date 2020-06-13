@@ -4,8 +4,11 @@ import { JWTInput } from 'google-auth-library';
 import * as yargs from 'yargs';
 import { DeepPartial, Nullable } from '../@types';
 import { IMaxCacheExpiration } from '../@types/caching';
-import { GoogleAuthKey } from '../@types/google';
-import { IApiQuota, ICalendarConfig } from '../@types/services';
+import {
+  GoogleAuthKey,
+  IGoogleEventsTaskContextStorageConfig,
+} from '../@types/google';
+import { IApiQuota} from '../@types/services';
 import { TaskProgressBackend } from '../@types/tasks';
 import { ICrossPlatformFilePath } from '../@types/utils';
 import { parseDuration } from '../utils/common';
@@ -54,7 +57,10 @@ export interface IFullAppConfig {
     google: {
       idPrefix: Nullable<string>;
       groupEmailPrefix: Nullable<string>;
-      calendar: ICalendarConfig;
+      calendar: {
+        timeZone: string;
+        eventsTaskContextStorage: IGoogleEventsTaskContextStorageConfig;
+      };
       auth: {
         adminDirectoryKey: Nullable<string | JWTInput>;
         calendarKey: Nullable<string | JWTInput>

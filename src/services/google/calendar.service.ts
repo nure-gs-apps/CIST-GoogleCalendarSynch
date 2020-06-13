@@ -1,7 +1,6 @@
 import { calendar_v3 } from 'googleapis';
 import { inject, injectable } from 'inversify';
 import { GuardedMap, IReadonlyGuardedMap, Nullable } from '../../@types';
-import { ICalendarConfig } from '../../@types/services';
 import { TYPES } from '../../di/types';
 import {
   CistRoomsResponse, CistRoom, CistGroup,
@@ -23,7 +22,7 @@ export class CalendarService {
   static readonly CALENDAR_LIST_PAGE_SIZE = 250; // maximum
   private readonly _utils: GoogleUtilsService;
   private readonly _calendar: GoogleApiCalendar;
-  private readonly _calendarConfig: ICalendarConfig;
+  private readonly _calendarTimeZone: string;
 
   private readonly _getCalendar: calendar_v3.Resource$Calendars['get'];
   private readonly _listCalendarList: calendar_v3.Resource$Calendarlist['list'];
@@ -34,13 +33,13 @@ export class CalendarService {
   constructor(
     @inject(TYPES.GoogleApiCalendar) googleApiCalendar: GoogleApiCalendar,
     @inject(TYPES.GoogleCalendarQuotaLimiter) quotaLimiter: QuotaLimiterService,
-    @inject(TYPES.GoogleCalendarConfig) calendarConfig: ICalendarConfig,
+    @inject(TYPES.GoogleCalendarTimeZone) calendarTimeZone: string,
     @inject(TYPES.GoogleUtils) utils: GoogleUtilsService,
   ) {
     this._utils = utils;
 
     this._calendar = googleApiCalendar;
-    this._calendarConfig = calendarConfig;
+    this._calendarTimeZone = calendarTimeZone;
 
     this._getCalendar = quotaLimiter.limiter.wrap(
       this._calendar.googleCalendar.calendars.get.bind(
@@ -143,7 +142,7 @@ export class CalendarService {
   // private async loadCalendar() {
   //   const calendarList = await this.getAllCalendars();
   //   const calendar = calendarList.find(
-  //     c => c.summary === this._calendarConfig.summary,
+  //     c => c.summary === this._calendarTimezone.summary,
   //   );
   //   if (calendar) {
   //     this._calendarId = calendar.id!;
@@ -250,7 +249,7 @@ export class CalendarService {
       requestBody: {
         summary,
         description,
-        timeZone: this._calendarConfig.timeZone,
+        timeZone: this._calendarTimeZone,
       },
     });
     await Promise.all([

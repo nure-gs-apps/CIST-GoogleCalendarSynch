@@ -13,7 +13,7 @@ import { RoomsService } from './rooms.service';
 export type EventGoogleContext = Pick<IGoogleEventContext, 'googleGroups' | 'roomEmailsByNames'>;
 
 @injectable()
-export class EventsContextService {
+export class EventContextService {
   private readonly _groupsService: GroupsService;
   private readonly _roomsService: RoomsService;
   private readonly _utils: GoogleUtilsService;
