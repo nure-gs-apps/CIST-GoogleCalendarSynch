@@ -5,15 +5,15 @@ import { TYPES } from '../../di/types';
 import {
   getGoogleRoomShortName,
   GoogleUtilsService,
-  IEventContext,
+  IGoogleEventContext,
 } from './google-utils.service';
 import { GroupsService } from './groups.service';
 import { RoomsService } from './rooms.service';
 
-export type EventGoogleContext = Pick<IEventContext, 'googleGroups' | 'roomEmailsByNames'>;
+export type EventGoogleContext = Pick<IGoogleEventContext, 'googleGroups' | 'roomEmailsByNames'>;
 
 @injectable()
-export class EventsContextManagerService {
+export class EventsContextService {
   private readonly _groupsService: GroupsService;
   private readonly _roomsService: RoomsService;
   private readonly _utils: GoogleUtilsService;

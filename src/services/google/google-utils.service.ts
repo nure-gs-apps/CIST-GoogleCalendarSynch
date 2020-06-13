@@ -1,5 +1,5 @@
 import { isEqual } from 'lodash';
-import { encode } from '@januswel/base32';
+import { encode, decode } from '@januswel/base32';
 import { admin_directory_v1, calendar_v3 } from 'googleapis';
 import { inject, injectable, optional } from 'inversify';
 import { iterate } from 'iterare';
@@ -34,7 +34,7 @@ import Schema$EventAttendee = calendar_v3.Schema$EventAttendee;
 export const buildingIdPrefix = 'b';
 export const roomIdPrefix = 'r';
 
-export interface IEventContext {
+export interface IGoogleEventContext {
   subjects: IGuardedMap<number, CistSubject>;
   googleGroups: IGuardedMap<number, Schema$Group>;
   teachers: IGuardedMap<number, CistTeacher>;
@@ -223,10 +223,10 @@ export class GoogleUtilsService {
     return room;
   }
 
-
   cistEventToGoogleEvent(
     cistEvent: DeepReadonly<CistEvent>,
-    context: DeepReadonly<IEventContext>,
+    context: DeepReadonly<IGoogleEventContext>,
+    cistEventHash = hashCistEvent(cistEvent)
   ): Schema$Event {
     if (!this.calendarConfig) {
       throw new TypeError('Calendar config is required');
@@ -254,7 +254,7 @@ export class GoogleUtilsService {
       guestsCanInviteOthers: false,
       guestsCanModify: false,
       guestsCanSeeOtherGuests: true,
-      id: encode(hashCistEvent(cistEvent)),
+      id: eventHashToEventId(cistEventHash),
       reminders: {
         useDefault: true, // FIXME: check if this is enough for reminders
       },
@@ -293,7 +293,8 @@ export class GoogleUtilsService {
   cistEventToGoogleEventPatch(
     event: DeepReadonly<Schema$Event>,
     cistEvent: DeepReadonly<CistEvent>,
-    context: DeepReadonly<IEventContext>,
+    context: DeepReadonly<IGoogleEventContext>,
+    cistEventHash = hashCistEvent(cistEvent)
   ) {
     if (!this.calendarConfig) {
       throw new TypeError('Calendar config is required');
@@ -360,7 +361,7 @@ export class GoogleUtilsService {
         hasChanges = true;
       }
     }
-    const id = encode(hashCistEvent(cistEvent));
+    const id = eventHashToEventId(cistEventHash);
     if (id !== event.id) {
       eventPatch.id = id;
       hasChanges = true;
@@ -386,7 +387,7 @@ export class GoogleUtilsService {
 
   createEventAttendees(
     cistEvent: DeepReadonly<CistEvent>,
-    context: DeepReadonly<IEventContext>,
+    context: DeepReadonly<IGoogleEventContext>,
   ): Schema$EventAttendee[] {
     const attendees: Schema$EventAttendee[] = [
       { // FIXME: maybe add displayName
@@ -410,7 +411,7 @@ export class GoogleUtilsService {
 
   createEventDescription(
     cistEvent: DeepReadonly<CistEvent>,
-    context: DeepReadonly<IEventContext>,
+    context: DeepReadonly<IGoogleEventContext>,
     subject = context.subjects.get(cistEvent.subject_id),
     type = context.types.get(cistEvent.type),
   ) {
@@ -456,7 +457,7 @@ export function isSameGroupIdentity(
 
 export function getEventSharedExtendedProperties(
   cistEvent: DeepReadonly<CistEvent>,
-  context: DeepReadonly<IEventContext>,
+  context: DeepReadonly<IGoogleEventContext>,
   subject = context.subjects.get(cistEvent.subject_id),
 ) {
   const object: IEventSharedExtendedProperties = {
@@ -477,7 +478,7 @@ export function getEventSharedExtendedPropertiesPatch(
   cistEvent: DeepReadonly<CistEvent>,
   // tslint:disable-next-line:max-line-length
   eventSharedExtendedProperties: Partial<DeepReadonly<IEventSharedExtendedProperties>>,
-  context: DeepReadonly<IEventContext>,
+  context: DeepReadonly<IGoogleEventContext>,
   subject = context.subjects.get(cistEvent.subject_id),
 ) {
   const props = eventSharedExtendedProperties;
@@ -584,6 +585,9 @@ export function hashCistEvent(cistEvent: DeepReadonly<CistEvent>) {
   return `${cistEvent.subject_id}t${cistEvent.type}t${cistEvent.start_time}t${cistEvent.end_time}`;
 } // t${cistEvent.teachers.join('s')} - FIXME: add if needed
 
+export function tryGetGoogleEventHash(googleEvent: DeepReadonly<Schema$Event>) {
+  return !googleEvent.id ? null : decode(googleEvent.id);
+}
 export function hashGoogleEvent(googleEvent: DeepReadonly<Schema$Event>) { // FIXME: add check for google event hash
   if (
     !googleEvent?.extendedProperties?.shared
@@ -598,6 +602,9 @@ export function hashGoogleEvent(googleEvent: DeepReadonly<Schema$Event>) { // FI
     throw new TypeError('Required shared extended properties are not found in Google Event');
   }
   return `${sharedProperties.subjectId}t${sharedProperties.type}t${moment(googleEvent.start.dateTime).unix()}t${moment(googleEvent.start.dateTime).unix()}`;
+}
+export function eventHashToEventId(eventHash: string) {
+  return encode(eventHash);
 }
 
 export function getGoogleEventColor(eventType: EventType) {

@@ -84,6 +84,7 @@ export function t(...args: any[]): any[] {
 export function as<T>(value: any): value is T {
   return true;
 }
+export function cast<T>(value: any): asserts value is T {}
 
 export interface IReadonlyGuardedMap<K, V> extends ReadonlyMap<K, NonOptional<V>> {
   get(key: K): NonOptional<V>;
