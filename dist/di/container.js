@@ -69,7 +69,10 @@ function addTypesToContainer(options) {
     const allRequired = types.size === 0;
     if ((allRequired
         || types.has(types_1.TYPES.TaskStepExecutor)
-        || types.has(task_step_executor_1.TaskStepExecutor)) && !skip.has(task_step_executor_1.TaskStepExecutor) && !skip.has(types_1.TYPES.TaskStepExecutor)) {
+        || types.has(task_step_executor_1.TaskStepExecutor))
+        && !skip.has(task_step_executor_1.TaskStepExecutor)
+        && !skip.has(types_1.TYPES.TaskStepExecutor)
+        && !container.isBound(types_1.TYPES.TaskStepExecutor)) {
         container.bind(types_1.TYPES.TaskStepExecutor)
             .to(task_step_executor_1.TaskStepExecutor)
             .onActivation((context, injectable) => addDisposable(context, injectable));
@@ -77,43 +80,58 @@ function addTypesToContainer(options) {
         types.add(types_1.TYPES.Logger);
     }
     if ((allRequired
-        || types.has(types_1.TYPES.TaskProgressBackend)) && !skip.has(types_1.TYPES.TaskProgressBackend)) {
+        || types.has(types_1.TYPES.TaskProgressBackend))
+        && !skip.has(types_1.TYPES.TaskProgressBackend)
+        && !container.isBound(types_1.TYPES.TaskProgressBackend)) {
         container.bind(types_1.TYPES.TaskProgressBackend)
             .toDynamicValue(di_2.getTaskProgressBackend);
         types.add(types_1.TYPES.TaskProgressBackendType);
     }
     if ((allRequired
-        || types.has(types_1.TYPES.TaskProgressBackendType)) && !skip.has(types_1.TYPES.TaskProgressBackendType)) {
+        || types.has(types_1.TYPES.TaskProgressBackendType))
+        && !skip.has(types_1.TYPES.TaskProgressBackendType)
+        && !container.isBound(types_1.TYPES.TaskProgressBackendType)) {
         container.bind(types_1.TYPES.TaskProgressBackendType)
             .toConstantValue(config_1.getConfig().tasks.progress.backend);
         types.add(di_2.getTaskProgressBackendSymbol(config_1.getConfig().tasks.progress.backend));
     }
     if ((allRequired
-        || types.has(types_1.TYPES.TaskProgressFileBackend)) && !skip.has(types_1.TYPES.TaskProgressFileBackend)) {
+        || types.has(types_1.TYPES.TaskProgressFileBackend))
+        && !skip.has(types_1.TYPES.TaskProgressFileBackend)
+        && !container.isBound(types_1.TYPES.TaskProgressFileBackend)) {
         container.bind(types_1.TYPES.TaskProgressFileBackend)
             .to(file_2.TaskProgressFileBackend);
         types.add(types_1.TYPES.TaskProgressFileBackendFileName);
     }
-    if ((allRequired || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) && !skip.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
+    if ((allRequired || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService))
+        && !skip.has(cached_cist_json_client_service_1.CachedCistJsonClientService)
+        && !container.isBound(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
         container.bind(cached_cist_json_client_service_1.CachedCistJsonClientService)
             .to(cached_cist_json_client_service_1.CachedCistJsonClientService)
             .onActivation(addDisposable);
         types.add(types_1.TYPES.CacheUtils);
         types.add(types_1.TYPES.CistCacheConfig);
     }
-    if ((allRequired || types.has(cist_json_http_client_service_1.CistJsonHttpClient)) && !skip.has(cist_json_http_client_service_1.CistJsonHttpClient)) {
+    if ((allRequired || types.has(cist_json_http_client_service_1.CistJsonHttpClient))
+        && !skip.has(cist_json_http_client_service_1.CistJsonHttpClient)
+        && !container.isBound(cist_json_http_client_service_1.CistJsonHttpClient)) {
         types.add(types_1.TYPES.CistBaseApiUrl);
         types.add(types_1.TYPES.CistApiKey);
         types.add(types_1.TYPES.CistJsonHttpParser);
     }
     if ((allRequired || (types.has(types_1.TYPES.CistJsonHttpClient)
-        || types.has(cist_json_http_client_service_1.CistJsonHttpClient)) && !types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) && !skip.has(cist_json_http_client_service_1.CistJsonHttpClient) && !skip.has(types_1.TYPES.CistJsonHttpClient)) {
+        || types.has(cist_json_http_client_service_1.CistJsonHttpClient)) && !types.has(cached_cist_json_client_service_1.CachedCistJsonClientService))
+        && !skip.has(cist_json_http_client_service_1.CistJsonHttpClient)
+        && !container.isBound(types_1.TYPES.CistJsonHttpClient)) {
         container.bind(types_1.TYPES.CistJsonHttpClient)
             .to(cist_json_http_client_service_1.CistJsonHttpClient);
     }
     if ((allRequired
         || types.has(types_1.TYPES.CacheUtils)
-        || types.has(cache_utils_service_1.CacheUtilsService)) && !skip.has(cache_utils_service_1.CacheUtilsService) && !skip.has(types_1.TYPES.CacheUtils)) {
+        || types.has(cache_utils_service_1.CacheUtilsService))
+        && !skip.has(cache_utils_service_1.CacheUtilsService)
+        && !skip.has(types_1.TYPES.CacheUtils)
+        && !container.isBound(types_1.TYPES.CacheUtils)) {
         container.bind(types_1.TYPES.CacheUtils).to(cache_utils_service_1.CacheUtilsService);
         types.add(types_1.TYPES.CacheMaxExpiration);
     }
@@ -121,7 +139,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.CistJsonHttpParser)
         || types.has(cist_json_http_parser_service_1.CistJsonHttpParserService))
         && !skip.has(cist_json_http_parser_service_1.CistJsonHttpParserService)
-        && !skip.has(types_1.TYPES.CistJsonHttpParser)) {
+        && !skip.has(types_1.TYPES.CistJsonHttpParser)
+        && !container.isBound(types_1.TYPES.CistJsonHttpParser)) {
         container.bind(types_1.TYPES.CistJsonHttpParser)
             .to(cist_json_http_parser_service_1.CistJsonHttpParserService);
     }
@@ -129,7 +148,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.BuildingsService)
         || types.has(buildings_service_1.BuildingsService))
         && !skip.has(buildings_service_1.BuildingsService)
-        && !skip.has(types_1.TYPES.BuildingsService)) {
+        && !skip.has(types_1.TYPES.BuildingsService)
+        && !container.isBound(types_1.TYPES.BuildingsService)) {
         container.bind(types_1.TYPES.BuildingsService)
             .to(buildings_service_1.BuildingsService);
         types.add(types_1.TYPES.GoogleApiAdminDirectory);
@@ -141,7 +161,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.GoogleEventContextService)
         || types.has(event_context_service_1.EventContextService))
         && !skip.has(event_context_service_1.EventContextService)
-        && !skip.has(types_1.TYPES.GoogleEventContextService)) {
+        && !skip.has(types_1.TYPES.GoogleEventContextService)
+        && !container.isBound(types_1.TYPES.GoogleEventContextService)) {
         container.bind(types_1.TYPES.GoogleEventContextService)
             .to(event_context_service_1.EventContextService);
         types.add(types_1.TYPES.RoomsService);
@@ -152,7 +173,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.RoomsService)
         || types.has(rooms_service_1.RoomsService))
         && !skip.has(rooms_service_1.RoomsService)
-        && !skip.has(types_1.TYPES.RoomsService)) {
+        && !skip.has(types_1.TYPES.RoomsService)
+        && !container.isBound(types_1.TYPES.RoomsService)) {
         container.bind(types_1.TYPES.RoomsService)
             .to(rooms_service_1.RoomsService);
         types.add(types_1.TYPES.GoogleApiAdminDirectory);
@@ -164,7 +186,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.GroupsService)
         || types.has(groups_service_1.GroupsService))
         && !skip.has(groups_service_1.GroupsService)
-        && !skip.has(types_1.TYPES.GroupsService)) {
+        && !skip.has(types_1.TYPES.GroupsService)
+        && !container.isBound(types_1.TYPES.GroupsService)) {
         container.bind(types_1.TYPES.GroupsService)
             .to(groups_service_1.GroupsService);
         types.add(types_1.TYPES.GoogleApiAdminDirectory);
@@ -176,30 +199,37 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.EventsService)
         || types.has(events_service_1.EventsService))
         && !skip.has(events_service_1.EventsService)
-        && !skip.has(types_1.TYPES.EventsService)) {
+        && !skip.has(types_1.TYPES.EventsService)
+        && !container.isBound(types_1.TYPES.EventsService)) {
         container.bind(types_1.TYPES.EventsService)
             .to(events_service_1.EventsService);
         types.add(types_1.TYPES.GoogleApiCalendar);
-        types.add(types_1.TYPES.GoogleCalendarQuotaLimiterConfig);
+        types.add(types_1.TYPES.GoogleCalendarQuotaLimiter);
         types.add(types_1.TYPES.GoogleUtils);
         types.add(types_1.TYPES.Logger);
         types.add(types_1.TYPES.GoogleCalendarTimeZone);
     }
     if ((allRequired
-        || types.has(types_1.TYPES.GoogleEventContextService)) && !skip.has(types_1.TYPES.GoogleEventContextService)) {
+        || types.has(types_1.TYPES.GoogleEventContextService))
+        && !skip.has(types_1.TYPES.GoogleEventContextService)
+        && !container.isBound(types_1.TYPES.GoogleEventContextService)) {
         container.bind(types_1.TYPES.GoogleEventContextService)
             .toDynamicValue(di_1.getEventsTaskContextStorage);
         types.add(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType);
     }
     if ((allRequired
-        || types.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType)) && !skip.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType)) {
+        || types.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType))
+        && !skip.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType)
+        && !container.isBound(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType)) {
         const type = config_1.getConfig().google.calendar.eventsTaskContextStorage.backend;
         container.bind(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType)
             .toConstantValue(type);
         types.add(di_1.getEventsTaskContextStorageSymbol(type));
     }
     if ((allRequired
-        || types.has(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage)) && !skip.has(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage)) {
+        || types.has(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage))
+        && !skip.has(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage)
+        && !container.isBound(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage)) {
         container.bind(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage).to(file_1.FileEventsTaskContextStorage);
         types.add(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName);
     }
@@ -207,7 +237,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.GoogleApiAdminDirectory)
         || types.has(google_api_admin_directory_1.GoogleApiAdminDirectory))
         && !skip.has(google_api_admin_directory_1.GoogleApiAdminDirectory)
-        && !skip.has(types_1.TYPES.GoogleApiAdminDirectory)) {
+        && !skip.has(types_1.TYPES.GoogleApiAdminDirectory)
+        && !container.isBound(types_1.TYPES.GoogleApiAdminDirectory)) {
         container.bind(types_1.TYPES.GoogleApiAdminDirectory)
             .to(google_api_admin_directory_1.GoogleApiAdminDirectory);
         types.add(types_1.TYPES.GoogleAuthAdminDirectory);
@@ -216,7 +247,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.GoogleApiCalendar)
         || types.has(google_api_calendar_1.GoogleApiCalendar))
         && !skip.has(google_api_calendar_1.GoogleApiCalendar)
-        && !skip.has(types_1.TYPES.GoogleApiCalendar)) {
+        && !skip.has(types_1.TYPES.GoogleApiCalendar)
+        && !container.isBound(types_1.TYPES.GoogleApiCalendar)) {
         container.bind(types_1.TYPES.GoogleApiCalendar)
             .to(google_api_calendar_1.GoogleApiCalendar);
         types.add(types_1.TYPES.GoogleAuthCalendar);
@@ -225,7 +257,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.GoogleAuthAdminDirectory)
         || types.has(google_auth_admin_directory_1.GoogleAuthAdminDirectory))
         && !skip.has(google_auth_admin_directory_1.GoogleAuthAdminDirectory)
-        && !skip.has(types_1.TYPES.GoogleAuthAdminDirectory)) {
+        && !skip.has(types_1.TYPES.GoogleAuthAdminDirectory)
+        && !container.isBound(types_1.TYPES.GoogleAuthAdminDirectory)) {
         container.bind(types_1.TYPES.GoogleAuthAdminDirectory)
             .to(google_auth_admin_directory_1.GoogleAuthAdminDirectory);
         types.add(types_1.TYPES.Logger);
@@ -235,18 +268,23 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.GoogleAuthCalendar)
         || types.has(google_auth_calendar_1.GoogleAuthCalendar))
         && !skip.has(google_auth_calendar_1.GoogleAuthCalendar)
-        && !skip.has(types_1.TYPES.GoogleAuthCalendar)) {
+        && !skip.has(types_1.TYPES.GoogleAuthCalendar)
+        && !container.isBound(types_1.TYPES.GoogleAuthCalendar)) {
         container.bind(types_1.TYPES.GoogleAuthCalendar)
             .to(google_auth_calendar_1.GoogleAuthCalendar);
         types.add(types_1.TYPES.Logger);
         types.add(types_1.TYPES.GoogleAuthCalendarKey);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)) && !skip.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter))
+        && !skip.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)
+        && !container.isBound(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)) {
         container.bind(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)
             .toDynamicValue(quota_limiter_service_1.getQuotaLimiterFactory(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig, defaultScope === inversify_1.BindingScopeEnum.Singleton));
         types.add(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleCalendarQuotaLimiter)) && !skip.has(types_1.TYPES.GoogleCalendarQuotaLimiter)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleCalendarQuotaLimiter))
+        && !skip.has(types_1.TYPES.GoogleCalendarQuotaLimiter)
+        && !container.isBound(types_1.TYPES.GoogleCalendarQuotaLimiter)) {
         container.bind(types_1.TYPES.GoogleCalendarQuotaLimiter)
             .toDynamicValue(quota_limiter_service_1.getQuotaLimiterFactory(types_1.TYPES.GoogleCalendarQuotaLimiterConfig, defaultScope === inversify_1.BindingScopeEnum.Singleton))
             .onActivation(addDisposable);
@@ -256,7 +294,8 @@ function addTypesToContainer(options) {
         || types.has(types_1.TYPES.GoogleUtils)
         || types.has(google_utils_service_1.GoogleUtilsService))
         && !skip.has(google_utils_service_1.GoogleUtilsService)
-        && !skip.has(types_1.TYPES.GoogleUtils)) {
+        && !skip.has(types_1.TYPES.GoogleUtils)
+        && !container.isBound(types_1.TYPES.GoogleUtils)) {
         container.bind(types_1.TYPES.GoogleUtils)
             .to(google_utils_service_1.GoogleUtilsService);
         types.add(types_1.TYPES.GoogleAuthSubject);
@@ -266,69 +305,105 @@ function addTypesToContainer(options) {
         types.add(types_1.TYPES.GoogleCalendarTimeZone);
         types.add(types_1.TYPES.NureAddress);
     }
-    if ((allRequired || types.has(types_1.TYPES.Container)) && !skip.has(types_1.TYPES.Container)) {
+    if ((allRequired || types.has(types_1.TYPES.Container))
+        && !skip.has(types_1.TYPES.Container)
+        && !container.isBound(types_1.TYPES.Container)) {
         container.bind(types_1.TYPES.Container).toConstantValue(container);
     }
-    if ((allRequired || types.has(types_1.TYPES.Config)) && !skip.has(types_1.TYPES.Config)) {
+    if ((allRequired || types.has(types_1.TYPES.Config))
+        && !skip.has(types_1.TYPES.Config)
+        && !container.isBound(types_1.TYPES.Config)) {
         container.bind(types_1.TYPES.Config).to(config_service_1.ConfigService);
     }
-    if ((allRequired || types.has(types_1.TYPES.Logger)) && !skip.has(types_1.TYPES.Logger)) {
+    if ((allRequired || types.has(types_1.TYPES.Logger))
+        && !skip.has(types_1.TYPES.Logger)
+        && !container.isBound(types_1.TYPES.Logger)) {
         container.bind(types_1.TYPES.Logger).toConstantValue(logger_service_1.logger);
     }
     // Constants
     if ((allRequired
-        || types.has(types_1.TYPES.TaskProgressFileBackendFileName)) && !skip.has(types_1.TYPES.TaskProgressFileBackendFileName)) {
+        || types.has(types_1.TYPES.TaskProgressFileBackendFileName))
+        && !skip.has(types_1.TYPES.TaskProgressFileBackendFileName)
+        && !container.isBound(types_1.TYPES.TaskProgressFileBackendFileName)) {
         container.bind(types_1.TYPES.TaskProgressFileBackendFileName)
             .toConstantValue(common_1.PathUtils.getPath(config_1.getConfig().tasks.progress.backendConfigs[tasks_1.TaskProgressBackend.File]));
     }
-    if ((allRequired || types.has(types_1.TYPES.CistCacheConfig)) && !skip.has(types_1.TYPES.CistCacheConfig)) {
+    if ((allRequired || types.has(types_1.TYPES.CistCacheConfig))
+        && !skip.has(types_1.TYPES.CistCacheConfig)
+        && !container.isBound(types_1.TYPES.CistCacheConfig)) {
         container.bind(types_1.TYPES.CistCacheConfig)
             .toConstantValue(config_1.getConfig().caching.cist);
     }
-    if ((allRequired || types.has(types_1.TYPES.CacheMaxExpiration)) && !skip.has(types_1.TYPES.CacheMaxExpiration)) {
+    if ((allRequired || types.has(types_1.TYPES.CacheMaxExpiration))
+        && !skip.has(types_1.TYPES.CacheMaxExpiration)
+        && !container.isBound(types_1.TYPES.CacheMaxExpiration)) {
         container.bind(types_1.TYPES.CacheMaxExpiration)
             .toConstantValue(config_1.getConfig().caching.maxExpiration);
     }
-    if ((allRequired || types.has(types_1.TYPES.CistApiKey)) && !skip.has(types_1.TYPES.CistApiKey)) {
+    if ((allRequired || types.has(types_1.TYPES.CistApiKey))
+        && !skip.has(types_1.TYPES.CistApiKey)
+        && !container.isBound(types_1.TYPES.CistApiKey)) {
         container.bind(types_1.TYPES.CistApiKey).toConstantValue(config_1.getConfig().cist.apiKey);
     }
-    if ((allRequired || types.has(types_1.TYPES.CistBaseApiUrl)) && !skip.has(types_1.TYPES.CistBaseApiUrl)) {
+    if ((allRequired || types.has(types_1.TYPES.CistBaseApiUrl))
+        && !skip.has(types_1.TYPES.CistBaseApiUrl)
+        && !container.isBound(types_1.TYPES.CistBaseApiUrl)) {
         container.bind(types_1.TYPES.CistBaseApiUrl).toConstantValue(config_1.getConfig().cist.baseUrl);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleAuthAdminDirectoryKey)) && !skip.has(types_1.TYPES.GoogleAuthAdminDirectoryKey)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleAuthAdminDirectoryKey))
+        && !skip.has(types_1.TYPES.GoogleAuthAdminDirectoryKey)
+        && !container.isBound(types_1.TYPES.GoogleAuthAdminDirectoryKey)) {
         container.bind(types_1.TYPES.GoogleAuthAdminDirectoryKey)
             .toConstantValue(config_1.getConfig().google.auth.adminDirectoryKey);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleAuthCalendarKey)) && !skip.has(types_1.TYPES.GoogleAuthCalendarKey)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleAuthCalendarKey))
+        && !skip.has(types_1.TYPES.GoogleAuthCalendarKey)
+        && !container.isBound(types_1.TYPES.GoogleAuthCalendarKey)) {
         container.bind(types_1.TYPES.GoogleAuthCalendarKey)
             .toConstantValue(config_1.getConfig().google.auth.calendarKey);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleAuthSubject)) && !skip.has(types_1.TYPES.GoogleAuthSubject)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleAuthSubject))
+        && !skip.has(types_1.TYPES.GoogleAuthSubject)
+        && !container.isBound(types_1.TYPES.GoogleAuthSubject)) {
         container.bind(types_1.TYPES.GoogleAuthSubject).toConstantValue(config_1.getConfig().google.auth.adminSubjectEmail);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleEntityIdPrefix)) && !skip.has(types_1.TYPES.GoogleEntityIdPrefix)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleEntityIdPrefix))
+        && !skip.has(types_1.TYPES.GoogleEntityIdPrefix)
+        && !container.isBound(types_1.TYPES.GoogleEntityIdPrefix)) {
         container.bind(types_1.TYPES.GoogleEntityIdPrefix).toConstantValue(config_1.getConfig().google.idPrefix);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleGroupEmailPrefix)) && !skip.has(types_1.TYPES.GoogleGroupEmailPrefix)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleGroupEmailPrefix))
+        && !skip.has(types_1.TYPES.GoogleGroupEmailPrefix)
+        && !container.isBound(types_1.TYPES.GoogleGroupEmailPrefix)) {
         container.bind(types_1.TYPES.GoogleGroupEmailPrefix).toConstantValue(config_1.getConfig().google.groupEmailPrefix);
     }
     if ((allRequired
-        || types.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName)) && !skip.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName)) {
+        || types.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName))
+        && !skip.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName)
+        && !container.isBound(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName)) {
         container.bind(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName)
             .toConstantValue(common_1.PathUtils.getPath(config_1.getConfig().google.calendar
             .eventsTaskContextStorage.backendConfigs[tasks_1.TaskProgressBackend.File]));
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleCalendarTimeZone)) && !skip.has(types_1.TYPES.GoogleCalendarTimeZone)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleCalendarTimeZone))
+        && !skip.has(types_1.TYPES.GoogleCalendarTimeZone)
+        && !container.isBound(types_1.TYPES.GoogleCalendarTimeZone)) {
         container.bind(types_1.TYPES.GoogleCalendarTimeZone).toConstantValue(config_1.getConfig().google.calendar.timeZone);
     }
-    if ((allRequired || types.has(types_1.TYPES.NureAddress)) && !skip.has(types_1.TYPES.NureAddress)) {
+    if ((allRequired || types.has(types_1.TYPES.NureAddress))
+        && !skip.has(types_1.TYPES.NureAddress)
+        && !container.isBound(types_1.TYPES.NureAddress)) {
         container.bind(types_1.TYPES.NureAddress)
             .toConstantValue(config_1.getConfig().nureAddress);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig)) && !skip.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig))
+        && !skip.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig)
+        && !container.isBound(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig)) {
         container.bind(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig).toConstantValue(config_1.getConfig().google.quotas.adminDirectoryApi);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleCalendarQuotaLimiterConfig)) && !skip.has(types_1.TYPES.GoogleCalendarQuotaLimiterConfig)) {
+    if ((allRequired || types.has(types_1.TYPES.GoogleCalendarQuotaLimiterConfig))
+        && !skip.has(types_1.TYPES.GoogleCalendarQuotaLimiterConfig)
+        && !container.isBound(types_1.TYPES.GoogleCalendarQuotaLimiterConfig)) {
         container.bind(types_1.TYPES.GoogleCalendarQuotaLimiterConfig).toConstantValue(config_1.getConfig().google.quotas.calendarApi);
     }
     // Unchecked
