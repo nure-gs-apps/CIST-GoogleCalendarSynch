@@ -1,5 +1,5 @@
 import iterate from 'iterare';
-import { DeepReadonly, GuardedMap, Nullable } from '../@types';
+import { DeepReadonly, Nullable } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IInfoLogger } from '../@types/logging';
 import { IFullAppConfig } from '../config/types';
@@ -53,7 +53,7 @@ export async function handleCistAssert(
     await cistClient.dispose();
   };
   bindOnExitHandler(dispose);
-  const failures = new GuardedMap<EntityType, number[]>();
+  const failures = new Map<EntityType, number[]>();
   if (args.auditories) {
     failures.set(
       EntityType.Rooms,

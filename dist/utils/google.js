@@ -16,7 +16,7 @@ function eventsTaskContextToSerializable(context) {
     if (events_service_1.isRelevantEventsTaskContext(context)) {
         serializable.relevantEventIds = Array.from(context.relevantEventIds);
     }
-    return context;
+    return serializable;
 }
 exports.eventsTaskContextToSerializable = eventsTaskContextToSerializable;
 function eventsTaskContextFromSerializable(serializable) {

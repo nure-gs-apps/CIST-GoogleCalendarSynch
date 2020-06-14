@@ -24,3 +24,4 @@ TODO:
 - resource id/email parsing & check for prefixes
 
 FIX:
+- unknown insert error, maybe only with -age flags e.g. {"email":"g_knpz-19-1_8468183@dl.kture.kharkov.ua","name":"КНпз-19-1","description":"КНпз-19-1, faculty \\"ЦПО\\" (Центр післядипломної освіти), direction \\"КН\\" (Комп`ютерні науки), speciality \\"ПЗАСп\\" (ПЗАСп)"}

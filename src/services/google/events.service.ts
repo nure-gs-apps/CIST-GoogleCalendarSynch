@@ -157,11 +157,13 @@ export class EventsService {
           }
           context.events.set(hash, item);
         }
-        this._logger.info(`Loaded ${context.events.size} events...`);
+        this._logger.info(`Loaded ${context.events.size} Google events...`);
+        if (eventsPage.data.items.length > 0) {
+          yield context;
+        }
       }
-      yield context;
     } while (context.nextPageToken);
-    this._logger.info('All events are loaded!');
+    this._logger.info(`All ${context.events.size} Google events are loaded!`);
   }
 
   getCreateContextTypeConfigByTaskType(taskType: TaskType) {
@@ -260,8 +262,8 @@ export class EventsService {
     cistEventsResponse: CistEventsResponse,
   ) {
     cast<IGoogleEventContext>(eventContext);
-    const isEnsureTaskContext = !isEnsureEventsTaskContext(context);
-    const isRelevantTaskContext = !isRelevantEventsTaskContext(context);
+    const isEnsureTaskContext = isEnsureEventsTaskContext(context);
+    const isRelevantTaskContext = isRelevantEventsTaskContext(context);
     if (!isEnsureTaskContext && !isRelevantTaskContext) {
       throw new TypeError(l('No operations to do!'));
     }

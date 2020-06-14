@@ -112,19 +112,17 @@ function addTypesToContainer(options) {
         types.add(types_1.TYPES.CacheUtils);
         types.add(types_1.TYPES.CistCacheConfig);
     }
-    if ((allRequired || types.has(cist_json_http_client_service_1.CistJsonHttpClient))
+    if ((allRequired
+        || types.has(cist_json_http_client_service_1.CistJsonHttpClient)
+        || types.has(types_1.TYPES.CistJsonHttpClient))
         && !skip.has(cist_json_http_client_service_1.CistJsonHttpClient)
-        && !container.isBound(cist_json_http_client_service_1.CistJsonHttpClient)) {
-        types.add(types_1.TYPES.CistBaseApiUrl);
-        types.add(types_1.TYPES.CistApiKey);
-        types.add(types_1.TYPES.CistJsonHttpParser);
-    }
-    if ((allRequired || (types.has(types_1.TYPES.CistJsonHttpClient)
-        || types.has(cist_json_http_client_service_1.CistJsonHttpClient)) && !types.has(cached_cist_json_client_service_1.CachedCistJsonClientService))
-        && !skip.has(cist_json_http_client_service_1.CistJsonHttpClient)
+        && !skip.has(types_1.TYPES.CistJsonHttpClient)
         && !container.isBound(types_1.TYPES.CistJsonHttpClient)) {
         container.bind(types_1.TYPES.CistJsonHttpClient)
             .to(cist_json_http_client_service_1.CistJsonHttpClient);
+        types.add(types_1.TYPES.CistBaseApiUrl);
+        types.add(types_1.TYPES.CistApiKey);
+        types.add(types_1.TYPES.CistJsonHttpParser);
     }
     if ((allRequired
         || types.has(types_1.TYPES.CacheUtils)
@@ -210,11 +208,10 @@ function addTypesToContainer(options) {
         types.add(types_1.TYPES.GoogleCalendarTimeZone);
     }
     if ((allRequired
-        || types.has(types_1.TYPES.GoogleEventContextService))
-        && !skip.has(types_1.TYPES.GoogleEventContextService)
-        && !container.isBound(types_1.TYPES.GoogleEventContextService)) {
-        container.bind(types_1.TYPES.GoogleEventContextService)
-            .toDynamicValue(di_1.getEventsTaskContextStorage);
+        || types.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorage))
+        && !skip.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorage)
+        && !container.isBound(types_1.TYPES.GoogleCalendarEventsTaskContextStorage)) {
+        container.bind(types_1.TYPES.GoogleCalendarEventsTaskContextStorage).toDynamicValue(di_1.getEventsTaskContextStorage);
         types.add(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType);
     }
     if ((allRequired
@@ -445,7 +442,7 @@ async function disposeContainer() {
     }
     disposing = Promise.resolve();
     for (const dispose of disposeCallbacks) {
-        disposing.then(dispose);
+        disposing = disposing.then(dispose);
     }
     await disposing;
     container.unload();
@@ -476,6 +473,11 @@ function getInitPromise(types = boundTypes) {
         || types.has(types_1.TYPES.GoogleAuthAdminDirectory)
         || types.has(google_auth_admin_directory_1.GoogleAuthAdminDirectory)) {
         promises.push(container.get(types_1.TYPES.GoogleAuthAdminDirectory)[object_1.ASYNC_INIT]);
+    }
+    if (types.size === 0
+        || types.has(types_1.TYPES.GoogleAuthCalendar)
+        || types.has(google_auth_calendar_1.GoogleAuthCalendar)) {
+        promises.push(container.get(types_1.TYPES.GoogleAuthCalendar)[object_1.ASYNC_INIT]);
     }
     if (types.size === 0
         || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {

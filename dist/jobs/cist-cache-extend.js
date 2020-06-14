@@ -10,7 +10,7 @@ const exit_handler_service_1 = require("../services/exit-handler.service");
 const cist_2 = require("../utils/cist");
 const jobs_1 = require("../utils/jobs");
 async function handleCistCacheExtend(args, newExpiration, config) {
-    const types = jobs_1.getCistCachedClientTypesForArgs(args, config.ncgc.caching.cist.priorities);
+    const types = [types_1.TYPES.CacheMaxExpiration, ...jobs_1.getCistCachedClientTypesForArgs(args, config.ncgc.caching.cist.priorities)];
     const container = container_1.createContainer({
         types,
         skip: [types_1.TYPES.CacheUtils]

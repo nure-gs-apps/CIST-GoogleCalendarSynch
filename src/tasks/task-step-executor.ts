@@ -712,7 +712,10 @@ export function getRequiredServicesFromTasks(
   }
 
   if (tasks.some(({ taskType, steps }) => (
-    taskType === TaskType.InitializeEventsBaseContext
+    taskType === TaskType.DeferredEnsureEvents
+    || taskType === TaskType.DeferredDeleteIrrelevantEvents
+    || taskType === TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+    || taskType === TaskType.InitializeEventsBaseContext
     || taskType === TaskType.InitializeEnsureEventsContext
     || taskType === TaskType.InitializeRelevantEventsContext
     || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
@@ -761,11 +764,12 @@ export function getRequiredServicesFromTasks(
             || tasks.some(({ taskType }) => (
               taskType === TaskType.InitializeEventsBaseContext
             )),
-          events: tasks.some(({ taskType }) => (
-            taskType === TaskType.InitializeEnsureEventsContext
-            || taskType === TaskType.InitializeRelevantEventsContext
-            || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
-          )),
+          events: cistEntitiesToOperateOn.events
+            || tasks.some(({ taskType }) => (
+              taskType === TaskType.InitializeEnsureEventsContext
+              || taskType === TaskType.InitializeRelevantEventsContext
+              || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+            )),
         }, cistCachePriorities)
         : getCistCachedClientTypes(
           cistCachePriorities

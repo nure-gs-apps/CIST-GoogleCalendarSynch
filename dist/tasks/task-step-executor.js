@@ -622,7 +622,10 @@ function getRequiredServicesFromTasks(tasks, cistCachePriorities, cistEntitiesTo
         || taskType === tasks_1.TaskType.DeleteIrrelevantEvents))) {
         types.push(types_1.TYPES.EventsService);
     }
-    if (tasks.some(({ taskType, steps }) => (taskType === tasks_1.TaskType.InitializeEventsBaseContext
+    if (tasks.some(({ taskType, steps }) => (taskType === tasks_1.TaskType.DeferredEnsureEvents
+        || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantEvents
+        || taskType === tasks_1.TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+        || taskType === tasks_1.TaskType.InitializeEventsBaseContext
         || taskType === tasks_1.TaskType.InitializeEnsureEventsContext
         || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
         || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext
@@ -659,9 +662,10 @@ function getRequiredServicesFromTasks(tasks, cistCachePriorities, cistEntitiesTo
                 auditories: cistEntitiesToOperateOn.auditories,
                 groups: cistEntitiesToOperateOn.groups
                     || tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.InitializeEventsBaseContext)),
-                events: tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.InitializeEnsureEventsContext
-                    || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
-                    || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext)),
+                events: cistEntitiesToOperateOn.events
+                    || tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+                        || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+                        || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext)),
             }, cistCachePriorities)
             : jobs_1.getCistCachedClientTypes(cistCachePriorities)));
     }

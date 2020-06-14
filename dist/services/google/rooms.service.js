@@ -195,8 +195,10 @@ let RoomsService = RoomsService_1 = class RoomsService {
                 rooms = rooms.concat(
                 // Flexible filtering for rooms only. Doesn't count on category
                 roomsPage.data.items.filter(i => !i.resourceType));
+                this._logger.info(`Loaded ${rooms.length} Google rooms...`);
             }
         } while (roomsPage.data.nextPageToken);
+        this._logger.info(`All ${rooms.length} Google rooms loaded!`);
         return rooms;
     }
     async doEnsureRoom(cistRoom, cistBuilding, googleRoom, cistRoomId = this._utils.getRoomId(cistRoom, cistBuilding), buildingId = this._utils.getGoogleBuildingId(cistBuilding)) {

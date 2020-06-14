@@ -495,7 +495,7 @@ function getEventSummary(title, cistEvent, googleGroups) {
 }
 exports.getEventSummary = getEventSummary;
 function hashCistEvent(cistEvent) {
-    return `${cistEvent.subject_id}t${cistEvent.type}t${cistEvent.start_time}t${cistEvent.end_time}`;
+    return `${cistEvent.subject_id}t${cistEvent.type}t${cistEvent.start_time}t${cistEvent.end_time}t${cistEvent.groups.join('s')}`;
 } // t${cistEvent.teachers.join('s')} - FIXME: add if needed
 exports.hashCistEvent = hashCistEvent;
 function tryGetGoogleEventHash(googleEvent) {
@@ -511,10 +511,12 @@ function hashGoogleEvent(googleEvent) {
     }
     // tslint:disable-next-line:max-line-length
     const sharedProperties = googleEvent.extendedProperties.shared;
-    if (!sharedProperties.type || !sharedProperties.subjectId) {
+    if (!sharedProperties.type
+        || !sharedProperties.subjectId
+        || !sharedProperties.teacherIds) {
         throw new TypeError('Required shared extended properties are not found in Google Event');
     }
-    return `${sharedProperties.subjectId}t${sharedProperties.type}t${moment(googleEvent.start.dateTime).unix()}t${moment(googleEvent.start.dateTime).unix()}`;
+    return `${sharedProperties.subjectId}t${sharedProperties.type}t${moment(googleEvent.start.dateTime).unix()}t${moment(googleEvent.start.dateTime).unix()}t${sharedProperties.teacherIds.split(',').join('s')}`;
 }
 exports.hashGoogleEvent = hashGoogleEvent;
 function eventHashToEventId(eventHash) {

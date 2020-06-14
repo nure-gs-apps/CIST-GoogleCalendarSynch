@@ -196,10 +196,10 @@ let GroupsService = GroupsService_1 = class GroupsService {
             });
             if (groupsPage.data.groups) {
                 groups = groups.concat(groupsPage.data.groups);
-                this._logger.info(`Loaded ${groups.length} groups...`);
+                this._logger.info(`Loaded ${groups.length} Google groups...`);
             }
         } while (groupsPage.data.nextPageToken);
-        this._logger.info(`All ${groups.length} groups loaded!`);
+        this._logger.info(`All ${groups.length} Google groups loaded!`);
         return groups;
     }
     doEnsureGroup(cistGroupData, googleGroup) {

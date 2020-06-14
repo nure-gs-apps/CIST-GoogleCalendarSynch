@@ -185,28 +185,19 @@ export function addTypesToContainer(
 
   if (
     (
-      allRequired || types.has(CistJsonHttpClient)
+      allRequired
+      || types.has(CistJsonHttpClient)
+      || types.has(TYPES.CistJsonHttpClient)
     )
     && !skip.has(CistJsonHttpClient)
-    && !container.isBound(CistJsonHttpClient)
-  ) {
-    types.add(TYPES.CistBaseApiUrl);
-    types.add(TYPES.CistApiKey);
-    types.add(TYPES.CistJsonHttpParser);
-  }
-
-  if (
-    (
-      allRequired || (
-        types.has(TYPES.CistJsonHttpClient)
-        || types.has(CistJsonHttpClient)
-      ) && !types.has(CachedCistJsonClientService)
-    )
-    && !skip.has(CistJsonHttpClient)
+    && !skip.has(TYPES.CistJsonHttpClient)
     && !container.isBound(TYPES.CistJsonHttpClient)
   ) {
     container.bind<CistJsonHttpClient>(TYPES.CistJsonHttpClient)
       .to(CistJsonHttpClient);
+    types.add(TYPES.CistBaseApiUrl);
+    types.add(TYPES.CistApiKey);
+    types.add(TYPES.CistJsonHttpParser);
   }
 
   if (
@@ -318,13 +309,14 @@ export function addTypesToContainer(
   if (
     (
       allRequired
-      || types.has(TYPES.GoogleEventContextService)
+      || types.has(TYPES.GoogleCalendarEventsTaskContextStorage)
     )
-    && !skip.has(TYPES.GoogleEventContextService)
-    && !container.isBound(TYPES.GoogleEventContextService)
+    && !skip.has(TYPES.GoogleCalendarEventsTaskContextStorage)
+    && !container.isBound(TYPES.GoogleCalendarEventsTaskContextStorage)
   ) {
-    container.bind<IEventsTaskContextStorage>(TYPES.GoogleEventContextService)
-      .toDynamicValue(getEventsTaskContextStorage);
+    container.bind<IEventsTaskContextStorage>(
+      TYPES.GoogleCalendarEventsTaskContextStorage
+    ).toDynamicValue(getEventsTaskContextStorage);
     types.add(TYPES.GoogleCalendarEventsTaskContextStorageType);
   }
 
@@ -715,7 +707,7 @@ export async function disposeContainer() {
 
   disposing = Promise.resolve();
   for (const dispose of disposeCallbacks) {
-    disposing.then(dispose);
+    disposing = disposing.then(dispose);
   }
   await disposing;
   container.unload();
@@ -751,6 +743,16 @@ function getInitPromise(types = boundTypes) {
   ) {
     promises.push(container.get<GoogleAuthAdminDirectory>(
       TYPES.GoogleAuthAdminDirectory
+    )[ASYNC_INIT]);
+  }
+
+  if (
+    types.size === 0
+    || types.has(TYPES.GoogleAuthCalendar)
+    || types.has(GoogleAuthCalendar)
+  ) {
+    promises.push(container.get<GoogleAuthCalendar>(
+      TYPES.GoogleAuthCalendar
     )[ASYNC_INIT]);
   }
 

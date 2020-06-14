@@ -203,7 +203,9 @@ export class BuildingsService {
       if (buildingsPage.data.buildings) {
         buildings = buildings.concat(buildingsPage.data.buildings);
       }
+      this._logger.info(`Loaded ${buildings.length} Google buildings...`);
     } while (buildingsPage.data.nextPageToken);
+    this._logger.info(`All ${buildings.length} Google buildings loaded!`);
     return buildings;
   }
 

@@ -77,12 +77,13 @@ class RunTasksJob {
             });
             types.push(types_2.TYPES.TaskProgressBackend);
             this._container = container_1.createContainer(this.getContainerConfig(types));
+            exit_handler_service_1.bindOnExitHandler(container_1.disposeContainer);
         }
         else {
             this._container = container_1.createContainer(this.getContainerConfig([types_2.TYPES.TaskProgressBackend]));
             exit_handler_service_1.bindOnExitHandler(container_1.disposeContainer);
             await container_1.getContainerAsyncInitializer();
-            this._progressBackend = this._container.get(types_2.TYPES.TaskProgressBackend);
+            this._progressBackend = this.getProgressBackend();
             tasks = await (this._progressBackend instanceof file_1.TaskProgressFileBackend
                 ? this._progressBackend.load()
                 : this._progressBackend.loadAndClear());
@@ -112,7 +113,7 @@ class RunTasksJob {
             await this.saveInterruptedTasks();
             exit_handler_service_1.enableExitTimeout();
         };
-        exit_handler_service_1.bindOnExitHandler(dispose);
+        exit_handler_service_1.bindOnExitHandler(dispose, true);
         const deadlineService = new deadline_service_1.DeadlineService(types_1.parseTasksTimeout(this._config.ncgc));
         deadlineService.on(deadline_service_1.DeadlineServiceEventNames.Deadline, () => {
             this._logger.info('Time has run out, saving interrupted tasks...');
@@ -122,7 +123,15 @@ class RunTasksJob {
         this._logger.info(this._args
             ? 'Running synchronization tasks...'
             : 'Running tasks...');
-        for await (const _ of this._taskRunner.asRunnableGenerator()) {
+        for await (const results of this._taskRunner.asRunnableGenerator()) {
+            for (const result of results) {
+                if (result.isError) {
+                    const message = `Error while executing task ${result.taskType}`;
+                    this._logger.error('step' in result
+                        ? `${message}, step ${result.step}`
+                        : message, result.value);
+                }
+            }
             if (this._interrupted) {
                 break;
             }

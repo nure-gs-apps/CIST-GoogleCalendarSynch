@@ -239,8 +239,10 @@ export class RoomsService {
           // Flexible filtering for rooms only. Doesn't count on category
           roomsPage.data.items.filter(i => !i.resourceType),
         );
+        this._logger.info(`Loaded ${rooms.length} Google rooms...`);
       }
     } while (roomsPage.data.nextPageToken);
+    this._logger.info(`All ${rooms.length} Google rooms loaded!`);
     return rooms;
   }
 

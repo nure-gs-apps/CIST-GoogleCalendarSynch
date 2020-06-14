@@ -28,10 +28,10 @@ export async function handleCistCacheExtend(
   newExpiration: Date,
   config: DeepReadonly<IFullAppConfig>
 ) {
-  const types = getCistCachedClientTypesForArgs(
+  const types = [TYPES.CacheMaxExpiration, ...getCistCachedClientTypesForArgs(
     args,
     config.ncgc.caching.cist.priorities,
-  );
+  )];
   const container = createContainer({
     types,
     skip: [TYPES.CacheUtils]

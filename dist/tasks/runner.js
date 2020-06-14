@@ -162,13 +162,7 @@ class TaskRunner {
             promises = iterare_1.default(task.steps)
                 .take(this._maxConcurrentSteps)
                 .map(s => Promise.resolve(this._taskStepExecutor.run(task.taskType, s))
-                .catch(error => {
-                if (!task.failedSteps) {
-                    task.failedSteps = [];
-                }
-                task.failedSteps.push({ error, value: s });
-            })
-                .tap(() => {
+                .then(value => {
                 if (task.steps && task.steps.length > 0) {
                     const i = task.steps.indexOf(s);
                     if (i >= 0) {
@@ -181,17 +175,47 @@ class TaskRunner {
                     }
                     this.doRemoveTask(task);
                 }
+                return {
+                    value,
+                    isError: false,
+                    taskType: task.taskType,
+                    step: s,
+                };
+            })
+                .catch(error => {
+                if (!task.failedSteps) {
+                    task.failedSteps = [];
+                }
+                task.failedSteps.push({ error, value: s });
+                return {
+                    isError: true,
+                    value: error,
+                    taskType: task.taskType,
+                    step: s,
+                };
             }))
                 .toArray();
         }
         else {
             promises = [
                 Promise.resolve(this._taskStepExecutor.run(task.taskType))
-                    .catch(error => task.failedSteps = [{ error }])
-                    .tap(() => {
+                    .then(value => {
                     if (!task.failedSteps || task.failedSteps.length === 0) {
                         this.doRemoveTask(task);
                     }
+                    return {
+                        value,
+                        isError: false,
+                        taskType: task.taskType,
+                    };
+                })
+                    .catch(error => {
+                    task.failedSteps = [{ error }];
+                    return {
+                        isError: true,
+                        value: error,
+                        taskType: task.taskType,
+                    };
                 }),
             ];
         }
@@ -256,6 +280,27 @@ class TaskRunner {
         const promises = iterare_1.default(task.failedSteps)
             .take(this._maxConcurrentSteps)
             .map(s => Promise.resolve('value' in s ? this._taskStepExecutor.rerunFailed(task.taskType, s.value, s.error) : this._taskStepExecutor.rerunFailed(task.taskType, s.error))
+            .then(value => {
+            if (task.failedSteps) {
+                const i = task.failedSteps.indexOf(s);
+                if (i >= 0) {
+                    task.failedSteps.splice(i, 1);
+                }
+            }
+            if ((!task.failedSteps || task.failedSteps.length === 0) && (!task.steps || task.steps.length === 0)) {
+                this.doRemoveTask(task);
+            }
+            const result = {
+                value,
+                isError: false,
+                taskType: task.taskType,
+                error: s.error
+            };
+            if ('value' in s) {
+                result.step = s.value;
+            }
+            return result;
+        })
             .catch(error => {
             const failedStep = { error };
             if ('value' in s) {
@@ -270,17 +315,16 @@ class TaskRunner {
                 this._failedTasks.push(this._twiceFailedTask);
                 this._runningFailedTask = this._runningTask;
             }
-        })
-            .tap(() => {
-            if (task.failedSteps) {
-                const i = task.failedSteps.indexOf(s);
-                if (i >= 0) {
-                    task.failedSteps.splice(i, 1);
-                }
+            const result = {
+                isError: true,
+                value: error,
+                taskType: task.taskType,
+                error: s.error
+            };
+            if ('value' in s) {
+                result.step = s.value;
             }
-            if ((!task.failedSteps || task.failedSteps.length === 0) && (!task.steps || task.steps.length === 0)) {
-                this.doRemoveTask(task);
-            }
+            return result;
         }))
             .toArray();
         this._runningTask = task;
