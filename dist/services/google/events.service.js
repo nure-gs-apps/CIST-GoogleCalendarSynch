@@ -131,33 +131,31 @@ let EventsService = EventsService_1 = class EventsService {
             taskType: tasks_1.TaskType.InitializeEventsBaseContext
         };
     }
-    async *loadEventsByChunksToContext(context) {
+    async loadEventsPageToContext(context) {
         var _a;
-        let eventsPage = null;
-        do {
-            eventsPage = await this._list({
-                calendarId,
-                maxResults: EventsService_1.ROOMS_PAGE_SIZE,
-                singleEvents: true,
-                timeZone: this._calendarTimeZone,
-                pageToken: eventsPage ? eventsPage.data.nextPageToken : undefined,
-            });
-            context.nextPageToken = eventsPage.data.nextPageToken;
-            if (eventsPage.data.items) {
-                for (const item of eventsPage.data.items) {
-                    const hash = (_a = google_utils_service_1.tryGetGoogleEventHash(item)) !== null && _a !== void 0 ? _a : google_utils_service_1.hashGoogleEvent(item);
-                    if (context.events.has(hash)) {
-                        this._logger.debug(l('has duplicate events, from context, from response'), context.events.get(hash), item);
-                    }
-                    context.events.set(hash, item);
+        const eventsPage = await this._list({
+            calendarId,
+            maxResults: EventsService_1.EVENTS_PAGE_SIZE,
+            singleEvents: true,
+            timeZone: this._calendarTimeZone,
+            pageToken: context.nextPageToken,
+        });
+        context.nextPageToken = eventsPage.data.nextPageToken;
+        if (eventsPage.data.items) {
+            for (const item of eventsPage.data.items) {
+                const hash = (_a = google_utils_service_1.tryGetGoogleEventHash(item)) !== null && _a !== void 0 ? _a : google_utils_service_1.hashGoogleEvent(item);
+                if (context.events.has(hash)) {
+                    this._logger.debug(l('has duplicate events, from context, from response'), context.events.get(hash), item);
                 }
-                this._logger.info(`Loaded ${context.events.size} Google events...`);
-                if (eventsPage.data.items.length > 0) {
-                    yield context;
-                }
+                context.events.set(hash, item);
             }
-        } while (context.nextPageToken);
-        this._logger.info(`All ${context.events.size} Google events are loaded!`);
+            this._logger.info(`Loaded ${context.events.size} Google events...`);
+        }
+        if (!context.nextPageToken) {
+            this._logger.info(`All ${context.events.size} Google events are loaded!`);
+            return false;
+        }
+        return true;
     }
     getCreateContextTypeConfigByTaskType(taskType) {
         if (taskType !== tasks_1.TaskType.InitializeEnsureEventsContext
@@ -336,7 +334,7 @@ let EventsService = EventsService_1 = class EventsService {
             sendUpdates: 'all',
         })).tap(() => this._logger.info(`Deleted event with hash ${eventHash}`));
     }
-    async ensureColorsLoaded() {
+    ensureColorsLoaded() {
         if (this._colorsLoaded) {
             return;
         }
@@ -348,19 +346,23 @@ let EventsService = EventsService_1 = class EventsService {
                 this._utils.eventColorToId = iterare_1.default(common_1.objectEntries(colors.data.event))
                     .filter(([id, color]) => typeof color.background === 'string'
                     && typeof id === 'string')
-                    .map(([id, color]) => _types_1.t(color.background, id))
+                    .map(([id, color]) => {
+                    const background = color.background;
+                    return _types_1.t(background[0] === '#' ? background.slice(1) : background, id);
+                })
                     .toMap();
                 this._colorsLoaded = true;
             }
             this._colorsLoading = null;
         });
+        return this._colorsLoading;
     }
     getIrrelevantEventHashes(context) {
         return iterare_1.default(context.events.keys())
             .filter(h => !context.relevantEventIds.has(h));
     }
 };
-Object.defineProperty(EventsService, "ROOMS_PAGE_SIZE", {
+Object.defineProperty(EventsService, "EVENTS_PAGE_SIZE", {
     enumerable: true,
     configurable: true,
     writable: true,

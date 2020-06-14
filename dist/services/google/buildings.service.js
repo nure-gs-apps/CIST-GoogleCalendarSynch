@@ -168,7 +168,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         do {
             buildingsPage = await this._list({
                 customer: constants_1.customer,
-                maxResults: BuildingsService_1.BUILDING_PAGE_SIZE,
+                maxResults: BuildingsService_1.BUILDINGS_PAGE_SIZE,
                 nextPage: buildingsPage ? buildingsPage.data.nextPageToken : null,
             });
             if (buildingsPage.data.buildings) {
@@ -253,7 +253,7 @@ let BuildingsService = BuildingsService_1 = class BuildingsService {
         });
     }
 };
-Object.defineProperty(BuildingsService, "BUILDING_PAGE_SIZE", {
+Object.defineProperty(BuildingsService, "BUILDINGS_PAGE_SIZE", {
     enumerable: true,
     configurable: true,
     writable: true,

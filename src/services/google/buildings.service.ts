@@ -30,7 +30,7 @@ export interface IBuildingsTaskContext {
 
 @injectable()
 export class BuildingsService {
-  static readonly BUILDING_PAGE_SIZE = 500;
+  static readonly BUILDINGS_PAGE_SIZE = 500;
   private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
   private readonly _utils: GoogleUtilsService;
@@ -197,7 +197,7 @@ export class BuildingsService {
     do {
       buildingsPage = await this._list({
         customer,
-        maxResults: BuildingsService.BUILDING_PAGE_SIZE,
+        maxResults: BuildingsService.BUILDINGS_PAGE_SIZE,
         nextPage: buildingsPage ? buildingsPage.data.nextPageToken : null,
       } as admin_directory_v1.Params$Resource$Resources$Buildings$List);
       if (buildingsPage.data.buildings) {

@@ -65,6 +65,7 @@ export interface IFullAppConfig {
         adminDirectoryKey: Nullable<string | JWTInput>;
         calendarKey: Nullable<string | JWTInput>
         adminSubjectEmail: string;
+        calendarUserEmail: string;
       };
       quotas: {
         adminDirectoryApi: IApiQuota;

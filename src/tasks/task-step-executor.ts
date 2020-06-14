@@ -369,11 +369,10 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutorW
       case TaskType.InitializeEventsBaseContext: {
         assertNoStep(step);
         const context = this._eventsContext ?? await this.loadEventsContext();
-        const loadEventsChunk = await this.getEventsService()
-          .loadEventsByChunksToContext(context)
-          .next();
+        const hasMoreEvents = await this.getEventsService()
+          .loadEventsPageToContext(context);
         const events = this.getEventsService();
-        if (!loadEventsChunk.done) {
+        if (hasMoreEvents) {
           this.emit(
             TaskStepExecutorEventNames.NewTask,
             events.createBaseContextTask(),

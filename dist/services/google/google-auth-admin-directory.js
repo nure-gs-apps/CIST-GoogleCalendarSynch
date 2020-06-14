@@ -45,7 +45,7 @@ GoogleAuthAdminDirectory = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.Logger)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAuthAdminDirectoryKey)),
-    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleAuthSubject)),
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleAuthAdminSubject)),
     tslib_1.__metadata("design:paramtypes", [Object, Object, String])
 ], GoogleAuthAdminDirectory);
 exports.GoogleAuthAdminDirectory = GoogleAuthAdminDirectory;

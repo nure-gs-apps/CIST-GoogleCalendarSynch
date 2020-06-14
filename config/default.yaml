@@ -42,6 +42,7 @@ ncgc:
       adminDirectoryKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
       calendarKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
       adminSubjectEmail: yourEmail@nure.ua # Required for admin. email of user belonging to the domain of G Suite.
+      calendarUserEmail: yourEmail@nure.ua # User, that will be organizer for all Google events.
     quotas:
       adminDirectoryApi:
         daily: 150000 # daily limit

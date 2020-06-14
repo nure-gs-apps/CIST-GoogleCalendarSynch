@@ -72,7 +72,7 @@ export interface IEventsTaskContextBase {
 
 @injectable()
 export class EventsService {
-  static readonly ROOMS_PAGE_SIZE = 2500; // max limit
+  static readonly EVENTS_PAGE_SIZE = 2500; // max limit
   private readonly _calendar: GoogleApiCalendar;
   private readonly _quotaLimiter: QuotaLimiterService;
   private readonly _utils: GoogleUtilsService;
@@ -136,34 +136,32 @@ export class EventsService {
     };
   }
 
-  async *loadEventsByChunksToContext(
+  async loadEventsPageToContext(
     context: IEventsTaskContextBase
-  ): AsyncGenerator<IEventsTaskContextBase> {
-    let eventsPage = null;
-    do {
-      eventsPage = await this._list({
-        calendarId,
-        maxResults: EventsService.ROOMS_PAGE_SIZE,
-        singleEvents: true,
-        timeZone: this._calendarTimeZone,
-        pageToken: eventsPage ? eventsPage.data.nextPageToken : undefined, // BUG in typedefs
-      });
-      context.nextPageToken = eventsPage.data.nextPageToken;
-      if (eventsPage.data.items) {
-        for (const item of eventsPage.data.items) {
-          const hash = tryGetGoogleEventHash(item) ?? hashGoogleEvent(item);
-          if (context.events.has(hash)) {
-            this._logger.debug(l('has duplicate events, from context, from response'), context.events.get(hash), item);
-          }
-          context.events.set(hash, item);
+  ): Promise<boolean> {
+    const eventsPage = await this._list({
+      calendarId,
+      maxResults: EventsService.EVENTS_PAGE_SIZE,
+      singleEvents: true,
+      timeZone: this._calendarTimeZone,
+      pageToken: context.nextPageToken, // BUG in typedefs
+    });
+    context.nextPageToken = eventsPage.data.nextPageToken;
+    if (eventsPage.data.items) {
+      for (const item of eventsPage.data.items) {
+        const hash = tryGetGoogleEventHash(item) ?? hashGoogleEvent(item);
+        if (context.events.has(hash)) {
+          this._logger.debug(l('has duplicate events, from context, from response'), context.events.get(hash), item);
         }
-        this._logger.info(`Loaded ${context.events.size} Google events...`);
-        if (eventsPage.data.items.length > 0) {
-          yield context;
-        }
+        context.events.set(hash, item);
       }
-    } while (context.nextPageToken);
-    this._logger.info(`All ${context.events.size} Google events are loaded!`);
+      this._logger.info(`Loaded ${context.events.size} Google events...`);
+    }
+    if (!context.nextPageToken) {
+      this._logger.info(`All ${context.events.size} Google events are loaded!`);
+      return false;
+    }
+    return true;
   }
 
   getCreateContextTypeConfigByTaskType(taskType: TaskType) {
@@ -414,7 +412,7 @@ export class EventsService {
     );
   }
 
-  private async ensureColorsLoaded() {
+  private ensureColorsLoaded() {
     if (this._colorsLoaded) {
       return;
     }
@@ -426,12 +424,19 @@ export class EventsService {
         this._utils.eventColorToId = iterate(objectEntries(colors.data.event))
           .filter(([id, color]) => typeof color.background === 'string'
             && typeof id === 'string')
-          .map(([id, color]) => t(color.background as string, id as string))
+          .map(([id, color]) => {
+            const background = color.background as string;
+            return t(
+              background[0] === '#' ? background.slice(1) : background,
+              id as string,
+            );
+          })
           .toMap();
         this._colorsLoaded = true;
       }
       this._colorsLoading = null;
     });
+    return this._colorsLoading;
   }
 
   private getIrrelevantEventHashes(

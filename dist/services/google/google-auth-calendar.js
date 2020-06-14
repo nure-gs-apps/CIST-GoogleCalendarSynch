@@ -9,7 +9,7 @@ const constants_1 = require("./constants");
 const google_auth_1 = require("./google-auth");
 google_auth_1.addDefaultScopes(constants_1.calendarAuthScopes);
 let GoogleAuthCalendar = class GoogleAuthCalendar {
-    constructor(logger, key, subject) {
+    constructor(logger, key, calendarUser) {
         Object.defineProperty(this, _a, {
             enumerable: true,
             configurable: true,
@@ -23,9 +23,7 @@ let GoogleAuthCalendar = class GoogleAuthCalendar {
             value: void 0
         });
         this._authClient = null;
-        // setDefaultSubject(subject);
-        this[object_1.ASYNC_INIT] = (key ? google_auth_1.createAuthWithFallback(key, constants_1.calendarAuthScopes.slice(), undefined, // subject,
-        (error, keyPath) => {
+        this[object_1.ASYNC_INIT] = (key ? google_auth_1.createAuthWithFallback(key, constants_1.calendarAuthScopes.slice(), calendarUser, (error, keyPath) => {
             if (keyPath) {
                 logger.warn(l(`Failed to load key from file "${keyPath}" due to error:`), error);
             }
@@ -46,7 +44,7 @@ GoogleAuthCalendar = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.Logger)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleAuthCalendarKey)),
-    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleAuthSubject)),
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleAuthCalendarUser)),
     tslib_1.__metadata("design:paramtypes", [Object, Object, String])
 ], GoogleAuthCalendar);
 exports.GoogleAuthCalendar = GoogleAuthCalendar;

@@ -1,8 +1,10 @@
+// import { base32Decode, base32Encode } from '@ctrl/ts-base32';
 import { isEqual } from 'lodash';
-import { encode, decode } from '@januswel/base32';
+// import { encode, decode } from '@januswel/base32';
 import { admin_directory_v1, calendar_v3 } from 'googleapis';
 import { inject, injectable, optional } from 'inversify';
 import { iterate } from 'iterare';
+import { base32hex } from 'rfc4648';
 import {
   DeepReadonly, DeepReadonlyGuardedMap,
   IGuardedMap, IReadonlyGuardedMap,
@@ -70,7 +72,7 @@ export class GoogleUtilsService {
   eventColorToId: Map<string, string>;
 
   constructor(
-    @inject(TYPES.GoogleAuthSubject) subject: string,
+    @inject(TYPES.GoogleAuthAdminSubject) subject: string,
     @inject(TYPES.GoogleEntityIdPrefix) idPrefix: Nullable<string>,
     @inject(TYPES.GoogleGroupEmailPrefix) groupEmailPrefix: Nullable<string>,
     @inject(TYPES.CistBaseApiUrl) @optional() cistBaseUrl: Optional<string>,
@@ -232,7 +234,6 @@ export class GoogleUtilsService {
     }
     const type = context.types.get(cistEvent.type);
     const subject = context.subjects.get(cistEvent.subject_id);
-    const title = `${subject.brief} ${cistEvent.auditory} ${type.short_name}`;
     const event: Schema$Event = {
       anyoneCanAddSelf: false,
       attendeesOmitted: false,
@@ -245,10 +246,6 @@ export class GoogleUtilsService {
       ),
       extendedProperties: {
         shared: getEventSharedExtendedProperties(cistEvent, context, subject)
-      },
-      gadget: {
-        title,
-        type: cistEvent.type.toString(), // TODO: check if allowed
       },
       guestsCanInviteOthers: false,
       guestsCanModify: false,
@@ -272,7 +269,7 @@ export class GoogleUtilsService {
       },
       endTimeUnspecified: false,
       status: 'confirmed',
-      summary: getEventSummary(title, cistEvent, context.googleGroups),
+      summary: getEventSummary(cistEvent, context.googleGroups, subject, type),
       transparency: 'opaque',
       visibility: 'public',
     };
@@ -336,37 +333,18 @@ export class GoogleUtilsService {
         };
       }
     }
-    const gadgetType = cistEvent.type.toString();
-    const title = `${subject.brief} ${cistEvent.auditory} ${type.short_name}`;
-    if (!event.gadget) {
-      eventPatch.gadget = {
-        title,
-        type: gadgetType, // TODO: check if allowed
-      };
-      hasChanges = true;
-    } else {
-      const gadget = {} as Record<string, string>;
-      let gadgetChanged = false;
-      if (title !== event.gadget.title) {
-        gadget.title = title;
-        gadgetChanged = true;
-      }
-      if (gadgetType !== event.gadget.type) {
-        gadget.type = gadgetType;
-        gadgetChanged = true;
-      }
-      if (gadgetChanged) {
-        eventPatch.gadget = gadget;
-        hasChanges = true;
-      }
-    }
     const id = eventHashToEventId(cistEventHash);
     if (id !== event.id) {
       eventPatch.id = id;
       hasChanges = true;
     }
     // FIXME: add start & end check
-    const summary = getEventSummary(title, cistEvent, context.googleGroups);
+    const summary = getEventSummary(
+      cistEvent,
+      context.googleGroups,
+      subject,
+      type,
+    );
     if (summary !== event.summary) {
       eventPatch.summary = summary;
       hasChanges = true;
@@ -573,11 +551,12 @@ export function getEventRoomShortName(cistEvent: DeepReadonly<CistEvent>) {
 }
 
 export function getEventSummary(
-  title: string,
   cistEvent: DeepReadonly<CistEvent>,
   googleGroups: DeepReadonlyGuardedMap<number, Schema$Group>,
+  subject: DeepReadonly<CistSubject>,
+  type: DeepReadonly<CistEventType>,
 ) {
-  return `${title}, ${iterate(cistEvent.groups).map(g => googleGroups.get(g).name).join(', ')}`;
+  return `${subject.brief} ${cistEvent.auditory} ${type.short_name}, ${iterate(cistEvent.groups).map(g => googleGroups.get(g).name).join(', ')}`;
 }
 
 export function hashCistEvent(cistEvent: DeepReadonly<CistEvent>) {
@@ -585,7 +564,12 @@ export function hashCistEvent(cistEvent: DeepReadonly<CistEvent>) {
 } // t${cistEvent.teachers.join('s')} - FIXME: add if needed
 
 export function tryGetGoogleEventHash(googleEvent: DeepReadonly<Schema$Event>) {
-  return !googleEvent.id ? null : decode(googleEvent.id);
+  return !googleEvent.id
+    ? null
+    : Buffer.from(base32hex.parse(
+      googleEvent.id.toUpperCase(),
+      { out: Buffer, loose: true },
+    )).toString('utf8');
 }
 export function hashGoogleEvent(googleEvent: DeepReadonly<Schema$Event>) { // FIXME: add check for google event hash
   if (
@@ -615,7 +599,8 @@ export function hashGoogleEvent(googleEvent: DeepReadonly<Schema$Event>) { // FI
   }t${sharedProperties.teacherIds.split(',').join('s')}`;
 }
 export function eventHashToEventId(eventHash: string) {
-  return encode(eventHash);
+  return base32hex.stringify(Buffer.from(eventHash, 'utf8'), { pad: false })
+    .toLowerCase();
 }
 
 export function getGoogleEventColor(eventType: EventType) {

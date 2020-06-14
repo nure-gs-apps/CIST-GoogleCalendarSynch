@@ -400,6 +400,7 @@ export function addTypesToContainer(
       .to(GoogleAuthCalendar);
     types.add(TYPES.Logger);
     types.add(TYPES.GoogleAuthCalendarKey);
+    types.add(TYPES.GoogleAuthCalendarUser);
   }
 
   if (
@@ -443,7 +444,7 @@ export function addTypesToContainer(
   ) {
     container.bind<GoogleUtilsService>(TYPES.GoogleUtils)
       .to(GoogleUtilsService);
-    types.add(TYPES.GoogleAuthSubject);
+    types.add(TYPES.GoogleAuthAdminSubject);
     types.add(TYPES.GoogleEntityIdPrefix);
     types.add(TYPES.GoogleGroupEmailPrefix);
     types.add(TYPES.CistBaseApiUrl);
@@ -567,13 +568,25 @@ export function addTypesToContainer(
 
   if (
     (
-      allRequired || types.has(TYPES.GoogleAuthSubject)
+      allRequired || types.has(TYPES.GoogleAuthAdminSubject)
     )
-    && !skip.has(TYPES.GoogleAuthSubject)
-    && !container.isBound(TYPES.GoogleAuthSubject)
+    && !skip.has(TYPES.GoogleAuthAdminSubject)
+    && !container.isBound(TYPES.GoogleAuthAdminSubject)
   ) {
-    container.bind<string>(TYPES.GoogleAuthSubject).toConstantValue(
+    container.bind<string>(TYPES.GoogleAuthAdminSubject).toConstantValue(
       getConfig().google.auth.adminSubjectEmail,
+    );
+  }
+
+  if (
+    (
+      allRequired || types.has(TYPES.GoogleAuthCalendarUser)
+    )
+    && !skip.has(TYPES.GoogleAuthCalendarUser)
+    && !container.isBound(TYPES.GoogleAuthCalendarUser)
+  ) {
+    container.bind<string>(TYPES.GoogleAuthCalendarUser).toConstantValue(
+      getConfig().google.auth.calendarUserEmail,
     );
   }
 

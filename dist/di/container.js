@@ -271,6 +271,7 @@ function addTypesToContainer(options) {
             .to(google_auth_calendar_1.GoogleAuthCalendar);
         types.add(types_1.TYPES.Logger);
         types.add(types_1.TYPES.GoogleAuthCalendarKey);
+        types.add(types_1.TYPES.GoogleAuthCalendarUser);
     }
     if ((allRequired || types.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter))
         && !skip.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiter)
@@ -295,7 +296,7 @@ function addTypesToContainer(options) {
         && !container.isBound(types_1.TYPES.GoogleUtils)) {
         container.bind(types_1.TYPES.GoogleUtils)
             .to(google_utils_service_1.GoogleUtilsService);
-        types.add(types_1.TYPES.GoogleAuthSubject);
+        types.add(types_1.TYPES.GoogleAuthAdminSubject);
         types.add(types_1.TYPES.GoogleEntityIdPrefix);
         types.add(types_1.TYPES.GoogleGroupEmailPrefix);
         types.add(types_1.TYPES.CistBaseApiUrl);
@@ -359,10 +360,15 @@ function addTypesToContainer(options) {
         container.bind(types_1.TYPES.GoogleAuthCalendarKey)
             .toConstantValue(config_1.getConfig().google.auth.calendarKey);
     }
-    if ((allRequired || types.has(types_1.TYPES.GoogleAuthSubject))
-        && !skip.has(types_1.TYPES.GoogleAuthSubject)
-        && !container.isBound(types_1.TYPES.GoogleAuthSubject)) {
-        container.bind(types_1.TYPES.GoogleAuthSubject).toConstantValue(config_1.getConfig().google.auth.adminSubjectEmail);
+    if ((allRequired || types.has(types_1.TYPES.GoogleAuthAdminSubject))
+        && !skip.has(types_1.TYPES.GoogleAuthAdminSubject)
+        && !container.isBound(types_1.TYPES.GoogleAuthAdminSubject)) {
+        container.bind(types_1.TYPES.GoogleAuthAdminSubject).toConstantValue(config_1.getConfig().google.auth.adminSubjectEmail);
+    }
+    if ((allRequired || types.has(types_1.TYPES.GoogleAuthCalendarUser))
+        && !skip.has(types_1.TYPES.GoogleAuthCalendarUser)
+        && !container.isBound(types_1.TYPES.GoogleAuthCalendarUser)) {
+        container.bind(types_1.TYPES.GoogleAuthCalendarUser).toConstantValue(config_1.getConfig().google.auth.calendarUserEmail);
     }
     if ((allRequired || types.has(types_1.TYPES.GoogleEntityIdPrefix))
         && !skip.has(types_1.TYPES.GoogleEntityIdPrefix)

@@ -31,7 +31,7 @@ export class GoogleAuthAdminDirectory implements IAsyncInitializable, IGoogleAut
       TYPES.GoogleAuthAdminDirectoryKey
     ) key: GoogleAuthConfigKey,
     @inject(
-      TYPES.GoogleAuthSubject
+      TYPES.GoogleAuthAdminSubject
     ) subject: string,
   ) {
     this._authClient = null;

@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
+// import { base32Decode, base32Encode } from '@ctrl/ts-base32';
 const lodash_1 = require("lodash");
-const base32_1 = require("@januswel/base32");
 const inversify_1 = require("inversify");
 const iterare_1 = require("iterare");
+const rfc4648_1 = require("rfc4648");
 const types_1 = require("../../di/types");
 const common_1 = require("../../utils/common");
 const translit_1 = require("../../utils/translit");
@@ -187,7 +188,6 @@ let GoogleUtilsService = class GoogleUtilsService {
         }
         const type = context.types.get(cistEvent.type);
         const subject = context.subjects.get(cistEvent.subject_id);
-        const title = `${subject.brief} ${cistEvent.auditory} ${type.short_name}`;
         const event = {
             anyoneCanAddSelf: false,
             attendeesOmitted: false,
@@ -195,10 +195,6 @@ let GoogleUtilsService = class GoogleUtilsService {
             description: this.createEventDescription(cistEvent, context, subject, type),
             extendedProperties: {
                 shared: getEventSharedExtendedProperties(cistEvent, context, subject)
-            },
-            gadget: {
-                title,
-                type: cistEvent.type.toString(),
             },
             guestsCanInviteOthers: false,
             guestsCanModify: false,
@@ -222,7 +218,7 @@ let GoogleUtilsService = class GoogleUtilsService {
             },
             endTimeUnspecified: false,
             status: 'confirmed',
-            summary: getEventSummary(title, cistEvent, context.googleGroups),
+            summary: getEventSummary(cistEvent, context.googleGroups, subject, type),
             transparency: 'opaque',
             visibility: 'public',
         };
@@ -270,38 +266,13 @@ let GoogleUtilsService = class GoogleUtilsService {
                 };
             }
         }
-        const gadgetType = cistEvent.type.toString();
-        const title = `${subject.brief} ${cistEvent.auditory} ${type.short_name}`;
-        if (!event.gadget) {
-            eventPatch.gadget = {
-                title,
-                type: gadgetType,
-            };
-            hasChanges = true;
-        }
-        else {
-            const gadget = {};
-            let gadgetChanged = false;
-            if (title !== event.gadget.title) {
-                gadget.title = title;
-                gadgetChanged = true;
-            }
-            if (gadgetType !== event.gadget.type) {
-                gadget.type = gadgetType;
-                gadgetChanged = true;
-            }
-            if (gadgetChanged) {
-                eventPatch.gadget = gadget;
-                hasChanges = true;
-            }
-        }
         const id = eventHashToEventId(cistEventHash);
         if (id !== event.id) {
             eventPatch.id = id;
             hasChanges = true;
         }
         // FIXME: add start & end check
-        const summary = getEventSummary(title, cistEvent, context.googleGroups);
+        const summary = getEventSummary(cistEvent, context.googleGroups, subject, type);
         if (summary !== event.summary) {
             eventPatch.summary = summary;
             hasChanges = true;
@@ -354,7 +325,7 @@ let GoogleUtilsService = class GoogleUtilsService {
 };
 GoogleUtilsService = tslib_1.__decorate([
     inversify_1.injectable(),
-    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuthSubject)),
+    tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleAuthAdminSubject)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleEntityIdPrefix)),
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleGroupEmailPrefix)),
     tslib_1.__param(3, inversify_1.inject(types_1.TYPES.CistBaseApiUrl)), tslib_1.__param(3, inversify_1.optional()),
@@ -490,8 +461,8 @@ function getEventRoomShortName(cistEvent) {
     return cistEvent.groups.join(',');
 }
 exports.getEventRoomShortName = getEventRoomShortName;
-function getEventSummary(title, cistEvent, googleGroups) {
-    return `${title}, ${iterare_1.iterate(cistEvent.groups).map(g => googleGroups.get(g).name).join(', ')}`;
+function getEventSummary(cistEvent, googleGroups, subject, type) {
+    return `${subject.brief} ${cistEvent.auditory} ${type.short_name}, ${iterare_1.iterate(cistEvent.groups).map(g => googleGroups.get(g).name).join(', ')}`;
 }
 exports.getEventSummary = getEventSummary;
 function hashCistEvent(cistEvent) {
@@ -499,7 +470,9 @@ function hashCistEvent(cistEvent) {
 } // t${cistEvent.teachers.join('s')} - FIXME: add if needed
 exports.hashCistEvent = hashCistEvent;
 function tryGetGoogleEventHash(googleEvent) {
-    return !googleEvent.id ? null : base32_1.decode(googleEvent.id);
+    return !googleEvent.id
+        ? null
+        : Buffer.from(rfc4648_1.base32hex.parse(googleEvent.id.toUpperCase(), { out: Buffer, loose: true })).toString('utf8');
 }
 exports.tryGetGoogleEventHash = tryGetGoogleEventHash;
 function hashGoogleEvent(googleEvent) {
@@ -520,7 +493,8 @@ function hashGoogleEvent(googleEvent) {
 }
 exports.hashGoogleEvent = hashGoogleEvent;
 function eventHashToEventId(eventHash) {
-    return base32_1.encode(eventHash);
+    return rfc4648_1.base32hex.stringify(Buffer.from(eventHash, 'utf8'), { pad: false })
+        .toLowerCase();
 }
 exports.eventHashToEventId = eventHashToEventId;
 function getGoogleEventColor(eventType) {

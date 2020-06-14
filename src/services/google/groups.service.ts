@@ -26,7 +26,7 @@ export interface IGroupsTaskContext {
 
 @injectable()
 export class GroupsService {
-  static readonly ROOMS_PAGE_SIZE = 200; // max limit
+  static readonly GROUPS_PAGE_SIZE = 200; // max limit
   private readonly _directory: GoogleApiAdminDirectory;
   private readonly _quotaLimiter: QuotaLimiterService;
   private readonly _utils: GoogleUtilsService;
@@ -224,7 +224,7 @@ export class GroupsService {
     do {
       groupsPage = await this._list({
         customer,
-        maxResults: GroupsService.ROOMS_PAGE_SIZE,
+        maxResults: GroupsService.GROUPS_PAGE_SIZE,
         pageToken: groupsPage ? groupsPage.data.nextPageToken : null, // BUG in typedefs
       } as any);
       if (groupsPage.data.groups) {

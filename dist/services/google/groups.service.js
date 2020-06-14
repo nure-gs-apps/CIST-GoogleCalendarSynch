@@ -191,7 +191,7 @@ let GroupsService = GroupsService_1 = class GroupsService {
         do {
             groupsPage = await this._list({
                 customer: constants_1.customer,
-                maxResults: GroupsService_1.ROOMS_PAGE_SIZE,
+                maxResults: GroupsService_1.GROUPS_PAGE_SIZE,
                 pageToken: groupsPage ? groupsPage.data.nextPageToken : null,
             });
             if (groupsPage.data.groups) {
@@ -262,7 +262,7 @@ let GroupsService = GroupsService_1 = class GroupsService {
         return hasChanges ? groupPatch : null;
     }
 };
-Object.defineProperty(GroupsService, "ROOMS_PAGE_SIZE", {
+Object.defineProperty(GroupsService, "GROUPS_PAGE_SIZE", {
     enumerable: true,
     configurable: true,
     writable: true,

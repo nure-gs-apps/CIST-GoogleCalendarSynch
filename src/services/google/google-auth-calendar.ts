@@ -31,15 +31,14 @@ export class GoogleAuthCalendar implements IAsyncInitializable, IGoogleAuth {
       TYPES.GoogleAuthCalendarKey
     ) key: GoogleAuthConfigKey,
     @inject(
-      TYPES.GoogleAuthSubject
-    ) subject: string,
+      TYPES.GoogleAuthCalendarUser
+    ) calendarUser: string,
   ) {
     this._authClient = null;
-    // setDefaultSubject(subject);
     this[ASYNC_INIT] = (key ? createAuthWithFallback(
       key,
       calendarAuthScopes.slice(),
-      undefined, // subject,
+      calendarUser,
       (error, keyPath) => {
         if (keyPath) {
           logger.warn(l(`Failed to load key from file "${keyPath}" due to error:`), error);

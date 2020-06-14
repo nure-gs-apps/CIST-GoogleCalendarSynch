@@ -344,11 +344,10 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
                 {
                     assertNoStep(step);
                     const context = (_g = this._eventsContext) !== null && _g !== void 0 ? _g : await this.loadEventsContext();
-                    const loadEventsChunk = await this.getEventsService()
-                        .loadEventsByChunksToContext(context)
-                        .next();
+                    const hasMoreEvents = await this.getEventsService()
+                        .loadEventsPageToContext(context);
                     const events = this.getEventsService();
-                    if (!loadEventsChunk.done) {
+                    if (hasMoreEvents) {
                         this.emit(TaskStepExecutorEventNames.NewTask, events.createBaseContextTask());
                     }
                     else {
