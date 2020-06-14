@@ -1,7 +1,7 @@
 import { Sema } from 'async-sema/lib';
 import { EventEmitter } from 'events';
-import { inject, injectable } from 'inversify';
-import { DeepReadonly, Nullable, Optional } from '../@types';
+import { inject, injectable, interfaces } from 'inversify';
+import { DeepReadonly, DeepReadonlyArray, Nullable, Optional } from '../@types';
 import {
   CistGroupsResponse,
   CistRoomsResponse,
@@ -12,6 +12,7 @@ import { IEventsTaskContextStorage } from '../@types/google';
 import { ILogger } from '../@types/logging';
 import { Disposer, IDisposable, isDisposable } from '../@types/object';
 import { ITaskDefinition, ITaskStepExecutor, TaskType } from '../@types/tasks';
+import { CistCachePriorities } from '../config/types';
 import { ensureInjectable, IContainer, TYPES } from '../di/types';
 import {
   BuildingsService,
@@ -36,6 +37,12 @@ import {
   IRoomsTaskContext,
   RoomsService,
 } from '../services/google/rooms.service';
+import {
+  CistClientEntities,
+  getCistCachedClientTypes,
+  getCistCachedClientTypesForArgs,
+} from '../utils/jobs';
+import ServiceIdentifier = interfaces.ServiceIdentifier;
 
 export enum TaskStepExecutorEventNames {
   NewTask = 'new-task'
@@ -654,6 +661,118 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutorW
     this._buildingsService = null;
     return Promise.all(promises);
   }
+}
+
+export function getRequiredServicesFromTasks(
+  tasks: DeepReadonlyArray<ITaskDefinition<any>>,
+  cistCachePriorities: DeepReadonly<CistCachePriorities>,
+  cistEntitiesToOperateOn?: DeepReadonly<CistClientEntities>,
+): ServiceIdentifier<any>[] {
+  const types = [TYPES.TaskStepExecutor] as ServiceIdentifier<any>[];
+  if (tasks.some(({ taskType }) => (
+    taskType === TaskType.DeferredDeleteIrrelevantBuildings
+    || taskType === TaskType.DeferredEnsureBuildings
+    || taskType === TaskType.EnsureBuildings
+    || taskType === TaskType.DeleteIrrelevantBuildings
+  ))) {
+    types.push(TYPES.BuildingsService);
+  }
+
+  if (tasks.some(({ taskType }) => (
+    taskType === TaskType.DeferredDeleteIrrelevantRooms
+    || taskType === TaskType.DeferredEnsureRooms
+    || taskType === TaskType.EnsureRooms
+    || taskType === TaskType.DeleteIrrelevantRooms
+  ))) {
+    types.push(TYPES.RoomsService);
+  }
+
+  if (tasks.some(({ taskType }) => (
+    taskType === TaskType.DeferredDeleteIrrelevantGroups
+    || taskType === TaskType.DeferredEnsureGroups
+    || taskType === TaskType.EnsureGroups
+    || taskType === TaskType.DeleteIrrelevantGroups
+  ))) {
+    types.push(TYPES.GroupsService);
+  }
+
+  if (tasks.some(({ taskType }) => (
+    taskType === TaskType.DeferredEnsureEvents
+    || taskType === TaskType.DeferredDeleteIrrelevantEvents
+    || taskType === TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+    || taskType === TaskType.InitializeEventsBaseContext
+    || taskType === TaskType.InitializeEnsureEventsContext
+    || taskType === TaskType.InitializeRelevantEventsContext
+    || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+    || taskType === TaskType.InsertEvents
+    || taskType === TaskType.PatchEvents
+    || taskType === TaskType.DeleteIrrelevantEvents
+  ))) {
+    types.push(TYPES.EventsService);
+  }
+
+  if (tasks.some(({ taskType, steps }) => (
+    taskType === TaskType.InitializeEventsBaseContext
+    || taskType === TaskType.InitializeEnsureEventsContext
+    || taskType === TaskType.InitializeRelevantEventsContext
+    || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+    || taskType === TaskType.InsertEvents
+    || taskType === TaskType.PatchEvents
+    || (
+      taskType === TaskType.DeleteIrrelevantEvents
+      && (!steps || steps.length === 0)
+    )
+    || taskType === TaskType.ClearEventsContext
+  ))) {
+    types.push(TYPES.GoogleCalendarEventsTaskContextStorage);
+  }
+
+  if (tasks.some(({ taskType }) => (
+    taskType === TaskType.InitializeEnsureEventsContext
+    || taskType === TaskType.InitializeRelevantEventsContext
+    || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+  ))) {
+    types.push(TYPES.GoogleEventContextService);
+  }
+
+  if (tasks.some(({ taskType }) => (
+    taskType === TaskType.DeferredEnsureBuildings
+    || taskType === TaskType.DeferredDeleteIrrelevantBuildings
+    || taskType === TaskType.EnsureBuildings
+    // || taskType === TaskType.DeleteIrrelevantBuildings
+    || taskType === TaskType.DeferredEnsureRooms
+    || taskType === TaskType.DeferredDeleteIrrelevantRooms
+    || taskType === TaskType.EnsureRooms
+    // || taskType === TaskType.DeleteIrrelevantRooms
+    || taskType === TaskType.DeferredEnsureGroups
+    || taskType === TaskType.DeferredDeleteIrrelevantGroups
+    || taskType === TaskType.EnsureGroups
+    // || taskType === TaskType.DeleteIrrelevantGroups
+    || taskType === TaskType.InitializeEventsBaseContext
+    || taskType === TaskType.InitializeEnsureEventsContext
+    || taskType === TaskType.InitializeRelevantEventsContext
+    || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+  ))) {
+    types.push(...(
+      cistEntitiesToOperateOn
+        ? getCistCachedClientTypesForArgs({
+          auditories: cistEntitiesToOperateOn.auditories,
+          groups: cistEntitiesToOperateOn.groups
+            || tasks.some(({ taskType }) => (
+              taskType === TaskType.InitializeEventsBaseContext
+            )),
+          events: tasks.some(({ taskType }) => (
+            taskType === TaskType.InitializeEnsureEventsContext
+            || taskType === TaskType.InitializeRelevantEventsContext
+            || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+          )),
+        }, cistCachePriorities)
+        : getCistCachedClientTypes(
+          cistCachePriorities
+        )
+    ));
+  }
+  return types;
 }
 
 function assertGoogleBuildingId(step: unknown): asserts step is string {

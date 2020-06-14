@@ -10,6 +10,7 @@ const tasks_1 = require("../@types/tasks");
 const types_1 = require("../di/types");
 const errors_1 = require("../services/google/errors");
 const events_service_1 = require("../services/google/events.service");
+const jobs_1 = require("../utils/jobs");
 var TaskStepExecutorEventNames;
 (function (TaskStepExecutorEventNames) {
     TaskStepExecutorEventNames["NewTask"] = "new-task";
@@ -589,6 +590,84 @@ TaskStepExecutor = tslib_1.__decorate([
     tslib_1.__metadata("design:paramtypes", [Object, Object])
 ], TaskStepExecutor);
 exports.TaskStepExecutor = TaskStepExecutor;
+function getRequiredServicesFromTasks(tasks, cistCachePriorities, cistEntitiesToOperateOn) {
+    const types = [types_1.TYPES.TaskStepExecutor];
+    if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
+        || taskType === tasks_1.TaskType.DeferredEnsureBuildings
+        || taskType === tasks_1.TaskType.EnsureBuildings
+        || taskType === tasks_1.TaskType.DeleteIrrelevantBuildings))) {
+        types.push(types_1.TYPES.BuildingsService);
+    }
+    if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredDeleteIrrelevantRooms
+        || taskType === tasks_1.TaskType.DeferredEnsureRooms
+        || taskType === tasks_1.TaskType.EnsureRooms
+        || taskType === tasks_1.TaskType.DeleteIrrelevantRooms))) {
+        types.push(types_1.TYPES.RoomsService);
+    }
+    if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredDeleteIrrelevantGroups
+        || taskType === tasks_1.TaskType.DeferredEnsureGroups
+        || taskType === tasks_1.TaskType.EnsureGroups
+        || taskType === tasks_1.TaskType.DeleteIrrelevantGroups))) {
+        types.push(types_1.TYPES.GroupsService);
+    }
+    if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureEvents
+        || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantEvents
+        || taskType === tasks_1.TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+        || taskType === tasks_1.TaskType.InitializeEventsBaseContext
+        || taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+        || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+        || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext
+        || taskType === tasks_1.TaskType.InsertEvents
+        || taskType === tasks_1.TaskType.PatchEvents
+        || taskType === tasks_1.TaskType.DeleteIrrelevantEvents))) {
+        types.push(types_1.TYPES.EventsService);
+    }
+    if (tasks.some(({ taskType, steps }) => (taskType === tasks_1.TaskType.InitializeEventsBaseContext
+        || taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+        || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+        || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext
+        || taskType === tasks_1.TaskType.InsertEvents
+        || taskType === tasks_1.TaskType.PatchEvents
+        || (taskType === tasks_1.TaskType.DeleteIrrelevantEvents
+            && (!steps || steps.length === 0))
+        || taskType === tasks_1.TaskType.ClearEventsContext))) {
+        types.push(types_1.TYPES.GoogleCalendarEventsTaskContextStorage);
+    }
+    if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+        || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+        || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext))) {
+        types.push(types_1.TYPES.GoogleEventContextService);
+    }
+    if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureBuildings
+        || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
+        || taskType === tasks_1.TaskType.EnsureBuildings
+        // || taskType === TaskType.DeleteIrrelevantBuildings
+        || taskType === tasks_1.TaskType.DeferredEnsureRooms
+        || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantRooms
+        || taskType === tasks_1.TaskType.EnsureRooms
+        // || taskType === TaskType.DeleteIrrelevantRooms
+        || taskType === tasks_1.TaskType.DeferredEnsureGroups
+        || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantGroups
+        || taskType === tasks_1.TaskType.EnsureGroups
+        // || taskType === TaskType.DeleteIrrelevantGroups
+        || taskType === tasks_1.TaskType.InitializeEventsBaseContext
+        || taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+        || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+        || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext))) {
+        types.push(...(cistEntitiesToOperateOn
+            ? jobs_1.getCistCachedClientTypesForArgs({
+                auditories: cistEntitiesToOperateOn.auditories,
+                groups: cistEntitiesToOperateOn.groups
+                    || tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.InitializeEventsBaseContext)),
+                events: tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+                    || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+                    || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext)),
+            }, cistCachePriorities)
+            : jobs_1.getCistCachedClientTypes(cistCachePriorities)));
+    }
+    return types;
+}
+exports.getRequiredServicesFromTasks = getRequiredServicesFromTasks;
 function assertGoogleBuildingId(step) {
     assertTaskStep(step);
     if (typeof step !== 'string') {

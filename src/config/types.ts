@@ -76,6 +76,8 @@ export interface IFullAppConfig {
 
 export type AppConfig = IFullAppConfig['ncgc'];
 
+export type CistCachePriorities = AppConfig['caching']['cist']['priorities'];
+
 export type GoogleAuthConfigKey = Nullable<GoogleAuthKey>;
 
 export type CistCacheConfig = AppConfig['caching']['cist'];

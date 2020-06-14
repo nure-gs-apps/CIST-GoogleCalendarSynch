@@ -1,5 +1,5 @@
 import { Container, interfaces } from 'inversify';
-import { DeepReadonly, DeepReadonlyArray, Nullable, Optional } from '../@types';
+import { DeepReadonly, Nullable, Optional } from '../@types';
 import { IEntitiesToOperateOn } from '../@types/jobs';
 import { IErrorLogger, IInfoLogger, IWarnLogger } from '../@types/logging';
 import {
@@ -34,13 +34,10 @@ import {
 import { TaskProgressFileBackend } from '../tasks/progress/file';
 import { TaskRunner } from '../tasks/runner';
 import {
+  getRequiredServicesFromTasks,
   TaskStepExecutor,
   TaskStepExecutorEventNames,
 } from '../tasks/task-step-executor';
-import {
-  getCistCachedClientTypes,
-  getCistCachedClientTypesForArgs,
-} from '../utils/jobs';
 import ServiceIdentifier = interfaces.ServiceIdentifier;
 
 export interface IEntitiesToRemove {
@@ -82,7 +79,16 @@ export class RunTasksJob {
         throw new TypeError('No tasks found. Please, specify either synchronization or removal.');
       }
 
-      const types = this.getRequiredServicesFromTasks(tasks);
+      const types = getRequiredServicesFromTasks(
+        tasks,
+        this._config.ncgc.caching.cist.priorities,
+        {
+          auditories: this._args.auditories
+            || this._args.deleteIrrelevantAuditories,
+          groups: this._args.groups || this._args.deleteIrrelevantGroups,
+          events: this._args.deleteIrrelevantGroups ? [] : this._args.events,
+        },
+      );
       types.push(TYPES.TaskProgressBackend);
       this._container = createContainer(this.getContainerConfig(types));
     } else {
@@ -101,7 +107,10 @@ export class RunTasksJob {
       );
 
       addTypesToContainer({
-        types: this.getRequiredServicesFromTasks(tasks)
+        types: getRequiredServicesFromTasks(
+          tasks,
+          this._config.ncgc.caching.cist.priorities,
+        ),
       });
     }
     this._container.bind<CachedCistJsonClientService>(TYPES.CistJsonClient)
@@ -126,7 +135,10 @@ export class RunTasksJob {
         }
         this._taskRunner.enqueueTask(task);
         addTypesToContainer({
-          types: this.getRequiredServicesFromTasks([task])
+          types: getRequiredServicesFromTasks(
+            [task],
+            this._config.ncgc.caching.cist.priorities,
+          ),
         });
         init = getContainerAsyncInitializer();
       },
@@ -251,108 +263,6 @@ export class RunTasksJob {
       types,
       forceNew: true
     };
-  }
-
-  protected getRequiredServicesFromTasks( // TODO: move closer to task step executor
-    tasks: DeepReadonlyArray<ITaskDefinition<any>>,
-  ): ServiceIdentifier<any>[] {
-    const types = [TYPES.TaskStepExecutor] as ServiceIdentifier<any>[];
-    if (tasks.some(({ taskType }) => (
-      taskType === TaskType.DeferredDeleteIrrelevantBuildings
-      // || taskType === TaskType.DeferredEnsureBuildings
-      || taskType === TaskType.EnsureBuildings
-      || taskType === TaskType.DeleteIrrelevantBuildings
-    ))) {
-      types.push(TYPES.BuildingsService);
-    }
-
-    if (tasks.some(({ taskType }) => (
-      taskType === TaskType.DeferredDeleteIrrelevantRooms
-      // || taskType === TaskType.DeferredEnsureRooms
-      || taskType === TaskType.EnsureRooms
-      || taskType === TaskType.DeleteIrrelevantRooms
-    ))) {
-      types.push(TYPES.RoomsService);
-    }
-
-    if (tasks.some(({ taskType }) => (
-      taskType === TaskType.DeferredDeleteIrrelevantGroups
-      // || taskType === TaskType.DeferredEnsureGroups
-      || taskType === TaskType.EnsureGroups
-      || taskType === TaskType.DeleteIrrelevantGroups
-    ))) {
-      types.push(TYPES.GroupsService);
-    }
-
-    if (tasks.some(({ taskType }) => (
-      taskType === TaskType.DeferredEnsureEvents
-      || taskType === TaskType.DeferredDeleteIrrelevantEvents
-      || taskType === TaskType.DeferredEnsureAndDeleteIrrelevantEvents
-      || taskType === TaskType.InitializeEventsBaseContext
-      || taskType === TaskType.InitializeEnsureEventsContext
-      || taskType === TaskType.InitializeRelevantEventsContext
-      || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
-      || taskType === TaskType.InsertEvents
-      || taskType === TaskType.PatchEvents
-      || taskType === TaskType.DeleteIrrelevantEvents
-    ))) {
-      types.push(TYPES.EventsService);
-    }
-
-    if (tasks.some(({ taskType, steps }) => (
-      taskType === TaskType.InitializeEventsBaseContext
-      || taskType === TaskType.InitializeEnsureEventsContext
-      || taskType === TaskType.InitializeRelevantEventsContext
-      || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
-      || taskType === TaskType.InsertEvents
-      || taskType === TaskType.PatchEvents
-      || (
-        taskType === TaskType.DeleteIrrelevantEvents
-        && (!steps || steps.length === 0)
-      )
-      || taskType === TaskType.ClearEventsContext
-    ))) {
-      types.push(TYPES.GoogleCalendarEventsTaskContextStorage);
-    }
-
-    if (tasks.some(({ taskType }) => (
-      taskType === TaskType.InitializeEnsureEventsContext
-      || taskType === TaskType.InitializeRelevantEventsContext
-      || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
-    ))) {
-      types.push(TYPES.GoogleEventContextService);
-    }
-
-    if (tasks.some(({ taskType }) => (
-      taskType === TaskType.DeferredEnsureBuildings
-      || taskType === TaskType.DeferredDeleteIrrelevantBuildings
-      || taskType === TaskType.EnsureBuildings
-      // || taskType === TaskType.DeleteIrrelevantBuildings
-      || taskType === TaskType.DeferredEnsureRooms
-      || taskType === TaskType.DeferredDeleteIrrelevantRooms
-      || taskType === TaskType.EnsureRooms
-      // || taskType === TaskType.DeleteIrrelevantRooms
-      || taskType === TaskType.DeferredEnsureGroups
-      || taskType === TaskType.DeferredDeleteIrrelevantGroups
-      || taskType === TaskType.EnsureGroups
-      // || taskType === TaskType.DeleteIrrelevantGroups
-      || taskType === TaskType.InitializeEventsBaseContext
-      || taskType === TaskType.InitializeEnsureEventsContext
-      || taskType === TaskType.InitializeRelevantEventsContext
-      || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
-    ))) {
-      types.push(...(
-        this._args
-          ? getCistCachedClientTypesForArgs(
-            this._args,
-            this._config.ncgc.caching.cist.priorities,
-          )
-          : getCistCachedClientTypes(
-            this._config.ncgc.caching.cist.priorities
-          )
-      ));
-    }
-    return types;
   }
 }
 
