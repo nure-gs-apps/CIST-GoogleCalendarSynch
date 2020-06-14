@@ -14,10 +14,10 @@ export enum TaskType {
 
   DeferredEnsureAndDeleteIrrelevantEvents = 'deferredEvents.ensure+deleteIrrelevant',
 
-  CreateEventsBaseContext = 'createEventsContext.base',
-  CreateEnsureEventsContext = 'createEventsContext.ensure',
-  CreateDeleteIrrelevantEventsContext = 'createEventsContext.deleteIrrelevant',
-  CreateEnsureAndDeleteIrrelevantEventsContext = 'createEventsContext.ensure+deleteIrrelevant',
+  InitializeEventsBaseContext = 'initializeEventsContext.base',
+  InitializeEnsureEventsContext = 'initializeEventsContext.ensure',
+  InitializeRelevantEventsContext = 'initializeEventsContext.relevant',
+  InitializeEnsureAndRelevantEventsContext = 'initializeEventsContext.ensure+relevant',
 
   EnsureBuildings = 'ensureBuildings',
   EnsureRooms = 'ensureRooms',
@@ -29,6 +29,8 @@ export enum TaskType {
   DeleteIrrelevantRooms = 'deleteIrrelevantRooms',
   DeleteIrrelevantGroups = 'deleteIrrelevantGroups',
   DeleteIrrelevantEvents = 'deleteIrrelevantEvents',
+
+  ClearEventsContext = 'clearEventsContext',
 }
 
 /**

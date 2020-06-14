@@ -11,6 +11,9 @@ const cist_json_http_client_service_1 = require("../services/cist/cist-json-http
 const cist_json_http_parser_service_1 = require("../services/cist/cist-json-http-parser.service");
 const buildings_service_1 = require("../services/google/buildings.service");
 const calendar_service_1 = require("../services/google/calendar.service");
+const event_context_service_1 = require("../services/google/event-context.service");
+const di_1 = require("../services/google/events-context-storage/di");
+const file_1 = require("../services/google/events-context-storage/file");
 const events_service_1 = require("../services/google/events.service");
 const google_api_admin_directory_1 = require("../services/google/google-api-admin-directory");
 const google_api_calendar_1 = require("../services/google/google-api-calendar");
@@ -21,8 +24,8 @@ const groups_service_1 = require("../services/google/groups.service");
 const rooms_service_1 = require("../services/google/rooms.service");
 const logger_service_1 = require("../services/logger.service");
 const quota_limiter_service_1 = require("../services/quota-limiter.service");
-const di_1 = require("../tasks/progress/di");
-const file_1 = require("../tasks/progress/file");
+const di_2 = require("../tasks/progress/di");
+const file_2 = require("../tasks/progress/file");
 const task_step_executor_1 = require("../tasks/task-step-executor");
 const common_1 = require("../utils/common");
 const types_1 = require("./types");
@@ -76,19 +79,19 @@ function addTypesToContainer(options) {
     if ((allRequired
         || types.has(types_1.TYPES.TaskProgressBackend)) && !skip.has(types_1.TYPES.TaskProgressBackend)) {
         container.bind(types_1.TYPES.TaskProgressBackend)
-            .toDynamicValue(di_1.getTaskProgressBackend);
+            .toDynamicValue(di_2.getTaskProgressBackend);
         types.add(types_1.TYPES.TaskProgressBackendType);
     }
     if ((allRequired
         || types.has(types_1.TYPES.TaskProgressBackendType)) && !skip.has(types_1.TYPES.TaskProgressBackendType)) {
         container.bind(types_1.TYPES.TaskProgressBackendType)
             .toConstantValue(config_1.getConfig().tasks.progress.backend);
-        types.add(di_1.getTaskProgressBackendSymbol(config_1.getConfig().tasks.progress.backend));
+        types.add(di_2.getTaskProgressBackendSymbol(config_1.getConfig().tasks.progress.backend));
     }
     if ((allRequired
         || types.has(types_1.TYPES.TaskProgressFileBackend)) && !skip.has(types_1.TYPES.TaskProgressFileBackend)) {
         container.bind(types_1.TYPES.TaskProgressFileBackend)
-            .to(file_1.TaskProgressFileBackend);
+            .to(file_2.TaskProgressFileBackend);
         types.add(types_1.TYPES.TaskProgressFileBackendFileName);
     }
     if ((allRequired || types.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) && !skip.has(cached_cist_json_client_service_1.CachedCistJsonClientService)) {
@@ -135,6 +138,17 @@ function addTypesToContainer(options) {
         types.add(types_1.TYPES.Logger);
     }
     if ((allRequired
+        || types.has(types_1.TYPES.GoogleEventContextService)
+        || types.has(event_context_service_1.EventContextService))
+        && !skip.has(event_context_service_1.EventContextService)
+        && !skip.has(types_1.TYPES.GoogleEventContextService)) {
+        container.bind(types_1.TYPES.GoogleEventContextService)
+            .to(event_context_service_1.EventContextService);
+        types.add(types_1.TYPES.RoomsService);
+        types.add(types_1.TYPES.GroupsService);
+        types.add(types_1.TYPES.GoogleUtils);
+    }
+    if ((allRequired
         || types.has(types_1.TYPES.RoomsService)
         || types.has(rooms_service_1.RoomsService))
         && !skip.has(rooms_service_1.RoomsService)
@@ -169,7 +183,25 @@ function addTypesToContainer(options) {
         types.add(types_1.TYPES.GoogleCalendarQuotaLimiterConfig);
         types.add(types_1.TYPES.GoogleUtils);
         types.add(types_1.TYPES.Logger);
-        types.add(types_1.TYPES.GoogleCalendarConfig);
+        types.add(types_1.TYPES.GoogleCalendarTimeZone);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.GoogleEventContextService)) && !skip.has(types_1.TYPES.GoogleEventContextService)) {
+        container.bind(types_1.TYPES.GoogleEventContextService)
+            .toDynamicValue(di_1.getEventsTaskContextStorage);
+        types.add(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType);
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType)) && !skip.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType)) {
+        const type = config_1.getConfig().google.calendar.eventsTaskContextStorage.backend;
+        container.bind(types_1.TYPES.GoogleCalendarEventsTaskContextStorageType)
+            .toConstantValue(type);
+        types.add(di_1.getEventsTaskContextStorageSymbol(type));
+    }
+    if ((allRequired
+        || types.has(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage)) && !skip.has(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage)) {
+        container.bind(types_1.TYPES.GoogleCalendarEventsFileTaskContextStorage).to(file_1.FileEventsTaskContextStorage);
+        types.add(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName);
     }
     if ((allRequired
         || types.has(types_1.TYPES.GoogleApiAdminDirectory)
@@ -231,7 +263,7 @@ function addTypesToContainer(options) {
         types.add(types_1.TYPES.GoogleEntityIdPrefix);
         types.add(types_1.TYPES.GoogleGroupEmailPrefix);
         types.add(types_1.TYPES.CistBaseApiUrl);
-        types.add(types_1.TYPES.GoogleCalendarConfig);
+        types.add(types_1.TYPES.GoogleCalendarTimeZone);
         types.add(types_1.TYPES.NureAddress);
     }
     if ((allRequired || types.has(types_1.TYPES.Container)) && !skip.has(types_1.TYPES.Container)) {
@@ -280,18 +312,24 @@ function addTypesToContainer(options) {
     if ((allRequired || types.has(types_1.TYPES.GoogleGroupEmailPrefix)) && !skip.has(types_1.TYPES.GoogleGroupEmailPrefix)) {
         container.bind(types_1.TYPES.GoogleGroupEmailPrefix).toConstantValue(config_1.getConfig().google.groupEmailPrefix);
     }
+    if ((allRequired
+        || types.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName)) && !skip.has(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName)) {
+        container.bind(types_1.TYPES.GoogleCalendarEventsTaskContextStorageFileName)
+            .toConstantValue(common_1.PathUtils.getPath(config_1.getConfig().google.calendar
+            .eventsTaskContextStorage.backendConfigs[tasks_1.TaskProgressBackend.File]));
+    }
+    if ((allRequired || types.has(types_1.TYPES.GoogleCalendarTimeZone)) && !skip.has(types_1.TYPES.GoogleCalendarTimeZone)) {
+        container.bind(types_1.TYPES.GoogleCalendarTimeZone).toConstantValue(config_1.getConfig().google.calendar.timeZone);
+    }
+    if ((allRequired || types.has(types_1.TYPES.NureAddress)) && !skip.has(types_1.TYPES.NureAddress)) {
+        container.bind(types_1.TYPES.NureAddress)
+            .toConstantValue(config_1.getConfig().nureAddress);
+    }
     if ((allRequired || types.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig)) && !skip.has(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig)) {
         container.bind(types_1.TYPES.GoogleAdminDirectoryQuotaLimiterConfig).toConstantValue(config_1.getConfig().google.quotas.adminDirectoryApi);
     }
     if ((allRequired || types.has(types_1.TYPES.GoogleCalendarQuotaLimiterConfig)) && !skip.has(types_1.TYPES.GoogleCalendarQuotaLimiterConfig)) {
         container.bind(types_1.TYPES.GoogleCalendarQuotaLimiterConfig).toConstantValue(config_1.getConfig().google.quotas.calendarApi);
-    }
-    if ((allRequired || types.has(types_1.TYPES.GoogleCalendarConfig)) && !skip.has(types_1.TYPES.GoogleCalendarConfig)) {
-        container.bind(types_1.TYPES.GoogleCalendarConfig).toConstantValue(config_1.getConfig().google.calendar);
-    }
-    if ((allRequired || types.has(types_1.TYPES.NureAddress)) && !skip.has(types_1.TYPES.NureAddress)) {
-        container.bind(types_1.TYPES.NureAddress)
-            .toConstantValue(config_1.getConfig().nureAddress);
     }
     // Unchecked
     container.bind(types_1.TYPES.CalendarService).to(calendar_service_1.CalendarService);

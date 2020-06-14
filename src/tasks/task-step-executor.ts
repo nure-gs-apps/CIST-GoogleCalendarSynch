@@ -6,6 +6,7 @@ import {
   CistGroupsResponse,
   CistRoomsResponse,
   ICistJsonClient,
+  TimetableType,
 } from '../@types/cist';
 import { IEventsTaskContextStorage } from '../@types/google';
 import { ILogger } from '../@types/logging';
@@ -18,8 +19,14 @@ import {
 } from '../services/google/buildings.service';
 import { FatalError } from '../services/google/errors';
 import {
+  EventContextService,
+  EventGoogleContext,
+} from '../services/google/event-context.service';
+import {
   EventsService,
   IEventsTaskContextBase,
+  isEnsureEventsTaskContext,
+  isRelevantEventsTaskContext,
 } from '../services/google/events.service';
 import {
   GroupsService,
@@ -61,13 +68,18 @@ const taskTypesOrder = [
     TaskType.DeferredDeleteIrrelevantEvents,
     TaskType.DeferredEnsureAndDeleteIrrelevantEvents,
   ],
-  [TaskType.CreateEventsBaseContext],
+  [TaskType.InitializeEventsBaseContext],
   [
-    TaskType.CreateEnsureEventsContext,
-    TaskType.CreateDeleteIrrelevantEventsContext,
-    TaskType.CreateEnsureAndDeleteIrrelevantEventsContext,
+    TaskType.InitializeEnsureEventsContext,
+    TaskType.InitializeRelevantEventsContext,
+    TaskType.InitializeEnsureAndRelevantEventsContext,
   ],
-  [TaskType.InsertEvents, TaskType.PatchEvents, TaskType.DeleteIrrelevantEvents]
+  [
+    TaskType.InsertEvents,
+    TaskType.PatchEvents,
+    TaskType.DeleteIrrelevantEvents,
+  ],
+  [TaskType.ClearEventsContext]
 ] as ReadonlyArray<ReadonlyArray<string>>;
 
 ensureInjectable(EventEmitter);
@@ -81,6 +93,7 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   protected _groupsService: Nullable<GroupsService>;
   protected _eventsService: Nullable<EventsService>;
   protected _eventsContextStorage: Nullable<IEventsTaskContextStorage>;
+  protected _eventContextStorage: Nullable<EventContextService>;
   protected _cistClient: Nullable<ICistJsonClient>;
 
   protected _buildingsContext: Nullable<IBuildingsTaskContext>; // FIXME: probably, use cached value with expiration
@@ -91,6 +104,8 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   protected _groupsContextSemaphore: Nullable<Sema>;
   protected _eventsContext: Nullable<IEventsTaskContextBase>; // FIXME: probably, use cached value with expiration
   protected _eventsContextSemaphore: Nullable<Sema>;
+  protected _eventContext: Nullable<EventGoogleContext>; // FIXME: probably, use cached value with expiration
+  protected _eventContextSemaphore: Nullable<Sema>;
 
   get isDisposed() {
     return this._disposer.isDisposed;
@@ -111,16 +126,19 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     this._eventsService = null;
     this._cistClient = null;
     this._eventsContextStorage = null;
+    this._eventContextStorage = null;
 
     this._buildingsContext = null;
     this._roomsContext = null;
     this._groupsContext = null;
     this._eventsContext = null;
+    this._eventContext = null;
 
     this._buildingsContextSemaphore = null;
     this._roomsContextSemaphore = null;
     this._groupsContextSemaphore = null;
     this._eventsContextSemaphore = null;
+    this._eventContextSemaphore = null;
   }
 
   requiresSteps(taskType: string): boolean {
@@ -131,9 +149,14 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
       case TaskType.DeferredDeleteIrrelevantBuildings:
       case TaskType.DeferredDeleteIrrelevantRooms:
       case TaskType.DeferredDeleteIrrelevantGroups:
+      case TaskType.DeferredEnsureEvents:
+      case TaskType.DeferredDeleteIrrelevantEvents:
+      case TaskType.DeferredEnsureAndDeleteIrrelevantEvents:
+      case TaskType.InitializeEventsBaseContext:
       case TaskType.InsertEvents:
       case TaskType.PatchEvents:
       case TaskType.DeleteIrrelevantEvents:
+      case TaskType.ClearEventsContext:
         return false;
 
       default:
@@ -251,21 +274,6 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
       }
         break;
 
-      case TaskType.DeferredEnsureEvents:
-      case TaskType.DeferredDeleteIrrelevantEvents:
-      case TaskType.DeferredEnsureAndDeleteIrrelevantEvents: {
-        if (this._eventsContext) {
-          throw new TypeError('Usage error: events context is already created');
-        }
-        assertNoStep(step);
-        this._eventsContext = this.saveAndGetEventsContext(taskType);
-        this.emit(
-          TaskStepExecutorEventNames.NewTask,
-          this.getEventsService().createBaseContextTask()
-        );
-      }
-        break;
-
       case TaskType.EnsureBuildings: {
         assertCistBuildingId(step);
         await this.getBuildingsService().ensureBuilding(
@@ -314,6 +322,146 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
       case TaskType.DeleteIrrelevantGroups: {
         assertGoogleGroupIdOrEmail(step);
         await this.getGroupsService().deleteGroupById(step);
+      }
+        break;
+
+      case TaskType.DeferredEnsureEvents:
+      case TaskType.DeferredDeleteIrrelevantEvents:
+      case TaskType.DeferredEnsureAndDeleteIrrelevantEvents: {
+        if (this._eventsContext) {
+          throw new TypeError(l('Usage error: events context is already created'));
+        }
+        assertNoStep(step);
+        this._eventsContext = await this.saveAndGetEventsContext(taskType);
+        this.emit(
+          TaskStepExecutorEventNames.NewTask,
+          this.getEventsService().createBaseContextTask()
+        );
+        if (taskType !== TaskType.DeferredEnsureEvents) {
+          this.emit(TaskStepExecutorEventNames.NewTask, {
+            taskType: TaskType.DeleteIrrelevantEvents
+          } as ITaskDefinition<any>);
+        }
+        if (taskType !== TaskType.DeferredDeleteIrrelevantEvents) {
+          this.emit(
+            TaskStepExecutorEventNames.NewTask,
+            { taskType: TaskType.InsertEvents } as ITaskDefinition<void>
+          );
+          this.emit(
+            TaskStepExecutorEventNames.NewTask,
+            { taskType: TaskType.PatchEvents } as ITaskDefinition<void>
+          );
+        }
+        this.emit(
+          TaskStepExecutorEventNames.NewTask,
+          { taskType: TaskType.ClearEventsContext } as ITaskDefinition<void>
+        );
+      }
+        break;
+
+      case TaskType.InitializeEventsBaseContext: {
+        assertNoStep(step);
+        const context = this._eventsContext ?? await this.loadEventsContext();
+        const loadEventsChunk = await this.getEventsService()
+          .loadEventsByChunksToContext(context)
+          .next();
+        const events = this.getEventsService();
+        if (!loadEventsChunk.done) {
+          this.emit(
+            TaskStepExecutorEventNames.NewTask,
+            events.createBaseContextTask(),
+          );
+        } else {
+          this.emit(
+            TaskStepExecutorEventNames.NewTask,
+            events.createInitializeContextTask(
+              events.getCreateContextTypeConfigByContext(context),
+              await this.getCistClient().getGroupsResponse(),
+            ),
+          );
+        }
+      }
+        break;
+
+      case TaskType.InitializeEnsureEventsContext:
+      case TaskType.InitializeRelevantEventsContext:
+      case TaskType.InitializeEnsureAndRelevantEventsContext: {
+        assertCistGroupId(step);
+        await this.getEventsService().updateTasksContext(
+          this._eventsContext ?? await this.loadEventsContext(),
+          await this.saveAndGetEventContext(),
+          await this.getCistClient().getEventsResponse(
+            TimetableType.Group,
+            step
+          ),
+        );
+      }
+        break;
+
+      case TaskType.InsertEvents: {
+        const context = this._eventsContext ?? await this.loadEventsContext();
+        if (!isEnsureEventsTaskContext(context)) {
+          throw new TypeError(l('Unknown state for insert: events context is not for ensuring'));
+        }
+        const events = this.getEventsService();
+        if (!isEventHash(step)) {
+          if (events.canCreateInsertEventsTaskForContext(context)) {
+            this.emit(
+              TaskStepExecutorEventNames.NewTask,
+              events.createInsertEventsTask(context)
+            );
+          }
+        } else {
+          await events.insertEvent(step, context);
+        }
+      }
+        break;
+
+      case TaskType.PatchEvents: {
+        const context = this._eventsContext ?? await this.loadEventsContext();
+        if (!isEnsureEventsTaskContext(context)) {
+          throw new TypeError(l('Unknown state for patch: events context is not for ensuring'));
+        }
+        const events = this.getEventsService();
+        if (!isEventHash(step)) {
+          if (events.canCreatePatchEventsTaskForContext(context)) {
+            this.emit(
+              TaskStepExecutorEventNames.NewTask,
+              events.createPatchEventsTask(context)
+            );
+          }
+        } else {
+          await events.patchEvent(step, context);
+        }
+      }
+        break;
+
+      case TaskType.DeleteIrrelevantEvents: {
+        const events = this.getEventsService();
+        if (!isEventHash(step)) {
+          const context = this._eventsContext ?? await this.loadEventsContext();
+          if (!isRelevantEventsTaskContext(context)) {
+            throw new TypeError(l('Unknown state for patch: events context is not for ensuring'));
+          }
+          if (events.canCreateDeleteIrrelevantEventsTaskForContext(context)) {
+            this.emit(
+              TaskStepExecutorEventNames.NewTask,
+              events.createDeleteIrrelevantEventsTask(context)
+            );
+          }
+        } else {
+          await events.deleteEvent(step);
+        }
+      }
+        break;
+
+      case TaskType.ClearEventsContext: {
+        await this.getEventsContextStorage()
+          .clear()
+          .catch(error => this._logger.warn(
+            l('Failed to clear events context'),
+            error,
+          ));
       }
         break;
     }
@@ -383,19 +531,20 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
     }
   }
 
-  saveAndGetEventsContext(taskType: TaskType) {
-    if (!this._eventsContext) {
-      this._eventsContext = this.getEventsService()
-        .createEventsTaskContext({
-          ensure: taskType === TaskType.DeferredEnsureEvents
-            || taskType === TaskType.DeferredEnsureAndDeleteIrrelevantEvents,
-          deleteIrrelevant: (
-            taskType === TaskType.DeferredDeleteIrrelevantEvents
-            || taskType === TaskType.DeferredEnsureAndDeleteIrrelevantEvents
-          ),
-        });
+  private async saveAndGetEventsContext(taskType: TaskType) {
+    const semaphore = this.getEventsContextSemaphore();
+    try {
+      await semaphore.acquire();
+      if (!this._eventsContext) {
+        const events = this.getEventsService();
+        this._eventsContext = events.createEventsTaskContext(
+          events.getCreateContextTypeConfigByTaskType(taskType)
+        );
+      }
+      return this._eventsContext;
+    } finally {
+      semaphore.release();
     }
-    return this._eventsContext;
   }
 
   private getBuildingsService() {
@@ -440,6 +589,50 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
         .get<IEventsTaskContextStorage>(TYPES.GoogleEventContextService);
     }
     return this._eventsContextStorage;
+  }
+
+  private async saveAndGetEventContext() {
+    if (!this._eventContextSemaphore) {
+      this._eventContextSemaphore = new Sema(1);
+    }
+    try {
+      await this._eventContextSemaphore.acquire();
+      if (!this._eventContext) {
+        this._eventContext =
+          await this.getEventContextService().createGeneralContext();
+      }
+      return this._eventContext;
+    } finally {
+      this._eventContextSemaphore.release();
+    }
+  }
+
+  private getEventContextService() {
+    if (!this._eventContextStorage) {
+      this._eventContextStorage = this._container
+        .get<EventContextService>(TYPES.GoogleEventContextService);
+    }
+    return this._eventContextStorage;
+  }
+
+  private async loadEventsContext() {
+    const semaphore = this.getEventsContextSemaphore();
+    try {
+      await semaphore.acquire();
+      if (!this._eventsContext) {
+        this._eventsContext = await this.getEventsContextStorage().load();
+      }
+      return this._eventsContext;
+    } finally {
+      semaphore.release();
+    }
+  }
+
+  private getEventsContextSemaphore() {
+    if (!this._eventsContextSemaphore) {
+      this._eventsContextSemaphore = new Sema(1);
+    }
+    return this._eventsContextSemaphore;
   }
 
   dispose(): Promise<void> {
@@ -513,6 +706,10 @@ function assertNoStep(step: Optional<any>): asserts step is undefined {
   if (step !== undefined) {
     throw new TypeError(l('step is not needed'));
   }
+}
+
+function isEventHash(step: Optional<any>): step is string {
+  return typeof step === 'string';
 }
 
 function l(message: string) {

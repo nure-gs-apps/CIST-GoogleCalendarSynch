@@ -120,6 +120,9 @@ class TaskRunner {
             this._tasks.sort(this._taskStepExecutor.taskComparator);
         }
     }
+    includesTask(taskType) {
+        return this._tasks.some(t => t.taskType === taskType);
+    }
     hasAnyTasks() {
         return this.hasEnqueuedTasks()
             || this.hasTwiceFailedTasks();

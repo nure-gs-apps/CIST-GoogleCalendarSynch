@@ -8,7 +8,7 @@ import {
   GoogleAuthKey,
   IGoogleEventsTaskContextStorageConfig,
 } from '../@types/google';
-import { IApiQuota} from '../@types/services';
+import { IApiQuota } from '../@types/services';
 import { TaskProgressBackend } from '../@types/tasks';
 import { ICrossPlatformFilePath } from '../@types/utils';
 import { parseDuration } from '../utils/common';

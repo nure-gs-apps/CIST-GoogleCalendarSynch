@@ -4,6 +4,7 @@ const tslib_1 = require("tslib");
 const inversify_1 = require("inversify");
 const types_1 = require("../../di/types");
 const fs_1 = require("fs");
+const path = require("path");
 exports.encoding = 'utf8';
 let TaskProgressFileBackend = class TaskProgressFileBackend {
     constructor(fileName) {
@@ -15,11 +16,12 @@ let TaskProgressFileBackend = class TaskProgressFileBackend {
         });
         this.fileName = fileName;
     }
-    save(tasks) {
+    async save(tasks) {
+        await fs_1.promises.mkdir(path.dirname(this.fileName), { recursive: true });
         fs_1.writeFileSync(this.fileName, JSON.stringify(tasks), {
             encoding: exports.encoding
         }); // No other way to write in async way from signal listener
-        return Promise.resolve();
+        // return Promise.resolve();
     }
     async loadAndClear() {
         const tasks = await this.load();

@@ -9,7 +9,7 @@ const quota_limiter_service_1 = require("../quota-limiter.service");
 const google_api_calendar_1 = require("./google-api-calendar");
 const google_utils_service_1 = require("./google-utils.service");
 let CalendarService = CalendarService_1 = class CalendarService {
-    constructor(googleApiCalendar, quotaLimiter, calendarConfig, utils) {
+    constructor(googleApiCalendar, quotaLimiter, calendarTimeZone, utils) {
         Object.defineProperty(this, "_utils", {
             enumerable: true,
             configurable: true,
@@ -22,7 +22,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
             writable: true,
             value: void 0
         });
-        Object.defineProperty(this, "_calendarConfig", {
+        Object.defineProperty(this, "_calendarTimeZone", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -60,7 +60,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
         });
         this._utils = utils;
         this._calendar = googleApiCalendar;
-        this._calendarConfig = calendarConfig;
+        this._calendarTimeZone = calendarTimeZone;
         this._getCalendar = quotaLimiter.limiter.wrap(this._calendar.googleCalendar.calendars.get.bind(this._calendar.googleCalendar.calendars));
         console.log(this._getCalendar); // TODO: remove
         this._listCalendarList = quotaLimiter.limiter.wrap(this._calendar.googleCalendar.calendarList.list.bind(this._calendar.googleCalendar.calendarList));
@@ -116,7 +116,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
     // private async loadCalendar() {
     //   const calendarList = await this.getAllCalendars();
     //   const calendar = calendarList.find(
-    //     c => c.summary === this._calendarConfig.summary,
+    //     c => c.summary === this._calendarTimezone.summary,
     //   );
     //   if (calendar) {
     //     this._calendarId = calendar.id!;
@@ -201,7 +201,7 @@ let CalendarService = CalendarService_1 = class CalendarService {
             requestBody: {
                 summary,
                 description,
-                timeZone: this._calendarConfig.timeZone,
+                timeZone: this._calendarTimeZone,
             },
         });
         await Promise.all([
@@ -240,10 +240,10 @@ CalendarService = CalendarService_1 = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.GoogleApiCalendar)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleCalendarQuotaLimiter)),
-    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleCalendarConfig)),
+    tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleCalendarTimeZone)),
     tslib_1.__param(3, inversify_1.inject(types_1.TYPES.GoogleUtils)),
     tslib_1.__metadata("design:paramtypes", [google_api_calendar_1.GoogleApiCalendar,
-        quota_limiter_service_1.QuotaLimiterService, Object, google_utils_service_1.GoogleUtilsService])
+        quota_limiter_service_1.QuotaLimiterService, String, google_utils_service_1.GoogleUtilsService])
 ], CalendarService);
 exports.CalendarService = CalendarService;
 function isGroupCorrespondingCalendar(groupNameWithPrefix, calendar) {

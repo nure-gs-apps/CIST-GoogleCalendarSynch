@@ -8,7 +8,7 @@ const types_1 = require("../../di/types");
 const google_utils_service_1 = require("./google-utils.service");
 const groups_service_1 = require("./groups.service");
 const rooms_service_1 = require("./rooms.service");
-let EventsContextService = class EventsContextService {
+let EventContextService = class EventContextService {
     constructor(roomsService, groupsService, utils) {
         Object.defineProperty(this, "_groupsService", {
             enumerable: true,
@@ -47,7 +47,7 @@ let EventsContextService = class EventsContextService {
         return context;
     }
 };
-EventsContextService = tslib_1.__decorate([
+EventContextService = tslib_1.__decorate([
     inversify_1.injectable(),
     tslib_1.__param(0, inversify_1.inject(types_1.TYPES.RoomsService)),
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GroupsService)),
@@ -55,6 +55,6 @@ EventsContextService = tslib_1.__decorate([
     tslib_1.__metadata("design:paramtypes", [rooms_service_1.RoomsService,
         groups_service_1.GroupsService,
         google_utils_service_1.GoogleUtilsService])
-], EventsContextService);
-exports.EventsContextService = EventsContextService;
-//# sourceMappingURL=events-context.service.js.map
+], EventContextService);
+exports.EventContextService = EventContextService;
+//# sourceMappingURL=event-context.service.js.map

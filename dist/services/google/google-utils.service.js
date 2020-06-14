@@ -14,7 +14,7 @@ const moment = require("moment");
 exports.buildingIdPrefix = 'b';
 exports.roomIdPrefix = 'r';
 let GoogleUtilsService = class GoogleUtilsService {
-    constructor(subject, idPrefix, groupEmailPrefix, cistBaseUrl, calendarConfig, nureAddress) {
+    constructor(subject, idPrefix, groupEmailPrefix, cistBaseUrl, calendarTimeZone, nureAddress) {
         Object.defineProperty(this, "_idPrefix", {
             enumerable: true,
             configurable: true,
@@ -33,7 +33,7 @@ let GoogleUtilsService = class GoogleUtilsService {
             writable: true,
             value: void 0
         });
-        Object.defineProperty(this, "calendarConfig", {
+        Object.defineProperty(this, "calendarTimezone", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -76,7 +76,7 @@ let GoogleUtilsService = class GoogleUtilsService {
             value: void 0
         });
         this.cistBaseUrl = cistBaseUrl;
-        this.calendarTimezone = calendarConfig;
+        this.calendarTimezone = calendarTimeZone;
         this.nureAddress = nureAddress;
         this.domainName = subject.slice(subject.indexOf('@') + 1, subject.length)
             .toLowerCase();
@@ -212,12 +212,12 @@ let GoogleUtilsService = class GoogleUtilsService {
             },
             start: {
                 dateTime: moment.unix(cistEvent.start_time)
-                    .tz(this.calendarTimezone.timeZone)
+                    .tz(this.calendarTimezone)
                     .toISOString(true),
             },
             end: {
                 dateTime: moment.unix(cistEvent.end_time)
-                    .tz(this.calendarTimezone.timeZone)
+                    .tz(this.calendarTimezone)
                     .toISOString(true)
             },
             endTimeUnspecified: false,
@@ -358,7 +358,7 @@ GoogleUtilsService = tslib_1.__decorate([
     tslib_1.__param(1, inversify_1.inject(types_1.TYPES.GoogleEntityIdPrefix)),
     tslib_1.__param(2, inversify_1.inject(types_1.TYPES.GoogleGroupEmailPrefix)),
     tslib_1.__param(3, inversify_1.inject(types_1.TYPES.CistBaseApiUrl)), tslib_1.__param(3, inversify_1.optional()),
-    tslib_1.__param(4, inversify_1.inject(types_1.TYPES.GoogleCalendarConfig)), tslib_1.__param(4, inversify_1.optional()),
+    tslib_1.__param(4, inversify_1.inject(types_1.TYPES.GoogleCalendarTimeZone)), tslib_1.__param(4, inversify_1.optional()),
     tslib_1.__param(5, inversify_1.inject(types_1.TYPES.NureAddress)), tslib_1.__param(5, inversify_1.optional()),
     tslib_1.__metadata("design:paramtypes", [String, Object, Object, Object, Object, Object])
 ], GoogleUtilsService);

@@ -10,13 +10,15 @@ import {
   Mutable, Nullable,
   t,
 } from '../../@types';
-import { CistEventsResponse } from '../../@types/cist';
+import { CistEventsResponse, CistGroupsResponse } from '../../@types/cist';
 import { ILogger } from '../../@types/logging';
 import { ITaskDefinition, TaskType } from '../../@types/tasks';
 import { TYPES } from '../../di/types';
+import { toGroupIds } from '../../utils/cist';
 import { objectEntries } from '../../utils/common';
 import { QuotaLimiterService } from '../quota-limiter.service';
 import { FatalError } from './errors';
+import { EventGoogleContext } from './event-context.service';
 import { GoogleApiCalendar } from './google-api-calendar';
 import {
   eventHashToEventId,
@@ -36,7 +38,7 @@ const calendarId = 'primary';
 
 export interface ICreateContextConfig {
   ensure: boolean;
-  deleteIrrelevant: boolean;
+  relevant: boolean;
 }
 
 export interface IEnsureEventsTaskContext extends IEventsTaskContextBase {
@@ -130,7 +132,7 @@ export class EventsService {
 
   createBaseContextTask(): ITaskDefinition<void> {
     return {
-      taskType: TaskType.CreateEventsBaseContext
+      taskType: TaskType.InitializeEventsBaseContext
     };
   }
 
@@ -162,61 +164,59 @@ export class EventsService {
     this._logger.info('All events are loaded!');
   }
 
-  getCreateEventsTaskContext(taskType: TaskType) {
+  getCreateContextTypeConfigByTaskType(taskType: TaskType) {
     if (
-      taskType !== TaskType.CreateEnsureEventsContext
-      && taskType !== TaskType.CreateDeleteIrrelevantEventsContext
-      && taskType !== TaskType.CreateEnsureAndDeleteIrrelevantEventsContext
+      taskType !== TaskType.InitializeEnsureEventsContext
+      && taskType !== TaskType.InitializeRelevantEventsContext
+      && taskType !== TaskType.InitializeEnsureAndRelevantEventsContext
+      && taskType !== TaskType.DeferredEnsureEvents
+      && taskType !== TaskType.DeferredDeleteIrrelevantEvents
+      && taskType !== TaskType.DeferredEnsureAndDeleteIrrelevantEvents
     ) {
       throw new TypeError(l(`Unknown create events context task: ${taskType}`));
     }
     const config: ICreateContextConfig = {
       ensure: false,
-      deleteIrrelevant: false
+      relevant: false
     };
     switch (taskType) {
-      case TaskType.CreateEnsureEventsContext:
+      case TaskType.DeferredEnsureEvents:
+      case TaskType.InitializeEnsureEventsContext:
         config.ensure = true;
         break;
 
-      case TaskType.CreateDeleteIrrelevantEventsContext:
-        config.deleteIrrelevant = true;
+      case TaskType.DeferredDeleteIrrelevantEvents:
+      case TaskType.InitializeRelevantEventsContext:
+        config.relevant = true;
         break;
 
-      case TaskType.CreateEnsureAndDeleteIrrelevantEventsContext:
+      case TaskType.DeferredEnsureAndDeleteIrrelevantEvents:
+      case TaskType.InitializeEnsureAndRelevantEventsContext:
         config.ensure = true;
-        config.deleteIrrelevant = true;
+        config.relevant = true;
     }
     return config;
-  }
-
-  createContextTask(
-    config: DeepReadonly<ICreateContextConfig>
-  ): ITaskDefinition<void> {
-    return {
-      taskType: this.getTaskTypeForConfig(config)
-    };
   }
 
   getTaskTypeForConfig(
     config: DeepReadonly<ICreateContextConfig>
   ): TaskType {
-    if (!config.deleteIrrelevant && !config.ensure) {
+    if (!config.relevant && !config.ensure) {
       throw new TypeError(l('No tasks found'));
     }
-    if (config.ensure && !config.deleteIrrelevant) {
-      return TaskType.CreateEnsureEventsContext;
+    if (config.ensure && !config.relevant) {
+      return TaskType.InitializeEnsureEventsContext;
     }
-    if (!config.ensure && config.deleteIrrelevant) {
-      return TaskType.CreateDeleteIrrelevantEventsContext;
+    if (!config.ensure && config.relevant) {
+      return TaskType.InitializeRelevantEventsContext;
     }
-    return TaskType.CreateEnsureAndDeleteIrrelevantEventsContext;
+    return TaskType.InitializeEnsureAndRelevantEventsContext;
   }
 
   createEventsTaskContext(
     config: DeepReadonly<ICreateContextConfig>
   ): IEventsTaskContextBase {
-    if (!config.ensure && !config.deleteIrrelevant) {
+    if (!config.ensure && !config.relevant) {
       throw new FatalError(l('no tasks requested'));
     }
     const context: IEventsTaskContextBase = {
@@ -227,19 +227,39 @@ export class EventsService {
       ensureContext.insertEvents = new GuardedMap();
       ensureContext.patchEvents = new GuardedMap();
     }
-    if (config.deleteIrrelevant) {
+    if (config.relevant) {
       // tslint:disable-next-line:max-line-length
-      const deleteContext: Mutable<Partial<IRelevantEventsTaskContext>> = context;
-      deleteContext.relevantEventIds = new Set();
+      const relevantContext: Mutable<Partial<IRelevantEventsTaskContext>> = context;
+      relevantContext.relevantEventIds = new Set();
     }
     return context;
   }
 
+  createInitializeContextTask(
+    config: DeepReadonly<ICreateContextConfig>,
+    cistGroupsResponse: DeepReadonly<CistGroupsResponse>
+  ): ITaskDefinition<number> {
+    return {
+      taskType: this.getTaskTypeForConfig(config),
+      steps: Array.from(toGroupIds(cistGroupsResponse))
+    };
+  }
+
+  getCreateContextTypeConfigByContext(
+    context: DeepReadonly<IEventsTaskContextBase>
+  ): ICreateContextConfig {
+    return {
+      ensure: isEnsureEventsTaskContext(context),
+      relevant: isRelevantEventsTaskContext(context)
+    };
+  }
+
   async updateTasksContext(
     context: IEventsTaskContextBase,
-    eventContext: IGoogleEventContext,
+    eventContext: EventGoogleContext,
     cistEventsResponse: CistEventsResponse,
   ) {
+    cast<IGoogleEventContext>(eventContext);
     const isEnsureTaskContext = !isEnsureEventsTaskContext(context);
     const isRelevantTaskContext = !isRelevantEventsTaskContext(context);
     if (!isEnsureTaskContext && !isRelevantTaskContext) {
