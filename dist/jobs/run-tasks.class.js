@@ -200,7 +200,8 @@ class RunTasksJob {
             forceNew: true
         };
     }
-    getRequiredServicesFromTasks(tasks) {
+    getRequiredServicesFromTasks(// TODO: move closer to task step executor
+    tasks) {
         const types = [types_2.TYPES.TaskStepExecutor];
         if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
             // || taskType === TaskType.DeferredEnsureBuildings
@@ -220,6 +221,34 @@ class RunTasksJob {
             || taskType === tasks_1.TaskType.DeleteIrrelevantGroups))) {
             types.push(types_2.TYPES.GroupsService);
         }
+        if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureEvents
+            || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantEvents
+            || taskType === tasks_1.TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+            || taskType === tasks_1.TaskType.InitializeEventsBaseContext
+            || taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+            || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+            || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext
+            || taskType === tasks_1.TaskType.InsertEvents
+            || taskType === tasks_1.TaskType.PatchEvents
+            || taskType === tasks_1.TaskType.DeleteIrrelevantEvents))) {
+            types.push(types_2.TYPES.EventsService);
+        }
+        if (tasks.some(({ taskType, steps }) => (taskType === tasks_1.TaskType.InitializeEventsBaseContext
+            || taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+            || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+            || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext
+            || taskType === tasks_1.TaskType.InsertEvents
+            || taskType === tasks_1.TaskType.PatchEvents
+            || (taskType === tasks_1.TaskType.DeleteIrrelevantEvents
+                && (!steps || steps.length === 0))
+            || taskType === tasks_1.TaskType.ClearEventsContext))) {
+            types.push(types_2.TYPES.GoogleCalendarEventsTaskContextStorage);
+        }
+        if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+            || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+            || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext))) {
+            types.push(types_2.TYPES.GoogleEventContextService);
+        }
         if (tasks.some(({ taskType }) => (taskType === tasks_1.TaskType.DeferredEnsureBuildings
             || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantBuildings
             || taskType === tasks_1.TaskType.EnsureBuildings
@@ -231,8 +260,11 @@ class RunTasksJob {
             || taskType === tasks_1.TaskType.DeferredEnsureGroups
             || taskType === tasks_1.TaskType.DeferredDeleteIrrelevantGroups
             || taskType === tasks_1.TaskType.EnsureGroups
-        // || taskType === TaskType.DeleteIrrelevantGroups
-        ))) {
+            // || taskType === TaskType.DeleteIrrelevantGroups
+            || taskType === tasks_1.TaskType.InitializeEventsBaseContext
+            || taskType === tasks_1.TaskType.InitializeEnsureEventsContext
+            || taskType === tasks_1.TaskType.InitializeRelevantEventsContext
+            || taskType === tasks_1.TaskType.InitializeEnsureAndRelevantEventsContext))) {
             types.push(...(this._args
                 ? jobs_1.getCistCachedClientTypesForArgs(this._args, this._config.ncgc.caching.cist.priorities)
                 : jobs_1.getCistCachedClientTypes(this._config.ncgc.caching.cist.priorities)));
@@ -265,6 +297,21 @@ function getTasksFromArgs(args) {
     if (args.deleteIrrelevantGroups) {
         tasks.push({
             taskType: tasks_1.TaskType.DeferredDeleteIrrelevantGroups
+        });
+    }
+    if (args.events && args.deleteIrrelevantEvents) {
+        tasks.push({
+            taskType: tasks_1.TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+        });
+    }
+    else if (args.events) {
+        tasks.push({
+            taskType: tasks_1.TaskType.DeferredEnsureEvents
+        });
+    }
+    else if (args.deleteIrrelevantEvents) {
+        tasks.push({
+            taskType: tasks_1.TaskType.DeferredEnsureEvents
         });
     }
     return tasks;

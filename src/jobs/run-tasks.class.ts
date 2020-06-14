@@ -253,7 +253,7 @@ export class RunTasksJob {
     };
   }
 
-  protected getRequiredServicesFromTasks(
+  protected getRequiredServicesFromTasks( // TODO: move closer to task step executor
     tasks: DeepReadonlyArray<ITaskDefinition<any>>,
   ): ServiceIdentifier<any>[] {
     const types = [TYPES.TaskStepExecutor] as ServiceIdentifier<any>[];
@@ -285,6 +285,45 @@ export class RunTasksJob {
     }
 
     if (tasks.some(({ taskType }) => (
+      taskType === TaskType.DeferredEnsureEvents
+      || taskType === TaskType.DeferredDeleteIrrelevantEvents
+      || taskType === TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+      || taskType === TaskType.InitializeEventsBaseContext
+      || taskType === TaskType.InitializeEnsureEventsContext
+      || taskType === TaskType.InitializeRelevantEventsContext
+      || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+      || taskType === TaskType.InsertEvents
+      || taskType === TaskType.PatchEvents
+      || taskType === TaskType.DeleteIrrelevantEvents
+    ))) {
+      types.push(TYPES.EventsService);
+    }
+
+    if (tasks.some(({ taskType, steps }) => (
+      taskType === TaskType.InitializeEventsBaseContext
+      || taskType === TaskType.InitializeEnsureEventsContext
+      || taskType === TaskType.InitializeRelevantEventsContext
+      || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+      || taskType === TaskType.InsertEvents
+      || taskType === TaskType.PatchEvents
+      || (
+        taskType === TaskType.DeleteIrrelevantEvents
+        && (!steps || steps.length === 0)
+      )
+      || taskType === TaskType.ClearEventsContext
+    ))) {
+      types.push(TYPES.GoogleCalendarEventsTaskContextStorage);
+    }
+
+    if (tasks.some(({ taskType }) => (
+      taskType === TaskType.InitializeEnsureEventsContext
+      || taskType === TaskType.InitializeRelevantEventsContext
+      || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
+    ))) {
+      types.push(TYPES.GoogleEventContextService);
+    }
+
+    if (tasks.some(({ taskType }) => (
       taskType === TaskType.DeferredEnsureBuildings
       || taskType === TaskType.DeferredDeleteIrrelevantBuildings
       || taskType === TaskType.EnsureBuildings
@@ -297,6 +336,10 @@ export class RunTasksJob {
       || taskType === TaskType.DeferredDeleteIrrelevantGroups
       || taskType === TaskType.EnsureGroups
       // || taskType === TaskType.DeleteIrrelevantGroups
+      || taskType === TaskType.InitializeEventsBaseContext
+      || taskType === TaskType.InitializeEnsureEventsContext
+      || taskType === TaskType.InitializeRelevantEventsContext
+      || taskType === TaskType.InitializeEnsureAndRelevantEventsContext
     ))) {
       types.push(...(
         this._args
@@ -339,6 +382,19 @@ function getTasksFromArgs(
   if (args.deleteIrrelevantGroups) {
     tasks.push({
       taskType: TaskType.DeferredDeleteIrrelevantGroups
+    });
+  }
+  if (args.events && args.deleteIrrelevantEvents) {
+    tasks.push({
+      taskType: TaskType.DeferredEnsureAndDeleteIrrelevantEvents
+    });
+  } else if (args.events) {
+    tasks.push({
+      taskType: TaskType.DeferredEnsureEvents
+    });
+  } else if (args.deleteIrrelevantEvents) {
+    tasks.push({
+      taskType: TaskType.DeferredEnsureEvents
     });
   }
   return tasks;

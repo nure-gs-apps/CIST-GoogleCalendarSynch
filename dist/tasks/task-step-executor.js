@@ -519,7 +519,7 @@ let TaskStepExecutor = class TaskStepExecutor extends events_1.EventEmitter {
     getEventsContextStorage() {
         if (!this._eventsContextStorage) {
             this._eventsContextStorage = this._container
-                .get(types_1.TYPES.GoogleEventContextService);
+                .get(types_1.TYPES.GoogleCalendarEventsTaskContextStorage);
         }
         return this._eventsContextStorage;
     }

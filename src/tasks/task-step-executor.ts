@@ -84,7 +84,7 @@ const taskTypesOrder = [
 
 ensureInjectable(EventEmitter);
 @injectable()
-export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor, IDisposable {
+export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutorWithEvents, ITaskStepExecutor, IDisposable {
   protected readonly _container: IContainer;
   protected readonly _logger: ILogger;
   protected readonly _disposer: Disposer;
@@ -586,7 +586,9 @@ export class TaskStepExecutor extends EventEmitter implements ITaskStepExecutor,
   private getEventsContextStorage() {
     if (!this._eventsContextStorage) {
       this._eventsContextStorage = this._container
-        .get<IEventsTaskContextStorage>(TYPES.GoogleEventContextService);
+        .get<IEventsTaskContextStorage>(
+          TYPES.GoogleCalendarEventsTaskContextStorage
+        );
     }
     return this._eventsContextStorage;
   }
