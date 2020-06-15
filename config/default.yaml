@@ -13,10 +13,13 @@ ncgc:
         file:
           unix: /var/tmp/ncgc/interrupted-tasks.json
           win: %SystemRoot%\Temp\ncgc\interrupted-tasks.json
-        google-storage:
+        google-cloud-storage:
           key: ./keys/cist-calendar.json
           bucket: ncgc
-          directory: interrupted-tasks.json
+          filePath: interrupted-tasks.json
+        google-cloud-pubsub:
+          key: ./keys/cist-calendar.json
+          topic: ncgc-sync
   caching:
     maxExpiration:
       hours: 5
@@ -31,7 +34,7 @@ ncgc:
           directory:
             unix: /var/tmp/ncgc/cache/cist
             win: %SystemRoot%\Temp\ncgc\cache\cist
-        google-storage:
+        google-cloud-storage:
           key: ./keys/cist-calendar.json
           bucket: ncgc
           directory: cache/cist
@@ -46,10 +49,10 @@ ncgc:
           file:
             unix: /var/tmp/ncgc/google/events-task-context.json
             win: %SystemRoot%\Temp\ncgc\google\events-task-context.json
-          google-storage:
+          google-cloud-storage:
             key: ./keys/cist-calendar.json
             bucket: ncgc
-            directory: cache/google/events-task-context.json
+            filePath: cache/google/events-task-context.json
     auth:
       adminDirectoryKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
       calendarKey: ./keys/cist-calendar.json # either object for JSON key or (string) path to file
