@@ -47,10 +47,10 @@ ncgc:
       adminDirectoryApi:
         daily: 150000 # daily limit
         period: 100000 # ms
-        queries: 4000 # per period. 460 Fallback to 425 if problems. Actual is 1500, but decreased for reliability
+        queries: 4000 # per period.
         burst: false # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time. False is used because it works more reliable for now
       calendarApi:
         daily: 1000000 # daily limit
         period: 100000 # ms
-        queries: 100 # per period
+        queries: 150 # per period. Actual is 100000000, but decreased for reliability.
         burst: false # true: try load all resources at once and then throttle when limit is exhausted; false: make requests with equal interval all the time.
