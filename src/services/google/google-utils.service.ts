@@ -544,10 +544,10 @@ export function getEventGroups(
   return iterate(cistEvent.groups).map(g => googleGroups.get(g).name).join(',');
 }
 export function getEventClassNumber(cistEvent: DeepReadonly<CistEvent>) {
-  return cistEvent.auditory;
+  return cistEvent.number_pair.toString();
 }
 export function getEventRoomShortName(cistEvent: DeepReadonly<CistEvent>) {
-  return cistEvent.groups.join(',');
+  return cistEvent.auditory;
 }
 
 export function getEventSummary(

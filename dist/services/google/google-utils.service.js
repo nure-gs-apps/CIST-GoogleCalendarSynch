@@ -454,11 +454,11 @@ function getEventGroups(cistEvent, googleGroups) {
 }
 exports.getEventGroups = getEventGroups;
 function getEventClassNumber(cistEvent) {
-    return cistEvent.auditory;
+    return cistEvent.number_pair.toString();
 }
 exports.getEventClassNumber = getEventClassNumber;
 function getEventRoomShortName(cistEvent) {
-    return cistEvent.groups.join(',');
+    return cistEvent.auditory;
 }
 exports.getEventRoomShortName = getEventRoomShortName;
 function getEventSummary(cistEvent, googleGroups, subject, type) {
