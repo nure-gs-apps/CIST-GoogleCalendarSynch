@@ -52,7 +52,7 @@
     "inversify": "^5.0.1",
     "iterare": "^1.2.0",
     "js-yaml": "^3.13.1",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.27",
     "nconf": "^0.10.0",
