@@ -53,7 +53,7 @@
     "iterare": "^1.2.0",
     "js-yaml": "^3.13.1",
     "lodash": "^4.17.15",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "moment-timezone": "^0.5.27",
     "nconf": "^0.10.0",
     "proper-lockfile": "^4.1.1",
