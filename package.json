@@ -55,7 +55,7 @@
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.27",
-    "nconf": "^0.10.0",
+    "nconf": "^0.11.4",
     "proper-lockfile": "^4.1.1",
     "readonly-date": "^1.0.0",
     "reflect-metadata": "^0.1.13",
