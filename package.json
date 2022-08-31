@@ -54,7 +54,7 @@
     "js-yaml": "^3.13.1",
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
-    "moment-timezone": "^0.5.27",
+    "moment-timezone": "^0.5.35",
     "nconf": "^0.10.0",
     "proper-lockfile": "^4.1.1",
     "readonly-date": "^1.0.0",
